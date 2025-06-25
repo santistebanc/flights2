@@ -1,8 +1,8 @@
 import { Temporal } from "@js-temporal/polyfill";
 
 export type Range<T> = {
-  start: Temporal.Instant;
-  end: Temporal.Instant;
+  start: Temporal.ZonedDateTime;
+  end: Temporal.ZonedDateTime;
   data: T;
 };
 
@@ -19,8 +19,8 @@ export function timeline<T>(
   const sortedRanges = ranges
     .flatMap((track, trackIndex) =>
       track.flatMap((range) => {
-        if (Temporal.Instant.compare(range.start, min) < 0) min = range.start;
-        if (Temporal.Instant.compare(range.end, max) > 0) max = range.end;
+        if (Temporal.ZonedDateTime.compare(range.start, min) < 0) min = range.start;
+        if (Temporal.ZonedDateTime.compare(range.end, max) > 0) max = range.end;
         const duration = range.start.until(range.end);
         if (
           duration.total("milliseconds") <
@@ -34,7 +34,7 @@ export function timeline<T>(
         ];
       })
     )
-    .sort((a, b) => Temporal.Instant.compare(a.instant, b.instant));
+    .sort((a, b) => Temporal.ZonedDateTime.compare(a.instant, b.instant));
 
   const stepDuration = smallestRange.duration
     .round({

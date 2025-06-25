@@ -1,6 +1,7 @@
 import { api } from "./_generated/api";
 import { query } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
+import { v } from "convex/values";
 
 export type DetailedFlight = Omit<Doc<"flights">, "airline" | "from" | "to"> & {
   airline: Doc<"airlines">;
@@ -14,9 +15,9 @@ export type Offer = {
 };
 
 export const getOffers = query({
-  args: {},
-  handler: async (ctx) => {
-    const deals = await ctx.db.query("deals").collect();
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const deals = await ctx.db.query("deals").take(args.limit ?? 100);
     const offersMap = new Map<string, Offer>();
     for (const deal of deals) {
       const existingOffer = offersMap.get(deal.flights.join(","));

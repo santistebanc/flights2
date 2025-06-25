@@ -15,7 +15,8 @@ export default function App() {
   const [searchParams, setSearchParams] = useState({
     from: "",
     to: "",
-    departure: "",
+    departureStart: "",
+    departureEnd: "",
   });
 
   return (
@@ -30,7 +31,7 @@ export default function App() {
           </div>
           <CompactFilters />
         </header>
-        <main className="flex-1 p-4">
+        <main className="flex-1">
           <Content />
         </main>
         <Toaster />

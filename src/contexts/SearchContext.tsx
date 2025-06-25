@@ -5,12 +5,14 @@ const SearchContext = createContext<{
   searchParams: {
     from: string;
     to: string;
-    departure: string;
+    departureStart: string;
+    departureEnd: string;
   };
   setSearchParams: React.Dispatch<React.SetStateAction<{
     from: string;
     to: string;
-    departure: string;
+    departureStart: string;
+    departureEnd: string;
   }>>;
 } | null>(null);
 

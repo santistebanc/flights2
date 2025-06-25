@@ -1,8 +1,5 @@
 import { Temporal } from "@js-temporal/polyfill";
-import stc from "string-to-color";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Doc } from "../../convex/_generated/dataModel";
+import randomColor from "randomcolor";
 import { DetailedFlight } from "../../convex/offers";
 
 export function FlightRange({
@@ -28,7 +25,11 @@ export function FlightRange({
       <div
         className="h-1 rounded-full w-full"
         style={{
-          backgroundColor: stc(flight.airline.name),
+          backgroundColor: randomColor({
+            seed: flight.airline.name,
+            hue: "random",
+            luminosity: "bright",
+          }),
         }}
       />
 

@@ -36,6 +36,36 @@ body {
   background: var(--color-bg-dark);
 }
 
+/* Global scrollbar styles for the entire app */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #eab308 #374151; /* yellow-500 for thumb, gray-700 for track */
+}
+
+/* Webkit scrollbar styles (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #374151; /* gray-700 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #eab308; /* yellow-500 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ca8a04; /* yellow-600 */
+}
+
+::-webkit-scrollbar-corner {
+  background: #374151; /* gray-700 */
+}
+
 /* only use this to update the style of the auth input fields. use a different class for all other input fields */
 .auth-input-field {
   @apply w-full px-4 py-3 rounded-container bg-gray-800 border border-gray-600 text-white focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 outline-none transition-shadow shadow-sm hover:shadow;
