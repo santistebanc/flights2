@@ -42,11 +42,13 @@ export function CompactFilters() {
               setSearchParams(prev => ({
                 ...prev,
                 departureStart: values.range.from ? format(values.range.from, "yyyy-MM-dd") : "",
-                departureEnd: values.range.to ? format(values.range.to, "yyyy-MM-dd") : "",
+                departureEnd: values.isRoundTrip && values.range.to ? format(values.range.to, "yyyy-MM-dd") : "",
+                isRoundTrip: values.isRoundTrip,
               }));
             }}
             initialDateFrom={searchParams.departureStart || undefined}
             initialDateTo={searchParams.departureEnd || undefined}
+            initialRoundTrip={searchParams.isRoundTrip}
             showCompare={false}
             align="start"
           />

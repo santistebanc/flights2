@@ -17,6 +17,7 @@ export default function App() {
     to: "",
     departureStart: "",
     departureEnd: "",
+    isRoundTrip: false,
   });
 
   return (

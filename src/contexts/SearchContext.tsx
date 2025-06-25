@@ -7,12 +7,14 @@ const SearchContext = createContext<{
     to: string;
     departureStart: string;
     departureEnd: string;
+    isRoundTrip: boolean;
   };
   setSearchParams: React.Dispatch<React.SetStateAction<{
     from: string;
     to: string;
     departureStart: string;
     departureEnd: string;
+    isRoundTrip: boolean;
   }>>;
 } | null>(null);
 

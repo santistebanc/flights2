@@ -11,6 +11,7 @@ export function Timeline({ offers }: { offers: Offer[] }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   // Memoize the ranges calculation to avoid unnecessary recalculations
   const { ranges, timelineData, getRelativePosition } = useMemo(() => {
@@ -96,6 +97,21 @@ export function Timeline({ offers }: { offers: Offer[] }) {
     setPopupPosition(null);
   };
 
+  // Update scroll position
+  useEffect(() => {
+    const element = parentRef.current;
+    if (element) {
+      const handleScroll = () => {
+        setScrollLeft(element.scrollLeft);
+      };
+      
+      element.addEventListener('scroll', handleScroll);
+      return () => {
+        element.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, []);
+
   // Add scroll event listeners
   useEffect(() => {
     if (selectedOffer) {
@@ -107,6 +123,19 @@ export function Timeline({ offers }: { offers: Offer[] }) {
         closePopup();
       };
 
+      const handleDocumentClick = (event: MouseEvent) => {
+        const popupElement = document.querySelector('[data-popup="deals"]');
+        const clickedElement = event.target as Element;
+        
+        if (popupElement && !popupElement.contains(clickedElement)) {
+          // Check if the click was on a price element (to prevent closing when opening)
+          const isPriceClick = clickedElement.closest('[data-price-clickable]');
+          if (!isPriceClick) {
+            closePopup();
+          }
+        }
+      };
+
       // Listen for window scroll (vertical)
       window.addEventListener('scroll', handleWindowScroll);
       
@@ -116,11 +145,17 @@ export function Timeline({ offers }: { offers: Offer[] }) {
         timelineElement.addEventListener('scroll', handleTimelineScroll);
       }
 
+      // Listen for clicks outside popup (with delay to avoid immediate closing)
+      setTimeout(() => {
+        document.addEventListener('click', handleDocumentClick);
+      }, 100);
+
       return () => {
         window.removeEventListener('scroll', handleWindowScroll);
         if (timelineElement) {
           timelineElement.removeEventListener('scroll', handleTimelineScroll);
         }
+        document.removeEventListener('click', handleDocumentClick);
       };
     }
   }, [selectedOffer]);
@@ -160,13 +195,14 @@ export function Timeline({ offers }: { offers: Offer[] }) {
                 width: `${timelineWidth}px`,
               }}
             >
-              {/* Price Column */}
+              {/* Sticky Price Column */}
               <div
-                className="h-full flex items-center justify-center border-r border-slate-600 bg-slate-700/50"
+                className="h-full flex items-center justify-center border-r border-slate-600 border-b border-slate-600 bg-slate-700 sticky left-0 z-10"
                 style={{ width: `${priceColumnWidth}px` }}
               >
                 {lowestPrice ? (
                   <div 
+                    data-price-clickable
                     className="text-center cursor-pointer hover:bg-slate-600/50 rounded px-2 py-1 transition-colors"
                     onClick={(e) => handlePriceClick(offer, e)}
                   >
@@ -230,6 +266,7 @@ export function Timeline({ offers }: { offers: Offer[] }) {
       {/* Deals Popup */}
       {selectedOffer && popupPosition && (
         <div
+          data-popup="deals"
           className="fixed z-50 bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-w-sm pointer-events-none"
           style={{
             left: popupPosition.x,
@@ -255,16 +292,14 @@ export function Timeline({ offers }: { offers: Offer[] }) {
                   rel="noopener noreferrer"
                   className="block p-3 bg-slate-700 hover:bg-slate-600 rounded border border-slate-600 transition-colors"
                 >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="text-yellow-400 font-semibold">
-                        {deal.price.toLocaleString()}€
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {deal.dealer}
-                      </div>
+                  <div className="flex justify-between items-center gap-4">
+                    <div className="text-yellow-400 font-semibold min-w-0 flex-shrink-0">
+                      {deal.price.toLocaleString()}€
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-sm text-gray-400 flex-1 text-center">
+                      {deal.dealer}
+                    </div>
+                    <div className="text-xs text-gray-500 min-w-0 flex-shrink-0">
                       {Temporal.ZonedDateTime.from(deal.date).toPlainDate().toString()}
                     </div>
                   </div>
