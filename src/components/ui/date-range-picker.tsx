@@ -79,8 +79,10 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
 
   // Ensure initial dates are not in the past
   const getValidInitialDate = (date: Date | string | undefined): Date => {
-    const adjustedDate = date
-      ? getDateAdjustedForTimezone(date)
+    // Treat empty strings as undefined to default to today
+    const validDate = date && date !== "" ? date : undefined;
+    const adjustedDate = validDate
+      ? getDateAdjustedForTimezone(validDate)
       : getStartOfToday();
     return isDateInPast(adjustedDate) ? getStartOfToday() : adjustedDate;
   };

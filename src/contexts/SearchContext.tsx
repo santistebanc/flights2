@@ -6,14 +6,14 @@ const SearchContext = createContext<{
     from: string;
     to: string;
     outboundDate: string;
-    inboundDate?: string;
+    inboundDate: string;
     isRoundTrip: boolean;
   };
   setSearchParams: React.Dispatch<React.SetStateAction<{
     from: string;
     to: string;
     outboundDate: string;
-    inboundDate?: string;
+    inboundDate: string;
     isRoundTrip: boolean;
   }>>;
 } | null>(null);

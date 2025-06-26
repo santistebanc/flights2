@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { FlightRange } from "./FlightRange";
 import { StayRange } from "./StayRange";
 import { Offer } from "../../convex/offers";
@@ -26,12 +26,18 @@ export function TimelineRow({
   measureElement: (el: HTMLElement | null) => void;
   virtualRow: any;
 }) {
+  const [fadeIn, setFadeIn] = useState(false);
+
+  useEffect(() => {
+    setFadeIn(true);
+  }, []);
+
   return (
     <div
       key={virtualRow.index}
       ref={measureElement}
       data-index={virtualRow.index}
-      className="w-full h-14 bg-slate-800 border-b border-slate-700 flex absolute top-0 left-0"
+      className={`w-full h-14 bg-slate-800 border-b border-slate-700 flex absolute top-0 left-0 transition-opacity duration-500 ${fadeIn ? "opacity-100" : "opacity-0"}`}
       style={{
         height: `${virtualRow.size}px`,
         transform: `translateY(${virtualRow.start}px)`,

@@ -5,6 +5,7 @@ import { timeline } from "./timeline";
 import { Offer } from "../../convex/offers";
 import { TimelineRow } from "./TimelineRow";
 import { DealsPopup } from "./DealsPopup";
+import React from "react";
 
 export function getLowestPrice(offer: Offer) {
   if (!offer.deals || offer.deals.length === 0) return null;

@@ -7,15 +7,27 @@ import { Toaster } from "sonner";
 import { FlightSearch } from "./FlightSearch";
 import { CompactFilters } from "./components/CompactFilters";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { SearchContext } from "./contexts/SearchContext";
 import { AuthButton } from "./components/auth/AuthButton";
+import { useLocalStorage } from "./hooks/useLocalStorage";
+import { Temporal } from "@js-temporal/polyfill";
+
+function getTodayAsString(): string {
+  const today = new Date();
+  return Temporal.PlainDate.from({
+    year: today.getFullYear(),
+    month: today.getMonth() + 1,
+    day: today.getDate(),
+  }).toString();
+}
 
 export default function App() {
-  const [searchParams, setSearchParams] = useState({
+  const [searchParams, setSearchParams] = useLocalStorage("flight-search-filters", {
     from: "",
     to: "",
-    outboundDate: "",
+    outboundDate: getTodayAsString(),
+    inboundDate: "",
     isRoundTrip: false,
   });
 

@@ -28,7 +28,7 @@ export function FlightSearch() {
       const filterDate = Temporal.PlainDate.from(searchParams.outboundDate);
       if (Temporal.PlainDate.compare(depDate, filterDate) !== 0) return false;
       // Filter by inboundDate (optional)
-      if (searchParams.inboundDate) {
+      if (searchParams.inboundDate && searchParams.inboundDate !== "") {
         const arrDate = Temporal.PlainDate.from(lastFlight.arrival);
         const filterDate = Temporal.PlainDate.from(searchParams.inboundDate);
         if (Temporal.PlainDate.compare(arrDate, filterDate) !== 0) return false;

@@ -25,6 +25,12 @@ A modern, real-time flight search application that helps users find and compare 
 - **Origin & Destination**: Search flights between any airports
 - **Date Range Selection**: Flexible date picking with range support
 - **Compact Filters**: Streamlined search interface for quick access
+- **Filter Persistence**: Search filters are automatically saved to localStorage and restored on page reload
+
+### 💾 **Data Persistence**
+- **Local Storage**: Search filters persist across browser sessions
+- **Automatic Restoration**: Filters are automatically restored when the app loads
+- **Cross-Session**: Your search preferences are maintained even after closing the browser
 
 ## Tech Stack
 
@@ -82,6 +88,8 @@ flights/
 │   │   ├── auth/           # Authentication components
 │   │   └── CompactFilters.tsx
 │   ├── contexts/           # React contexts
+│   ├── hooks/              # Custom React hooks
+│   │   └── useLocalStorage.ts
 │   ├── FlightSearch.tsx    # Main flight search component
 │   └── App.tsx            # Root application component
 ├── convex/                 # Backend code (Convex functions)
@@ -98,6 +106,7 @@ flights/
 - Future date validation
 - Dark theme styling
 - Single date and range selection modes
+- Auto-selects today's date by default
 
 ### Timeline
 - Virtual scrolling for performance
@@ -110,6 +119,12 @@ flights/
 - Origin/destination inputs
 - Date range selection
 - Search button
+
+### useLocalStorage Hook
+- Custom React hook for localStorage persistence
+- Automatic JSON serialization/deserialization
+- Error handling for localStorage access
+- SSR-safe implementation
 
 ## Development
 
