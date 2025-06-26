@@ -9,10 +9,10 @@ type AirlineArgs = {
 
 type AirportArgs = {
   uniqueId: string;
-  iata: string;
   name: string;
-  city: string;
-  country: string;
+  iata_code: string;
+  iso_country: string;
+  municipality?: string;
   timezone: string;
 };
 
@@ -45,6 +45,7 @@ async function getOrCreateEntity(
   ctx: MutationCtx,
   entity: EntityArgs
 ) {
+  // For all entities, use uniqueId for deduplication
   const existing = await ctx.db
     .query(entity.type)
     .withIndex("by_uniqueId", (q) => q.eq("uniqueId", entity.args.uniqueId))
@@ -70,10 +71,10 @@ export const createAirline = internalMutation({
 export const createAirport = internalMutation({
   args: {
     uniqueId: v.string(),
-    iata: v.string(),
     name: v.string(),
-    city: v.string(),
-    country: v.string(),
+    iata_code: v.string(),
+    iso_country: v.string(),
+    municipality: v.optional(v.string()),
     timezone: v.string(),
   },
   handler: async (ctx, args) => {

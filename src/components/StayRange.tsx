@@ -27,8 +27,8 @@ export function StayRange({
   rangeStart?: Temporal.ZonedDateTime;
   rangeEnd?: Temporal.ZonedDateTime;
 }) {
-  const fromLabel = from && `${from.name} (${from.city}, ${from.country})`;
-  const toLabel = to && `${to.name} (${to.city}, ${to.country})`;
+  const fromLabel = from && `${from.name} (${from.municipality}, ${from.iso_country})`;
+  const toLabel = to && `${to.name} (${to.municipality}, ${to.iso_country})`;
   const label =
     from && to && from._id !== to._id
       ? `${fromLabel} - ${toLabel}`
@@ -92,7 +92,7 @@ export function StayRange({
           }
           style={{ zIndex: 1 }}
         >
-          {from.iata}
+          {from.iata_code}
         </span>
       )}
       {rangeStart && rangeEnd && (
@@ -113,7 +113,7 @@ export function StayRange({
           }
           style={{ zIndex: 1 }}
         >
-          {to.iata}
+          {to.iata_code}
         </span>
       )}
       {from && to && from === to ? (
@@ -121,14 +121,14 @@ export function StayRange({
           className="@[80px]:hidden text-[0.5rem] @[60px]:text-xs text-white font-bold flex-1 text-center"
           style={{ zIndex: 1 }}
         >
-          {`${from.iata}-${to.iata}`}
+          {`${from.iata_code}-${to.iata_code}`}
         </span>
       ) : (
         <span
           className="@[80px]:hidden text-[0.6rem] @[40px]:text-xs text-white font-bold flex-1 text-center"
           style={{ zIndex: 1 }}
         >
-          {from?.iata ?? to?.iata}
+          {from?.iata_code ?? to?.iata_code}
         </span>
       )}
     </div>

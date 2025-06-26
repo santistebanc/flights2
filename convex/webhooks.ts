@@ -3,10 +3,10 @@ import { internal } from "./_generated/api";
 
 export type Airport = {
   uniqueId: string;
-  iata: string;
   name: string;
-  city: string;
-  country: string;
+  iata_code: string;
+  iso_country: string;
+  municipality: string;
   timezone: string;
 };
 
@@ -36,25 +36,20 @@ export type Deal = {
 
 export const addEntities = httpAction(async (ctx, request) => {
   const {
-    airports = [],
     airlines = [],
     flights = [],
     deals = [],
   }: {
-    airports: Airport[];
     airlines: Airline[];
     flights: Flight[];
     deals: Deal[];
   } = await request.json();
 
-  await Promise.all([
-    ...airlines.map(async (airline) => {
+  await Promise.all(
+    airlines.map(async (airline) => {
       await ctx.runMutation(internal.mutations.createAirline, airline);
-    }),
-    ...airports.map(async (airport) => {
-      await ctx.runMutation(internal.mutations.createAirport, airport);
-    }),
-  ]);
+    })
+  );
 
   await Promise.all(
     flights.map(async (flight) => {

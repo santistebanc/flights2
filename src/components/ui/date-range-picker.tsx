@@ -8,29 +8,19 @@ import { Calendar } from "./calendar";
 import DateInput from "./date-input";
 import { Label } from "./label";
 import { Switch } from "./switch";
-import {
-  ChevronUpIcon,
-  ChevronDownIcon,
-} from "@radix-ui/react-icons";
+import { ChevronUpIcon, ChevronDownIcon } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
 
 export interface DateRangePickerProps {
   /** Click handler for applying the updates from DateRangePicker. */
-  onUpdate?: (values: { range: DateRange; rangeCompare?: DateRange; isRoundTrip: boolean }) => void;
+  onUpdate?: (values: {
+    range: DateRange;
+    isRoundTrip: boolean;
+  }) => void;
   /** Initial value for start date */
   initialDateFrom?: Date | string;
   /** Initial value for end date */
   initialDateTo?: Date | string;
-  /** Initial value for start date for compare */
-  initialCompareFrom?: Date | string;
-  /** Initial value for end date for compare */
-  initialCompareTo?: Date | string;
-  /** Alignment of popover */
-  align?: "start" | "center" | "end";
-  /** Option for locale */
-  locale?: string;
-  /** Option for showing compare feature */
-  showCompare?: boolean;
   /** Initial value for round trip mode */
   initialRoundTrip?: boolean;
 }
@@ -81,12 +71,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
 } = ({
   initialDateFrom = new Date(new Date().setHours(0, 0, 0, 0)),
   initialDateTo,
-  initialCompareFrom,
-  initialCompareTo,
   onUpdate,
-  align = "end",
-  locale = "en-US",
-  showCompare = true,
   initialRoundTrip = false,
 }): JSX.Element => {
   const [isOpen, setIsOpen] = useState(false);
@@ -94,31 +79,24 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
 
   // Ensure initial dates are not in the past
   const getValidInitialDate = (date: Date | string | undefined): Date => {
-    const adjustedDate = date ? getDateAdjustedForTimezone(date) : getStartOfToday();
+    const adjustedDate = date
+      ? getDateAdjustedForTimezone(date)
+      : getStartOfToday();
     return isDateInPast(adjustedDate) ? getStartOfToday() : adjustedDate;
   };
 
   const [range, setRange] = useState<DateRange>({
     from: getValidInitialDate(initialDateFrom),
-    to: isRoundTrip && initialDateTo
-      ? getValidInitialDate(initialDateTo)
-      : undefined,
+    to:
+      isRoundTrip && initialDateTo
+        ? getValidInitialDate(initialDateTo)
+        : undefined,
   });
-  const [rangeCompare, setRangeCompare] = useState<DateRange | undefined>(
-    initialCompareFrom
-      ? {
-          from: getValidInitialDate(initialCompareFrom),
-          to: initialCompareTo
-            ? getValidInitialDate(initialCompareTo)
-            : getValidInitialDate(initialCompareFrom),
-        }
-      : undefined
-  );
 
-  // Refs to store the values of range and rangeCompare when the date picker is opened
+  // Refs to store the values of range when the date picker is opened
   const openedRangeRef = useRef<DateRange | undefined>(undefined);
-  const openedRangeCompareRef = useRef<DateRange | undefined>(undefined);
   const openedRoundTripRef = useRef<boolean | undefined>(undefined);
+  const prevIsOpen = useRef(false);
 
   const [isSmallScreen, setIsSmallScreen] = useState(
     typeof window !== "undefined" ? window.innerWidth < 960 : false
@@ -140,20 +118,11 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
   const resetValues = (): void => {
     setRange({
       from: getValidInitialDate(initialDateFrom),
-      to: isRoundTrip && initialDateTo
-        ? getValidInitialDate(initialDateTo)
-        : undefined,
+      to:
+        isRoundTrip && initialDateTo
+          ? getValidInitialDate(initialDateTo)
+          : undefined,
     });
-    setRangeCompare(
-      initialCompareFrom
-        ? {
-            from: getValidInitialDate(initialCompareFrom),
-            to: initialCompareTo
-              ? getValidInitialDate(initialCompareTo)
-              : getValidInitialDate(initialCompareFrom),
-          }
-        : undefined
-    );
     setIsRoundTrip(initialRoundTrip);
   };
 
@@ -167,59 +136,39 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpen.current) {
+      // Popover just opened
       openedRangeRef.current = range;
-      openedRangeCompareRef.current = rangeCompare;
       openedRoundTripRef.current = isRoundTrip;
     }
-  }, [isOpen, range, rangeCompare, isRoundTrip]);
+    prevIsOpen.current = isOpen;
+  }, [isOpen]);
 
   // Function to handle date changes with validation
-  const handleDateChange = (date: Date, isFromDate: boolean, isCompare: boolean = false) => {
+  const handleDateChange = (
+    date: Date,
+    isFromDate: boolean
+  ) => {
     const startOfToday = getStartOfToday();
-    
+
     // If the date is in the past, use today instead
     const validDate = isDateInPast(date) ? startOfToday : date;
-    
-    if (isCompare) {
-      if (rangeCompare) {
-        if (isFromDate) {
-          const compareToDate = rangeCompare.to == null || validDate > rangeCompare.to ? validDate : rangeCompare.to;
-          setRangeCompare((prevRangeCompare) => ({
-            ...prevRangeCompare,
-            from: validDate,
-            to: compareToDate,
-          }));
-        } else {
-          const compareFromDate = validDate < rangeCompare.from ? validDate : rangeCompare.from;
-          setRangeCompare({
-            ...rangeCompare,
-            from: compareFromDate,
-            to: validDate,
-          });
-        }
-      } else {
-        setRangeCompare({
-          from: validDate,
-          to: new Date(),
-        });
-      }
+
+    if (isFromDate) {
+      const toDate =
+        range.to == null || validDate > range.to ? validDate : range.to;
+      setRange((prevRange) => ({
+        ...prevRange,
+        from: validDate,
+        to: toDate,
+      }));
     } else {
-      if (isFromDate) {
-        const toDate = range.to == null || validDate > range.to ? validDate : range.to;
-        setRange((prevRange) => ({
-          ...prevRange,
-          from: validDate,
-          to: toDate,
-        }));
-      } else {
-        const fromDate = validDate < range.from ? validDate : range.from;
-        setRange((prevRange) => ({
-          ...prevRange,
-          from: fromDate,
-          to: validDate,
-        }));
-      }
+      const fromDate = validDate < range.from ? validDate : range.from;
+      setRange((prevRange) => ({
+        ...prevRange,
+        from: fromDate,
+        to: validDate,
+      }));
     }
   };
 
@@ -235,27 +184,19 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
       }}
     >
       <PopoverTrigger asChild>
-        <Button 
-          size={"lg"} 
+        <Button
+          size={"lg"}
           variant="outline"
           className="border-gray-600 bg-gray-700 text-white hover:bg-gray-600 hover:border-gray-500 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400"
         >
           <div className="text-right">
             <div className="py-1">
-              <div>{`${formatDate(range.from, locale)}${
-                isRoundTrip && range.to != null ? " - " + formatDate(range.to, locale) : ""
+              <div>{`${formatDate(range.from)}${
+                isRoundTrip && range.to != null
+                  ? " - " + formatDate(range.to)
+                  : ""
               }`}</div>
             </div>
-            {rangeCompare != null && (
-              <div className="opacity-60 text-xs -mt-1 text-gray-400">
-                <>
-                  vs. {formatDate(rangeCompare.from, locale)}
-                  {rangeCompare.to != null
-                    ? ` - ${formatDate(rangeCompare.to, locale)}`
-                    : ""}
-                </>
-              </div>
-            )}
           </div>
           <div className="pl-1 opacity-60 -mr-2 scale-125 text-gray-400">
             {isOpen ? (
@@ -266,8 +207,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        align={align} 
+      <PopoverContent
         className="w-auto bg-gray-800 border-gray-600 text-white shadow-lg"
       >
         <div className="flex py-2">
@@ -281,61 +221,24 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                       setIsRoundTrip(checked);
                       if (checked) {
                         // When switching to round trip, set the return date to the same as departure if not already set
-                        setRange(prev => ({
+                        setRange((prev) => ({
                           ...prev,
-                          to: prev.to || prev.from
+                          to: prev.to || prev.from,
                         }));
                       } else {
                         // When switching to one-way, clear the return date
-                        setRange(prev => ({
+                        setRange((prev) => ({
                           ...prev,
-                          to: undefined
+                          to: undefined,
                         }));
                       }
                     }}
                     id="round-trip-mode"
                   />
-                  <Label htmlFor="round-trip-mode" className="text-gray-300">Round Trip</Label>
+                  <Label htmlFor="round-trip-mode" className="text-gray-300">
+                    Round Trip
+                  </Label>
                 </div>
-                {showCompare && (
-                  <div className="flex items-center space-x-2 py-1">
-                    <Switch
-                      defaultChecked={Boolean(rangeCompare)}
-                      onCheckedChange={(checked: boolean) => {
-                        if (checked) {
-                          if (!range.to) {
-                            setRange({
-                              from: range.from,
-                              to: range.from,
-                            });
-                          }
-                          setRangeCompare({
-                            from: new Date(
-                              range.from.getFullYear(),
-                              range.from.getMonth(),
-                              range.from.getDate() - 365
-                            ),
-                            to: range.to
-                              ? new Date(
-                                  range.to.getFullYear() - 1,
-                                  range.to.getMonth(),
-                                  range.to.getDate()
-                                )
-                              : new Date(
-                                  range.from.getFullYear() - 1,
-                                  range.from.getMonth(),
-                                  range.from.getDate()
-                                ),
-                          });
-                        } else {
-                          setRangeCompare(undefined);
-                        }
-                      }}
-                      id="compare-mode"
-                    />
-                    <Label htmlFor="compare-mode" className="text-gray-300">Compare</Label>
-                  </div>
-                )}
                 <div className="flex flex-col gap-2 ml-auto">
                   <div className="flex gap-2">
                     <DateInput
@@ -356,33 +259,23 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                       </>
                     )}
                   </div>
-                  {rangeCompare != null && (
-                    <div className="flex gap-2">
-                      <DateInput
-                        value={rangeCompare?.from}
-                        onChange={(date: Date) => {
-                          handleDateChange(date, true, true);
-                        }}
-                      />
-                      <div className="py-1 text-gray-400">-</div>
-                      <DateInput
-                        value={rangeCompare?.to}
-                        onChange={(date: Date) => {
-                          handleDateChange(date, false, true);
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
               <div>
                 {isRoundTrip ? (
                   <Calendar
                     mode="range"
-                    onSelect={(value: { from?: Date; to?: Date } | undefined) => {
+                    onSelect={(
+                      value: { from?: Date; to?: Date } | undefined
+                    ) => {
                       if (value?.from != null) {
-                        const validFrom = isDateInPast(value.from) ? getStartOfToday() : value.from;
-                        const validTo = value.to && isDateInPast(value.to) ? getStartOfToday() : value.to;
+                        const validFrom = isDateInPast(value.from)
+                          ? getStartOfToday()
+                          : value.from;
+                        const validTo =
+                          value.to && isDateInPast(value.to)
+                            ? getStartOfToday()
+                            : value.to;
                         setRange({ from: validFrom, to: validTo });
                       }
                     }}
@@ -403,7 +296,9 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                     mode="single"
                     onSelect={(value: Date | undefined) => {
                       if (value) {
-                        const validDate = isDateInPast(value) ? getStartOfToday() : value;
+                        const validDate = isDateInPast(value)
+                          ? getStartOfToday()
+                          : value;
                         setRange({ from: validDate, to: undefined });
                       }
                     }}
@@ -440,10 +335,9 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
               setIsOpen(false);
               if (
                 !areRangesEqual(range, openedRangeRef.current) ||
-                !areRangesEqual(rangeCompare, openedRangeCompareRef.current) ||
                 isRoundTrip !== openedRoundTripRef.current
               ) {
-                onUpdate?.({ range, rangeCompare, isRoundTrip });
+                onUpdate?.({ range, isRoundTrip });
               }
             }}
             className="bg-yellow-400 text-black hover:bg-yellow-500"

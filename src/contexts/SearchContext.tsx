@@ -5,15 +5,15 @@ const SearchContext = createContext<{
   searchParams: {
     from: string;
     to: string;
-    departureStart: string;
-    departureEnd: string;
+    outboundDate: string;
+    inboundDate?: string;
     isRoundTrip: boolean;
   };
   setSearchParams: React.Dispatch<React.SetStateAction<{
     from: string;
     to: string;
-    departureStart: string;
-    departureEnd: string;
+    outboundDate: string;
+    inboundDate?: string;
     isRoundTrip: boolean;
   }>>;
 } | null>(null);

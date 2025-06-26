@@ -15,8 +15,7 @@ export default function App() {
   const [searchParams, setSearchParams] = useState({
     from: "",
     to: "",
-    departureStart: "",
-    departureEnd: "",
+    outboundDate: "",
     isRoundTrip: false,
   });
 
