@@ -1,45 +1,55 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
 
 const applicationTables = {
   flights: defineTable({
     uniqueId: v.string(),
-    airline: v.id("airlines"),
     flightNumber: v.string(),
-    from: v.id("airports"),
-    to: v.id("airports"),
-    departure: v.string(),
-    arrival: v.string(),
+    fromId: v.id("airports"),
+    toId: v.id("airports"),
+    departure: v.number(),
+    arrival: v.number(),
   }).index("by_uniqueId", ["uniqueId"]),
   airports: defineTable({
-    uniqueId: v.string(),
+    iataCode: v.string(),
+    icaoCode: v.optional(v.string()),
     name: v.string(),
-    iata_code: v.string(),
-    iso_country: v.string(),
-    municipality: v.optional(v.string()),
-    timezone: v.string(),
+    city: v.string(),
+    country: v.optional(v.string()),
+    timezone: v.optional(v.string()),
+  })
+    .index("by_iataCode", ["iataCode"])
+    .searchIndex("search_iataCode", { searchField: "iataCode" })
+    .searchIndex("search_name", { searchField: "name" })
+    .searchIndex("search_city", { searchField: "city" })
+    .searchIndex("search_country", { searchField: "country" }),
+  airlines: defineTable({
+    iataCode: v.optional(v.string()),
+    icaoCode: v.optional(v.string()),
+    name: v.string(),
+    country: v.optional(v.string()),
+    scrapedAt: v.string(),
+  })
+    .index("by_iataCode", ["iataCode"])
+    .index("by_icaoCode", ["icaoCode"]),
+  bundles: defineTable({
+    uniqueId: v.string(),
+    outboundFlightIds: v.array(v.id("flights")),
+    inboundFlightIds: v.array(v.id("flights")),
+  }).index("by_uniqueId", ["uniqueId"]),
+  bookingOptions: defineTable({
+    uniqueId: v.string(),
+    targetId: v.id("bundles"),
+    agency: v.string(),
+    price: v.number(),
+    link: v.string(),
+    currency: v.string(),
+    extractedAt: v.number(),
   })
     .index("by_uniqueId", ["uniqueId"])
-    .searchIndex("search_name", { searchField: "name" })
-    .searchIndex("search_iata_code", { searchField: "iata_code" })
-    .searchIndex("search_municipality", { searchField: "municipality" })
-    .searchIndex("search_iso_country", { searchField: "iso_country" }),
-  airlines: defineTable({
-    uniqueId: v.string(),
-    name: v.string(),
-  }).index("by_uniqueId", ["uniqueId"]),
-  deals: defineTable({
-    uniqueId: v.string(),
-    flights: v.array(v.id("flights")),
-    price: v.number(),
-    dealer: v.string(),
-    link: v.string(),
-    date: v.string(),
-  }).index("by_uniqueId", ["uniqueId"]),
+    .index("by_targetId", ["targetId"]),
 };
 
 export default defineSchema({
-  ...authTables,
   ...applicationTables,
 });

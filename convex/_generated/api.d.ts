@@ -13,16 +13,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as apify from "../apify.js";
-import type * as auth from "../auth.js";
-import type * as flights from "../flights.js";
-import type * as http from "../http.js";
-import type * as loadAirportsFromStorage from "../loadAirportsFromStorage.js";
-import type * as mutations from "../mutations.js";
-import type * as offers from "../offers.js";
-import type * as queries from "../queries.js";
-import type * as router from "../router.js";
-import type * as webhooks from "../webhooks.js";
+import type * as airports from "../airports.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -33,16 +24,7 @@ import type * as webhooks from "../webhooks.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  apify: typeof apify;
-  auth: typeof auth;
-  flights: typeof flights;
-  http: typeof http;
-  loadAirportsFromStorage: typeof loadAirportsFromStorage;
-  mutations: typeof mutations;
-  offers: typeof offers;
-  queries: typeof queries;
-  router: typeof router;
-  webhooks: typeof webhooks;
+  airports: typeof airports;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

@@ -25,3 +25,11 @@ dist-ssr
 
 # Ignored for the template, you probably want to remove it:
 package-lock.json
+
+# Debug and test artifacts
+debug/
+*.debug.html
+*.debug.json
+*.debug.log
+test-artifacts/
+temp/

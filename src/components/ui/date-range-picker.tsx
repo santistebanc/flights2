@@ -9,14 +9,11 @@ import DateInput from "./date-input";
 import { Label } from "./label";
 import { Switch } from "./switch";
 import { ChevronUpIcon, ChevronDownIcon } from "@radix-ui/react-icons";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils";
 
 export interface DateRangePickerProps {
   /** Click handler for applying the updates from DateRangePicker. */
-  onUpdate?: (values: {
-    range: DateRange;
-    isRoundTrip: boolean;
-  }) => void;
+  onUpdate?: (values: { range: DateRange; isRoundTrip: boolean }) => void;
   /** Initial value for start date */
   initialDateFrom?: Date | string;
   /** Initial value for end date */
@@ -95,11 +92,6 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
         : undefined,
   });
 
-  // Refs to store the values of range when the date picker is opened
-  const openedRangeRef = useRef<DateRange | undefined>(undefined);
-  const openedRoundTripRef = useRef<boolean | undefined>(undefined);
-  const prevIsOpen = useRef(false);
-
   const [isSmallScreen, setIsSmallScreen] = useState(
     typeof window !== "undefined" ? window.innerWidth < 960 : false
   );
@@ -117,40 +109,13 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     };
   }, []);
 
-  const resetValues = (): void => {
-    setRange({
-      from: getValidInitialDate(initialDateFrom),
-      to:
-        isRoundTrip && initialDateTo
-          ? getValidInitialDate(initialDateTo)
-          : undefined,
-    });
-    setIsRoundTrip(initialRoundTrip);
-  };
-
-  // Helper function to check if two date ranges are equal
-  const areRangesEqual = (a?: DateRange, b?: DateRange): boolean => {
-    if (!a || !b) return a === b; // If either is undefined, return true if both are undefined
-    return (
-      a.from.getTime() === b.from.getTime() &&
-      (!a.to || !b.to || a.to.getTime() === b.to.getTime())
-    );
-  };
-
+  // Auto-update when range or round trip mode changes
   useEffect(() => {
-    if (isOpen && !prevIsOpen.current) {
-      // Popover just opened
-      openedRangeRef.current = range;
-      openedRoundTripRef.current = isRoundTrip;
-    }
-    prevIsOpen.current = isOpen;
-  }, [isOpen]);
+    onUpdate?.({ range, isRoundTrip });
+  }, [range, isRoundTrip]);
 
   // Function to handle date changes with validation
-  const handleDateChange = (
-    date: Date,
-    isFromDate: boolean
-  ) => {
+  const handleDateChange = (date: Date, isFromDate: boolean) => {
     const startOfToday = getStartOfToday();
 
     // If the date is in the past, use today instead
@@ -179,9 +144,6 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
       modal={true}
       open={isOpen}
       onOpenChange={(open: boolean) => {
-        if (!open) {
-          resetValues();
-        }
         setIsOpen(open);
       }}
     >
@@ -209,9 +171,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-auto bg-gray-800 border-gray-600 text-white shadow-lg"
-      >
+      <PopoverContent className="w-auto bg-gray-800 border-gray-600 text-white shadow-lg">
         <div className="flex py-2">
           <div className="flex">
             <div className="flex flex-col">
@@ -325,26 +285,10 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
           <Button
             onClick={() => {
               setIsOpen(false);
-              resetValues();
-            }}
-            variant="ghost"
-            className="text-gray-300 hover:text-white hover:bg-gray-700"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              setIsOpen(false);
-              if (
-                !areRangesEqual(range, openedRangeRef.current) ||
-                isRoundTrip !== openedRoundTripRef.current
-              ) {
-                onUpdate?.({ range, isRoundTrip });
-              }
             }}
             className="bg-yellow-400 text-black hover:bg-yellow-500"
           >
-            Update
+            Done
           </Button>
         </div>
       </PopoverContent>
