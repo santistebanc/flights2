@@ -1,8 +1,8 @@
 import { useSearchContext } from "../SearchContext";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { DateRangePicker } from "./ui/date-range-picker";
-import { useState, useRef, useCallback } from "react";
+import { IataInput } from "./flight-search/IataInput";
+import { useState, useCallback } from "react";
 import { getTodayAsString, toPlainDateString } from "@/utils";
 
 export function Filters() {
@@ -55,31 +55,29 @@ export function Filters() {
         {/* Top Row: Airport inputs, date picker, search button, settings button */}
         <div className="flex gap-3 items-center mb-3">
           <div className="flex-1">
-            <Input
-              type="text"
-              placeholder="From (e.g., JFK, LAX)"
+            <IataInput
+              placeholder="From"
               value={localFilters.from}
-              onChange={(e) =>
+              onChange={(value) =>
                 setLocalFilters((prev) => ({
                   ...prev,
-                  from: e.target.value.toUpperCase(),
+                  from: value,
                 }))
               }
-              className="h-9"
+              required
             />
           </div>
           <div className="flex-1">
-            <Input
-              type="text"
-              placeholder="To (e.g., LHR, CDG)"
+            <IataInput
+              placeholder="To"
               value={localFilters.to}
-              onChange={(e) =>
+              onChange={(value) =>
                 setLocalFilters((prev) => ({
                   ...prev,
-                  to: e.target.value.toUpperCase(),
+                  to: value,
                 }))
               }
-              className="h-9"
+              required
             />
           </div>
           <DateRangePicker

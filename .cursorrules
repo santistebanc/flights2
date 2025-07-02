@@ -1,4 +1,4 @@
-# Flight Scraping Project - Essential Rules
+<!-- # Flight Scraping Project - Essential Rules
 
 ## Core Principles
 
@@ -201,4 +201,4 @@ See `docs/IMPLEMENTATION_SUMMARY.md` for current status and `FLIGHT_SCRAPING_IMP
 - Include both created and modified files in the summary
 - Mention any files that were deleted if relevant
 - Provide a clear summary of what was changed in each file
-- This helps with code review, debugging, and project tracking
+- This helps with code review, debugging, and project tracking -->
