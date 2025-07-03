@@ -4,6 +4,7 @@ import { DateRangePicker } from "./ui/date-range-picker";
 import { IataInput } from "./flight-search/IataInput";
 import { useState, useCallback } from "react";
 import { getTodayAsString, toPlainDateString } from "@/utils";
+import { useFlightSearchValidation } from "../hooks/useFlightSearchValidation";
 
 export function Filters() {
   const { searchParams, setSearchParams } = useSearchContext();
@@ -17,33 +18,36 @@ export function Filters() {
     inboundDate: searchParams.inboundDate || "",
   });
 
-  // Check if all required filters are set
-  const areRequiredFiltersSet = () => {
-    const hasFrom = localFilters.from.trim() !== "";
-    const hasTo = localFilters.to.trim() !== "";
-    const hasOutboundDate = localFilters.outboundDate.trim() !== "";
-    const hasInboundDate = localFilters.isRoundTrip
-      ? localFilters.inboundDate.trim() !== ""
-      : true; // Inbound date only required for round trips
+  // Use comprehensive validation hook
+  const validation = useFlightSearchValidation({
+    from: localFilters.from,
+    to: localFilters.to,
+    outboundDate: localFilters.outboundDate,
+    inboundDate: localFilters.inboundDate,
+    isRoundTrip: localFilters.isRoundTrip,
+  });
 
-    return hasFrom && hasTo && hasOutboundDate && hasInboundDate;
-  };
-
-  const isSearchDisabled = !areRequiredFiltersSet();
+  const isSearchDisabled = !validation.isValid;
 
   const handleDateRangeUpdate = useCallback(
     (values: { range: { from: Date; to?: Date }; isRoundTrip: boolean }) => {
-      setLocalFilters((prev) => ({
-        ...prev,
+      const updatedFilters = {
+        ...localFilters,
         outboundDate: toPlainDateString(values.range.from),
         inboundDate:
           values.isRoundTrip && values.range.to
             ? toPlainDateString(values.range.to)
             : "",
         isRoundTrip: values.isRoundTrip,
-      }));
+      };
+
+      // Update local state
+      setLocalFilters(updatedFilters);
+
+      // Immediately save to localStorage
+      setSearchParams(updatedFilters);
     },
-    []
+    [localFilters, setSearchParams]
   );
 
   return (
@@ -54,6 +58,7 @@ export function Filters() {
       <div className="mx-auto">
         {/* Top Row: Airport inputs, date picker, search button, settings button */}
         <div className="flex gap-3 items-center mb-3">
+          {/* IataInput components */}
           <div className="flex-1">
             <IataInput
               placeholder="From"
@@ -65,6 +70,8 @@ export function Filters() {
                 }))
               }
               required
+              otherAirportValue={localFilters.to}
+              error={validation.errors.from}
             />
           </div>
           <div className="flex-1">
@@ -78,14 +85,19 @@ export function Filters() {
                 }))
               }
               required
+              otherAirportValue={localFilters.from}
+              error={validation.errors.to}
             />
           </div>
-          <DateRangePicker
-            onUpdate={handleDateRangeUpdate}
-            initialDateFrom={localFilters.outboundDate}
-            initialDateTo={localFilters.inboundDate || undefined}
-            initialRoundTrip={localFilters.isRoundTrip}
-          />
+          {/* DateRangePicker restored */}
+          <div className="flex-1">
+            <DateRangePicker
+              dateFrom={localFilters.outboundDate}
+              dateTo={localFilters.inboundDate}
+              isRoundTrip={localFilters.isRoundTrip}
+              onUpdate={handleDateRangeUpdate}
+            />
+          </div>
           <Button
             className={`flex-shrink-0 ${
               isSearchDisabled
@@ -94,13 +106,12 @@ export function Filters() {
             }`}
             onClick={async () => {
               setSearchParams(localFilters);
-              console.log("Searching with params:", localFilters);
             }}
             disabled={isSearchDisabled}
             title={
               isSearchDisabled
-                ? "Please fill in all required fields: From, To, and Departure Date" +
-                  (localFilters.isRoundTrip ? ", Return Date" : "")
+                ? Object.values(validation.errors).filter(Boolean).join(", ") ||
+                  "Please fill in all required fields"
                 : "Search for flights"
             }
           >
@@ -114,6 +125,11 @@ export function Filters() {
             {/* Results count will be updated by parent component */}
             Ready to search
           </div>
+          {validation.errors.general && (
+            <div className="text-sm text-red-400">
+              {validation.errors.general}
+            </div>
+          )}
         </div>
       </div>
     </div>

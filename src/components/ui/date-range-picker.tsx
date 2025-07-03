@@ -14,12 +14,12 @@ import { cn } from "@/utils";
 export interface DateRangePickerProps {
   /** Click handler for applying the updates from DateRangePicker. */
   onUpdate?: (values: { range: DateRange; isRoundTrip: boolean }) => void;
-  /** Initial value for start date */
-  initialDateFrom?: Date | string;
-  /** Initial value for end date */
-  initialDateTo?: Date | string;
-  /** Initial value for round trip mode */
-  initialRoundTrip?: boolean;
+  /** Current value for start date */
+  dateFrom: Date | string;
+  /** Current value for end date */
+  dateTo?: Date | string;
+  /** Current value for round trip mode */
+  isRoundTrip: boolean;
 }
 
 const formatDate = (date: Date, locale: string = "en-us"): string => {
@@ -65,17 +65,11 @@ interface DateRange {
 /** The DateRangePicker component allows a user to select a range of dates */
 export const DateRangePicker: FC<DateRangePickerProps> & {
   filePath: string;
-} = ({
-  initialDateFrom = new Date(new Date().setHours(0, 0, 0, 0)),
-  initialDateTo,
-  onUpdate,
-  initialRoundTrip = false,
-}): JSX.Element => {
+} = ({ dateFrom, dateTo, onUpdate, isRoundTrip }): JSX.Element => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isRoundTrip, setIsRoundTrip] = useState(initialRoundTrip);
 
-  // Ensure initial dates are not in the past
-  const getValidInitialDate = (date: Date | string | undefined): Date => {
+  // Ensure dates are not in the past
+  const getValidDate = (date: Date | string | undefined): Date => {
     // Treat empty strings as undefined to default to today
     const validDate = date && date !== "" ? date : undefined;
     const adjustedDate = validDate
@@ -84,13 +78,11 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     return isDateInPast(adjustedDate) ? getStartOfToday() : adjustedDate;
   };
 
-  const [range, setRange] = useState<DateRange>({
-    from: getValidInitialDate(initialDateFrom),
-    to:
-      isRoundTrip && initialDateTo
-        ? getValidInitialDate(initialDateTo)
-        : undefined,
-  });
+  // Convert props to internal range format
+  const range: DateRange = {
+    from: getValidDate(dateFrom),
+    to: isRoundTrip && dateTo ? getValidDate(dateTo) : undefined,
+  };
 
   const [isSmallScreen, setIsSmallScreen] = useState(
     typeof window !== "undefined" ? window.innerWidth < 960 : false
@@ -109,11 +101,6 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     };
   }, []);
 
-  // Auto-update when range or round trip mode changes
-  useEffect(() => {
-    onUpdate?.({ range, isRoundTrip });
-  }, [range, isRoundTrip]);
-
   // Function to handle date changes with validation
   const handleDateChange = (date: Date, isFromDate: boolean) => {
     const startOfToday = getStartOfToday();
@@ -124,18 +111,16 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     if (isFromDate) {
       const toDate =
         range.to == null || validDate > range.to ? validDate : range.to;
-      setRange((prevRange) => ({
-        ...prevRange,
-        from: validDate,
-        to: toDate,
-      }));
+      onUpdate?.({
+        range: { from: validDate, to: toDate },
+        isRoundTrip,
+      });
     } else {
       const fromDate = validDate < range.from ? validDate : range.from;
-      setRange((prevRange) => ({
-        ...prevRange,
-        from: fromDate,
-        to: validDate,
-      }));
+      onUpdate?.({
+        range: { from: fromDate, to: validDate },
+        isRoundTrip,
+      });
     }
   };
 
@@ -180,19 +165,21 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                   <Switch
                     checked={isRoundTrip}
                     onCheckedChange={(checked: boolean) => {
-                      setIsRoundTrip(checked);
                       if (checked) {
                         // When switching to round trip, set the return date to the same as departure if not already set
-                        setRange((prev) => ({
-                          ...prev,
-                          to: prev.to || prev.from,
-                        }));
+                        onUpdate?.({
+                          range: {
+                            from: range.from,
+                            to: range.to || range.from,
+                          },
+                          isRoundTrip: checked,
+                        });
                       } else {
                         // When switching to one-way, clear the return date
-                        setRange((prev) => ({
-                          ...prev,
-                          to: undefined,
-                        }));
+                        onUpdate?.({
+                          range: { from: range.from, to: undefined },
+                          isRoundTrip: checked,
+                        });
                       }
                     }}
                     id="round-trip-mode"
@@ -238,7 +225,10 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                           value.to && isDateInPast(value.to)
                             ? getStartOfToday()
                             : value.to;
-                        setRange({ from: validFrom, to: validTo });
+                        onUpdate?.({
+                          range: { from: validFrom, to: validTo },
+                          isRoundTrip,
+                        });
                       }
                     }}
                     selected={range}
@@ -261,7 +251,10 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                         const validDate = isDateInPast(value)
                           ? getStartOfToday()
                           : value;
-                        setRange({ from: validDate, to: undefined });
+                        onUpdate?.({
+                          range: { from: validDate, to: undefined },
+                          isRoundTrip,
+                        });
                       }
                     }}
                     selected={range.from}

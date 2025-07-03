@@ -29,6 +29,7 @@ This document outlines the requirements for extending the existing React/Tailwin
 6. **As a traveler**, I want to see booking options with agency information and direct booking links so that I can make a purchase
 7. **As a traveler**, I want my search preferences saved locally so that I don't have to re-enter them each time
 8. **As a traveler**, I want to be notified if no flights match my criteria so that I can adjust my search
+9. **As a traveler**, I want my frequently used airports and popular airports to appear first in autocomplete suggestions so that I can quickly select them
 
 ## Functional Requirements
 
@@ -47,10 +48,20 @@ This document outlines the requirements for extending the existing React/Tailwin
 3. The system must validate that required fields are filled before allowing search
 
 4. The system must provide autocomplete functionality for airport inputs with search priority:
-   - IATA code (highest priority)
+
+   - IATA code exact match (highest priority)
+   - Recently used airports (from localStorage history, second priority)
+   - Popular airports (based on popularity score, third priority)
+   - IATA code search (starts with)
    - Airport name
    - City name
    - Country name (lowest priority)
+
+5. The system must save selected airport IATA codes to localStorage history for future autocomplete suggestions
+
+6. The system must limit airport history to the 10 most recently used airports per input field
+
+7. The system must order autocomplete results by popularity score (descending) within each match type category
 
 ### Scraping Engine
 
@@ -72,9 +83,19 @@ This document outlines the requirements for extending the existing React/Tailwin
    - **bundles**: uniqueId, outboundFlightIds (array), inboundFlightIds (array, optional for one-way)
    - **bookingOptions**: targetId (bundle reference), agency, price, currency, linkToBook, extractedAt
 
-10. The system must automatically delete bundles where flight dates are in the past
+10. The system must extend the airports table with a popularity score field:
 
-11. The system must handle duplicates based on uniqueId as follows:
+    - **airports**: Add popularityScore field (integer, 0-1000) for ranking airports by popularity
+    - Popularity scores should be based on airport size, passenger traffic, and route importance
+    - Major hubs (JFK, LAX, LHR, CDG, etc.): 900-1000
+    - Large international airports: 700-899
+    - Medium regional airports: 400-699
+    - Small domestic airports: 100-399
+    - Very small airports: 0-99
+
+11. The system must automatically delete bundles where flight dates are in the past
+
+12. The system must handle duplicates based on uniqueId as follows:
     - **flights**: If duplicate uniqueId exists, keep the original flight
     - **bundles**: If duplicate uniqueId exists, keep the original bundle
     - **bookingOptions**: If duplicate uniqueId exists, replace the original with the new booking option
@@ -82,21 +103,21 @@ This document outlines the requirements for extending the existing React/Tailwin
 
 ### Results Display
 
-12. The system must display bundles sorted by lowest available price
+13. The system must display bundles sorted by lowest available price
 
-13. The system must calculate bundle price as the minimum price across all associated booking options
+14. The system must calculate bundle price as the minimum price across all associated booking options
 
-14. The system must show "No flights match your search criteria" when no results are found
+15. The system must show "No flights match your search criteria" when no results are found
 
-15. The system must display booking options with agency information and booking links for each bundle
+16. The system must display booking options with agency information and booking links for each bundle
 
 ### Error Handling
 
-16. The system must handle website structure changes gracefully by logging errors and continuing operation
+17. The system must handle website structure changes gracefully by logging errors and continuing operation
 
-17. The system must show partial results if some scraping sources are unavailable
+18. The system must show partial results if some scraping sources are unavailable
 
-18. The system must provide clear error messages for invalid search parameters
+19. The system must provide clear error messages for invalid search parameters
 
 ## Non-Goals (Out of Scope)
 
@@ -151,6 +172,7 @@ This document outlines the requirements for extending the existing React/Tailwin
 - Store datetime values as Unix milliseconds for consistency
 - Implement proper foreign key relationships between tables using Convex references
 - Add indexes for efficient querying by date ranges and airports
+- Add popularityScore field to airports table with index for autocomplete ordering
 - Follow Convex naming conventions and schema design patterns
 - Ensure compatibility with existing schema structure
 
@@ -168,6 +190,7 @@ This document outlines the requirements for extending the existing React/Tailwin
 - Use Convex pagination for large result sets
 - Optimize scraping parallelization using Convex actions
 - Implement proper cleanup of expired data using Convex scheduled functions
+- Optimize airport autocomplete queries using popularity score indexing
 - Follow Convex best practices for query optimization and indexing
 
 ## Success Metrics
@@ -178,6 +201,7 @@ This document outlines the requirements for extending the existing React/Tailwin
 4. **User Experience:** Zero UI blocking during scraping operations
 5. **Data Freshness:** All displayed flights have departure dates in the future
 6. **Error Recovery:** System continues operation when individual sources fail
+7. **Autocomplete Performance:** Popular airports appear in top 3 results 90% of the time
 
 ## Open Questions
 
@@ -190,6 +214,7 @@ This document outlines the requirements for extending the existing React/Tailwin
 7. **Error Notification:** How should scraping failures be communicated to users?
 8. **Future Source Addition:** What is the process for adding new flight data sources?
 9. **Convex Deployment:** How should the application be deployed using Convex's deployment system?
+10. **Airport Popularity Data:** What data sources should be used to determine initial airport popularity scores?
 
 ## Implementation Priority
 

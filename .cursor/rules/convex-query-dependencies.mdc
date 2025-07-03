@@ -1,0 +1,147 @@
+# Rule: Convex Query Dependency Management
+
+## Goal
+
+Prevent infinite loops and performance issues when using Convex queries in React useEffect dependencies.
+
+## Problem
+
+Convex query objects return new references on every render, even when the data hasn't changed. This can cause infinite loops in useEffect dependencies and unnecessary re-renders.
+
+## Solution
+
+### 1. Use Stable Values Instead of Objects
+
+```typescript
+// ❌ DON'T: Depend on full query objects
+const departureAirport = useQuery(api.airports.get, { iataCode: params.from });
+useEffect(() => {
+  // This will run on every render because departureAirport is a new object
+  setValidationState({ isValid, errors });
+}, [params, departureAirport]); // departureAirport changes every render
+
+// ✅ DO: Use stable values like _id
+const departureAirport = useQuery(api.airports.get, { iataCode: params.from });
+useEffect(() => {
+  setValidationState({ isValid, errors });
+}, [params, departureAirport?._id]); // Only depends on the stable _id
+```
+
+### 2. Memoize Complex Dependencies
+
+```typescript
+// ✅ DO: Memoize complex objects or arrays
+const memoizedParams = useMemo(
+  () => ({
+    from: params.from,
+    to: params.to,
+    outboundDate: params.outboundDate,
+    inboundDate: params.inboundDate,
+    isRoundTrip: params.isRoundTrip,
+  }),
+  [
+    params.from,
+    params.to,
+    params.outboundDate,
+    params.inboundDate,
+    params.isRoundTrip,
+  ]
+);
+
+useEffect(() => {
+  // Only runs when actual values change, not object references
+  validateSearch(memoizedParams);
+}, [memoizedParams]);
+```
+
+### 3. Avoid Direct Object Dependencies
+
+```typescript
+// ❌ DON'T: Depend on query result objects directly
+const airports = useQuery(api.airports.search, { searchTerm });
+useEffect(() => {
+  processAirports(airports);
+}, [airports]); // airports object changes every render
+
+// ✅ DO: Depend on specific properties or use useMemo
+const airports = useQuery(api.airports.search, { searchTerm });
+const airportIds = useMemo(() => airports?.map((a) => a._id) || [], [airports]);
+
+useEffect(() => {
+  processAirports(airports);
+}, [airportIds]); // Only depends on stable array of IDs
+```
+
+### 4. Test for Infinite Loops
+
+```typescript
+// ✅ DO: Add console.log to detect infinite loops during development
+useEffect(() => {
+  console.log("Validation effect running with:", { params, airportId });
+  setValidationState({ isValid, errors });
+}, [params, airportId]);
+```
+
+## Best Practices
+
+1. **Always use stable values** (strings, numbers, \_id) in dependency arrays
+2. **Memoize complex objects** that need to be dependencies
+3. **Extract specific properties** from query results when possible
+4. **Add temporary logging** to detect infinite loops during development
+5. **Test useEffect hooks** with different data scenarios
+6. **Consider using useMemo** for expensive computations that depend on queries
+
+## Common Patterns
+
+### For Single Query Results
+
+```typescript
+const airport = useQuery(api.airports.get, { iataCode });
+useEffect(() => {
+  if (airport) {
+    // Use airport._id or specific properties as dependencies
+  }
+}, [airport?._id]); // Not [airport]
+```
+
+### For Multiple Queries
+
+```typescript
+const departureAirport = useQuery(api.airports.get, { iataCode: params.from });
+const arrivalAirport = useQuery(api.airports.get, { iataCode: params.to });
+
+useEffect(() => {
+  // Use IDs for dependencies
+}, [departureAirport?._id, arrivalAirport?._id]);
+```
+
+### For Query Arrays
+
+```typescript
+const airports = useQuery(api.airports.search, { searchTerm });
+const airportIds = useMemo(() => airports?.map((a) => a._id) || [], [airports]);
+
+useEffect(() => {
+  // Process airports
+}, [airportIds]); // Not [airports]
+```
+
+## Warning Signs
+
+- useEffect running on every render
+- Console warnings about missing dependencies
+- Performance issues with large datasets
+- Infinite loops in development
+
+## Testing Checklist
+
+- [ ] useEffect doesn't run on every render
+- [ ] Dependencies are stable across re-renders
+- [ ] No console warnings about missing dependencies
+- [ ] Performance is acceptable with large datasets
+- [ ] No infinite loops in development mode
+      description:
+      globs:
+      alwaysApply: false
+
+---

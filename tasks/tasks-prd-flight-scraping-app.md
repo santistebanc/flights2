@@ -71,7 +71,8 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [x] 2.1.3 Add auto-scroll functionality to autocomplete dropdown
   - [x] 2.1.4 Remove forced capitalization from IATA inputs
   - [x] 2.1.5 Add validation to IataInput component (show red border for invalid IATA codes)
-  - [ ] 2.1.6 Add form validation to disable search button when any inputs are invalid
+  - [x] 2.1.6 Add form validation to disable search button when any inputs are invalid
+  - [ ] 2.1.7 Implement IATA input history with localStorage persistence and priority-based autocomplete
   - [ ] 2.2 Implement round-trip toggle component with proper state management
   - [ ] 2.3 Integrate existing date range picker with flight search logic
   - [ ] 2.4 Create search form component that combines all flight search fields

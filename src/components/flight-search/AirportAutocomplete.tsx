@@ -24,6 +24,7 @@ interface AirportAutocompleteProps {
   required?: boolean;
   error?: string;
   disabled?: boolean;
+  otherAirportValue?: string; // For checking duplicate airports
 }
 
 export function AirportAutocomplete({
@@ -36,6 +37,7 @@ export function AirportAutocomplete({
   required = false,
   error,
   disabled = false,
+  otherAirportValue,
 }: AirportAutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,9 +68,14 @@ export function AirportAutocomplete({
     value.length === 3 && isValidIataCode(value) ? { iataCode: value } : "skip"
   );
 
+  // Check if airports are the same (duplicate)
+  const isDuplicateAirport =
+    otherAirportValue && value.length > 0 && value === otherAirportValue;
+
   // Determine if the input is valid
   const isInputValid =
-    value.length === 0 || (isValidIataCode(value) && currentAirport !== null);
+    value.length === 0 ||
+    (isValidIataCode(value) && currentAirport !== null && !isDuplicateAirport);
 
   // Debounce search term
   useEffect(() => {
@@ -82,12 +89,18 @@ export function AirportAutocomplete({
   // Handle airport selection
   const handleAirportSelect = useCallback(
     (airport: Airport) => {
+      isUserTyping.current = true;
       onChange(airport.iataCode);
       setSearchTerm(airport.iataCode);
       onAirportSelect?.(airport);
       setIsOpen(false);
       setSelectedIndex(-1);
       inputRef.current?.blur();
+
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        isUserTyping.current = false;
+      }, 100);
     },
     [onChange, onAirportSelect]
   );
@@ -125,19 +138,29 @@ export function AirportAutocomplete({
     [airports, selectedIndex, handleAirportSelect]
   );
 
-  // Sync searchTerm with value prop
+  // Sync searchTerm with value prop (but not during user input)
+  const isUserTyping = useRef(false);
+
   useEffect(() => {
-    setSearchTerm(value);
+    if (!isUserTyping.current) {
+      setSearchTerm(value);
+    }
   }, [value]);
 
   // Handle input change
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
+      isUserTyping.current = true;
       setSearchTerm(newValue);
       onChange(newValue);
       setIsOpen(newValue.length > 0);
       setSelectedIndex(-1);
+
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        isUserTyping.current = false;
+      }, 100);
     },
     [onChange]
   );

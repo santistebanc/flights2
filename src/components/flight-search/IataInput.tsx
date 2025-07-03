@@ -9,6 +9,7 @@ interface IataInputProps {
   required?: boolean;
   error?: string;
   disabled?: boolean;
+  otherAirportValue?: string; // For checking duplicate airports
 }
 
 export function IataInput({
@@ -20,6 +21,7 @@ export function IataInput({
   required = false,
   error,
   disabled = false,
+  otherAirportValue,
 }: IataInputProps) {
   return (
     <AirportAutocomplete
@@ -31,6 +33,7 @@ export function IataInput({
       required={required}
       error={error}
       disabled={disabled}
+      otherAirportValue={otherAirportValue}
     />
   );
 }

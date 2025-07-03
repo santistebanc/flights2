@@ -49,6 +49,14 @@ The generated PRD should include the following sections:
 
 Assume the primary reader of the PRD is a **junior developer**. Therefore, requirements should be explicit, unambiguous, and avoid jargon where possible. Provide enough detail for them to understand the feature's purpose and core logic.
 
+## PRD Organization
+
+**Core Features**: Add to main PRD when feature is part of core user flow, required for MVP, or fundamental to architecture.
+
+**Separate Tasks**: Only create separate task files for independent features that can be developed separately (admin features, future enhancements, etc.).
+
+**Avoid Duplication**: Don't create separate task files for features already covered in main PRD.
+
 ## Output
 
 - **Format:** Markdown (`.md`)
