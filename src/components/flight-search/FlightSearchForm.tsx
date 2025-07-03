@@ -288,6 +288,9 @@ export function FlightSearchForm({
     const upperValue = value.toUpperCase();
     setArrivalAirport(upperValue);
 
+    // Debug log
+    console.log("[DEBUG] handleArrivalAirportChange:", upperValue);
+
     // Reset existence check when value changes
     setArrivalAirportExists(null);
 
@@ -317,6 +320,8 @@ export function FlightSearchForm({
 
   const handleArrivalAirportExists = (exists: boolean | null) => {
     setArrivalAirportExists(exists);
+    // Debug log
+    console.log("[DEBUG] handleArrivalAirportExists:", exists, arrivalAirport);
     // Re-validate if we now know the airport doesn't exist
     if (exists === false && arrivalAirport) {
       const error = validateField("arrivalAirport");
@@ -398,42 +403,6 @@ export function FlightSearchForm({
           </SearchButton>
         </div>
       </div>
-
-      {/* Form Status and Validation Summary */}
-      {!isFormValid && (
-        <div className="mt-3 max-w-6xl mx-auto">
-          {/* Validation Summary */}
-          {(errors.departureAirport ||
-            errors.arrivalAirport ||
-            errors.dates) && (
-            <div className="bg-red-900/20 border border-red-500/30 rounded-md p-2">
-              <h4 className="text-sm font-medium text-red-400 mb-1">
-                Please fix the following issues:
-              </h4>
-              <ul className="text-sm text-red-300 space-y-1">
-                {errors.departureAirport && (
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-400 mt-0.5">•</span>
-                    <span>Departure Airport: {errors.departureAirport}</span>
-                  </li>
-                )}
-                {errors.arrivalAirport && (
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-400 mt-0.5">•</span>
-                    <span>Arrival Airport: {errors.arrivalAirport}</span>
-                  </li>
-                )}
-                {errors.dates && (
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-400 mt-0.5">•</span>
-                    <span>Travel Dates: {errors.dates}</span>
-                  </li>
-                )}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
     </form>
   );
 }
