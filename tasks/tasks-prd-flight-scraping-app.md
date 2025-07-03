@@ -80,8 +80,8 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [x] 2.6 Add form validation for required fields (departure/arrival airports, dates)
   - [x] 2.7 Create search button component with loading states
   - [x] 2.8 Integrate FlightSearchForm component into main app UI
-  - [ ] 2.10 Add accessibility features (ARIA labels, keyboard navigation)
-  - [ ] 2.11 Create airport search functionality with Convex queries
+  - [ ] 2.9 Add accessibility features (ARIA labels, keyboard navigation)
+  - [ ] 2.10 Create airport search functionality with Convex queries
 
 - [ ] 3.0 Implement Multi-Source Scraping Engine
 
