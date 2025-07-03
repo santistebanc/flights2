@@ -1,4 +1,3 @@
-import { Parser } from "htmlparser2";
 import {
   ScrapedFlight,
   ScrapedBundle,
@@ -10,38 +9,26 @@ export function extractSessionDataFromPhase1Html(html: string): {
   token: string;
 } {
   let token = "";
-  let inScriptTag = false;
-  let scriptContent = "";
 
-  const parser = new Parser({
-    onopentag(name, attributes) {
-      if (name === "script") {
-        inScriptTag = true;
-        scriptContent = "";
-      }
-    },
-    ontext(text) {
-      if (inScriptTag) {
-        scriptContent += text;
-      }
-    },
-    onclosetag(tagname) {
-      if (tagname === "script" && inScriptTag) {
-        inScriptTag = false;
+  // Use regex to find token in script tags
+  const scriptMatches = html.match(/<script[^>]*>([\s\S]*?)<\/script>/g);
+  if (scriptMatches) {
+    for (const scriptMatch of scriptMatches) {
+      const scriptContent = scriptMatch.replace(
+        /<script[^>]*>|<\/script>/g,
+        ""
+      );
 
-        // Look for token in script content - matches the CFFLive AJAX data structure
-        const tokenMatch = scriptContent.match(
-          /['"]_token['"]\s*:\s*['"`]([^'"`]+)['"`]/
-        );
-        if (tokenMatch) {
-          token = tokenMatch[1];
-        }
+      // Look for token in script content - matches the CFFLive AJAX data structure
+      const tokenMatch = scriptContent.match(
+        /['"]_token['"]\s*:\s*['"`]([^'"`]+)['"`]/
+      );
+      if (tokenMatch) {
+        token = tokenMatch[1];
+        break;
       }
-    },
-  });
-
-  parser.write(html);
-  parser.end();
+    }
+  }
 
   return { token };
 }
@@ -125,39 +112,28 @@ export function extractFlightsFromPhase2Html(html: string): ScrapedFlight[] {
 
 export function extractBundlesFromPhase2Html(html: string): ScrapedBundle[] {
   const bundles: ScrapedBundle[] = [];
-  let currentBundleData: any = null;
 
-  const parser = new Parser({
-    onopentag(name, attributes) {
-      if (name === "div" && attributes.class?.includes("list-item")) {
-        // Start of a new bundle
-        currentBundleData = {
-          duration: attributes["data-duration"],
-          outboundmins: attributes["data-outboundmins"],
-          returnmins: attributes["data-returnmins"],
-          journey: attributes["data-journey"],
-          airline: attributes["data-airline"],
-          price: attributes["data-price"],
-          totalstops: attributes["data-totalstops"],
-        };
-      }
-    },
-    onclosetag(tagname) {
-      if (tagname === "div" && currentBundleData) {
-        // End of bundle, create bundle record
+  // Use regex to find bundle divs with data attributes
+  const bundleMatches = html.match(
+    /<div[^>]*class="[^"]*list-item[^"]*"[^>]*>/g
+  );
+  if (bundleMatches) {
+    for (const bundleMatch of bundleMatches) {
+      // Extract data attributes using regex
+      const durationMatch = bundleMatch.match(/data-duration="([^"]*)"/);
+      const airlineMatch = bundleMatch.match(/data-airline="([^"]*)"/);
+      const priceMatch = bundleMatch.match(/data-price="([^"]*)"/);
+
+      if (durationMatch && airlineMatch && priceMatch) {
         const bundle: ScrapedBundle = {
-          uniqueId: `bundle_${currentBundleData.airline}_${currentBundleData.duration}_${currentBundleData.price}`,
+          uniqueId: `bundle_${airlineMatch[1]}_${durationMatch[1]}_${priceMatch[1]}`,
           outboundFlightUniqueIds: [], // Will be populated by linking to flights
           inboundFlightUniqueIds: [], // Will be populated for round trips
         };
         bundles.push(bundle);
-        currentBundleData = null;
       }
-    },
-  });
-
-  parser.write(html);
-  parser.end();
+    }
+  }
 
   return bundles;
 }
@@ -166,48 +142,36 @@ export function extractBookingOptionsFromPhase2Html(
   html: string
 ): ScrapedBookingOption[] {
   const bookingOptions: ScrapedBookingOption[] = [];
-  let currentAgency = "";
-  let currentPrice = 0;
-  let currentLink = "";
-  let inSimilar = false;
 
-  const parser = new Parser({
-    onopentag(name, attributes) {
-      if (name === "div" && attributes.class === "_similar") {
-        inSimilar = true;
+  // Use regex to find booking option sections
+  const similarMatches = html.match(
+    /<div[^>]*class="_similar"[^>]*>([\s\S]*?)<\/div>/g
+  );
+  if (similarMatches) {
+    for (const similarMatch of similarMatches) {
+      let currentAgency = "";
+      let currentPrice = 0;
+      let currentLink = "";
+
+      // Extract agency name
+      const agencyMatch = similarMatch.match(/(Kiwi\.com|WAYA|Mytrip)/);
+      if (agencyMatch) {
+        currentAgency = agencyMatch[1];
       }
 
-      if (
-        name === "a" &&
-        attributes.href &&
-        attributes.href.includes("kiwi.com")
-      ) {
-        currentLink = attributes.href;
+      // Extract price
+      const priceMatch = similarMatch.match(/€(\d+)/);
+      if (priceMatch) {
+        currentPrice = parseInt(priceMatch[1]);
       }
-    },
-    ontext(text) {
-      if (inSimilar) {
-        const trimmedText = text.trim();
 
-        // Extract agency name (e.g., "Kiwi.com")
-        if (
-          trimmedText.includes(".com") ||
-          trimmedText.includes("WAYA") ||
-          trimmedText.includes("Mytrip")
-        ) {
-          currentAgency = trimmedText;
-        }
-
-        // Extract price (e.g., "€99")
-        const priceMatch = trimmedText.match(/€(\d+)/);
-        if (priceMatch) {
-          currentPrice = parseInt(priceMatch[1]);
-        }
+      // Extract link
+      const linkMatch = similarMatch.match(/href="([^"]*kiwi\.com[^"]*)"/);
+      if (linkMatch) {
+        currentLink = linkMatch[1];
       }
-    },
-    onclosetag(tagname) {
-      if (tagname === "div" && inSimilar && currentAgency && currentLink) {
-        // Create booking option when we have all the data
+
+      if (currentAgency && currentPrice && currentLink) {
         const bookingOption: ScrapedBookingOption = {
           uniqueId: `booking_${currentAgency}_${currentPrice}`,
           targetUniqueId: `bundle_placeholder`, // Will be linked to actual bundle
@@ -218,20 +182,9 @@ export function extractBookingOptionsFromPhase2Html(
           extractedAt: Date.now(),
         };
         bookingOptions.push(bookingOption);
-
-        // Reset for next booking option
-        currentAgency = "";
-        currentLink = "";
       }
-
-      if (tagname === "div" && inSimilar) {
-        inSimilar = false;
-      }
-    },
-  });
-
-  parser.write(html);
-  parser.end();
+    }
+  }
 
   return bookingOptions;
 }
