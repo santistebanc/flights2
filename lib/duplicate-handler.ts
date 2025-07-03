@@ -91,7 +91,8 @@ export function handleDuplicates(
 export function generateFlightUniqueId(flight: ScrapedFlight): string {
   const date = new Date(flight.departureDateTime);
   const dateStr = date.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD format
-  return `flight_${flight.flightNumber}_${flight.departureAirportId}_${flight.arrivalAirportId}_${dateStr}`;
+  const timeStr = date.toISOString().slice(11, 16).replace(/:/g, ""); // HHMM format
+  return `flight_${flight.flightNumber}_${flight.departureAirportId}_${flight.arrivalAirportId}_${dateStr}_${timeStr}`;
 }
 
 /**
