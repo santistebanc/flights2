@@ -76,111 +76,76 @@ export function extractSessionDataFromPhase1Html(html: string): {
 // Phase 2: Extract entities from results HTML
 export function extractFlightsFromPhase2Html(html: string): ScrapedFlight[] {
   const flights: ScrapedFlight[] = [];
-  let currentFlightData: any = null;
-  let inModal = false;
-  let inPanelBody = false;
-  let inItem = false;
-  let inSmall = false;
-  let smallText = "";
 
-  const parser = new Parser({
-    onopentag(name, attributes) {
-      if (name === "div" && attributes.id?.startsWith("myModal")) {
-        inModal = true;
-      }
+  // Use regex to find flight information more reliably
+  const flightMatches = html.match(/<small>([^<]+)<\/small>/g);
+  if (!flightMatches) return flights;
 
-      if (name === "div" && attributes.class === "_panel_body") {
-        inPanelBody = true;
-      }
+  for (const match of flightMatches) {
+    const flightText = match.replace(/<\/?small>/g, "");
+    const flightMatch = flightText.match(/([A-Za-z\s]+)\s+([A-Z]{2})(\d+)/);
+    if (!flightMatch) continue;
 
-      if (name === "div" && attributes.class === "_item") {
-        inItem = true;
-        currentFlightData = {};
-      }
+    const airline = flightMatch[1].trim();
+    const flightNumber = `${flightMatch[2]}${flightMatch[3]}`;
 
-      if (name === "small" && inPanelBody && inItem) {
-        inSmall = true;
-        smallText = "";
-      }
-    },
-    ontext(text) {
-      if (inSmall) {
-        smallText += text;
-      }
+    // Find the corresponding _item div that follows this flight info
+    const itemStart = html.indexOf('<div class="_item">', html.indexOf(match));
+    if (itemStart === -1) continue;
 
-      if (inItem && currentFlightData) {
-        const trimmedText = text.trim();
+    // Find the correct closing tag by counting opening and closing divs
+    let itemEnd = itemStart;
+    let divCount = 0;
+    let inItem = false;
 
-        // Extract times (e.g., "06:00", "09:10")
-        const timeMatch = trimmedText.match(/(\d{2}:\d{2})/g);
-        if (timeMatch && timeMatch.length >= 2) {
-          currentFlightData.departureTime = timeMatch[0];
-          currentFlightData.arrivalTime = timeMatch[1];
+    for (let i = itemStart; i < html.length; i++) {
+      if (html.substring(i, i + 4) === "<div") {
+        divCount++;
+        if (html.substring(i, i + 20).includes('class="_item"')) {
+          inItem = true;
         }
-
-        // Extract airports (e.g., "BER Berlin Brandenburg", "OTP Bucharest Otopeni")
-        const airportMatch = trimmedText.match(/([A-Z]{3})\s+([A-Za-z\s]+)/);
-        if (airportMatch) {
-          if (!currentFlightData.departureAirport) {
-            currentFlightData.departureAirport = airportMatch[1];
-          } else {
-            currentFlightData.arrivalAirport = airportMatch[1];
-          }
-        }
-
-        // Extract duration (e.g., "2h 10")
-        const durationMatch = trimmedText.match(/(\d+)h\s+(\d+)/);
-        if (durationMatch) {
-          currentFlightData.duration = `${durationMatch[1]}:${durationMatch[2]}`;
+      } else if (html.substring(i, i + 6) === "</div>") {
+        divCount--;
+        if (inItem && divCount === 0) {
+          itemEnd = i + 6;
+          break;
         }
       }
-    },
-    onclosetag(tagname) {
-      if (tagname === "small" && inSmall) {
-        // Extract flight number from small tag text (e.g., "Ryanair FR314")
-        const flightMatch = smallText.match(/([A-Za-z\s]+)\s+([A-Z]{2})(\d+)/);
-        if (flightMatch) {
-          currentFlightData.airline = flightMatch[1].trim();
-          currentFlightData.flightNumber = `${flightMatch[2]}${flightMatch[3]}`;
-        }
-        inSmall = false;
-        smallText = "";
-      }
+    }
 
-      if (tagname === "div" && inItem) {
-        // When we finish a flight item, create a flight record
-        if (
-          currentFlightData &&
-          currentFlightData.flightNumber &&
-          currentFlightData.departureAirport &&
-          currentFlightData.arrivalAirport
-        ) {
-          const flight: ScrapedFlight = {
-            uniqueId: `flight_${currentFlightData.flightNumber}_${currentFlightData.departureAirport}_${currentFlightData.arrivalAirport}`,
-            flightNumber: currentFlightData.flightNumber,
-            departureAirportId: currentFlightData.departureAirport, // Will be converted to DB ID later
-            arrivalAirportId: currentFlightData.arrivalAirport, // Will be converted to DB ID later
-            departureDateTime: Date.now(), // Will be calculated from date + time
-            arrivalDateTime: Date.now(), // Will be calculated from date + time
-          };
-          flights.push(flight);
-        }
-        inItem = false;
-        currentFlightData = null;
-      }
+    if (itemEnd === itemStart) continue;
 
-      if (tagname === "div" && inPanelBody) {
-        inPanelBody = false;
-      }
+    const itemHtml = html.substring(itemStart, itemEnd);
 
-      if (tagname === "div" && inModal) {
-        inModal = false;
-      }
-    },
-  });
+    // Extract times from c3 div
+    const timeMatches = itemHtml.match(/(\d{2}:\d{2})/g);
+    if (!timeMatches || timeMatches.length < 2) continue;
 
-  parser.write(html);
-  parser.end();
+    const departureTime = timeMatches[0];
+    const arrivalTime = timeMatches[1];
+
+    // Extract airports from c4 div
+    const airportMatches = itemHtml.match(/([A-Z]{3})\s+([A-Za-z\s]+)/g);
+    if (!airportMatches || airportMatches.length < 2) continue;
+
+    const depMatch = airportMatches[0].match(/([A-Z]{3})/);
+    const arrMatch = airportMatches[1].match(/([A-Z]{3})/);
+    if (!depMatch || !arrMatch) continue;
+
+    const departureAirport = depMatch[1];
+    const arrivalAirport = arrMatch[1];
+
+    const flight: ScrapedFlight = {
+      uniqueId: `flight_${flightNumber}_${departureAirport}_${arrivalAirport}`,
+      flightNumber: flightNumber,
+      departureAirportId: departureAirport,
+      arrivalAirportId: arrivalAirport,
+      departureDateTime: Date.now(),
+      arrivalDateTime: Date.now(),
+    };
+
+    flights.push(flight);
+  }
 
   return flights;
 }
