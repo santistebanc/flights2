@@ -90,7 +90,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [ ] 3.3 Implement Kiwi scraper using Convex actions
   - [ ] 3.4 Create scraping coordinator to handle parallel scraping operations
   - [ ] 3.5 Implement retry logic for failed scraping attempts
-  - [ ] 3.6 Add rate limiting and polite crawling practices
+  - [ ] 3.6 Add rate limiting and polite crawling practices (not needed at the moment)
   - [ ] 3.7 Create data transformation layer to normalize scraped data
   - [ ] 3.8 Implement duplicate handling logic (keep flights/bundles, replace bookingOptions; see deduplication in 3.10/3.11)
   - [ ] 3.9 Add scraping error logging and monitoring
@@ -105,6 +105,7 @@ Based on PRD: `prd-flight-scraping-app.md`
     - [ ] 3.10.8 Generate uniqueIds for deduplication (flights, bundles, booking options)
     - [ ] 3.10.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
     - [ ] 3.10.10 Log success and handle errors at each step
+    - [ ] 3.10.11 Ensure each step (fetching, parsing, extraction, DB insertion) is modular and testable
   - [ ] 3.11 Implement Skyscanner Scraping Process
     - [ ] 3.11.1 Set up Skyscanner scraping actor to receive FlightSearchParams
     - [ ] 3.11.2 Implement phase 1: fetch HTML from flightsfinder.com/portal/sky with correct query params
@@ -117,6 +118,7 @@ Based on PRD: `prd-flight-scraping-app.md`
     - [ ] 3.11.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
     - [ ] 3.11.10 Log success and handle errors at each step
     - [ ] 3.11.11 Implement polling loop: repeat until first part of response is 'Y', always use latest cookie
+    - [ ] 3.11.12 Ensure each step (fetching, parsing, extraction, DB insertion) is modular and testable
 
 - [ ] 4.0 Create Bundle Display and Results Management System
 
