@@ -92,7 +92,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [ ] 3.5 Implement retry logic for failed scraping attempts
   - [ ] 3.6 Add rate limiting and polite crawling practices
   - [ ] 3.7 Create data transformation layer to normalize scraped data
-  - [ ] 3.8 Implement duplicate handling logic (keep flights/bundles, replace bookingOptions)
+  - [ ] 3.8 Implement duplicate handling logic (keep flights/bundles, replace bookingOptions; see deduplication in 3.10/3.11)
   - [ ] 3.9 Add scraping error logging and monitoring
   - [ ] 3.10 Implement Kiwi Scraping Process
     - [ ] 3.10.1 Set up Kiwi scraping actor to receive FlightSearchParams
