@@ -56,13 +56,15 @@ export function AirportAutocomplete({
 
   // Check if current value is a valid IATA code
   const isValidIataCode = (code: string): boolean => {
-    return /^[A-Z]{3}$/.test(code);
+    return /^[A-Z]{3}$/.test(code.toUpperCase());
   };
 
   // Check if the current value exists as an airport
   const currentAirport = useQuery(
     api.airports.getAirportByIata,
-    value.length === 3 && isValidIataCode(value) ? { iataCode: value } : "skip"
+    value.length === 3 && isValidIataCode(value)
+      ? { iataCode: value.toUpperCase() }
+      : "skip"
   );
 
   // Check if airports are the same (duplicate)
@@ -162,8 +164,9 @@ export function AirportAutocomplete({
 
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchValue(e.target.value);
-    onChange(e.target.value);
+    const newValue = e.target.value.toUpperCase();
+    setSearchValue(newValue);
+    onChange(newValue);
     setOpen(true);
     setHighlightedIndex(-1);
   };
@@ -175,6 +178,23 @@ export function AirportAutocomplete({
 
   // Handle input blur
   const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Auto-select top result if available and input is not empty
+    if (
+      searchValue.length > 0 &&
+      combinedResults.length > 0 &&
+      !currentAirport
+    ) {
+      const topResult = combinedResults[0];
+      // Only auto-select if the search value matches the IATA code or name
+      if (
+        topResult.iataCode === searchValue ||
+        topResult.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+        topResult.city.toLowerCase().includes(searchValue.toLowerCase())
+      ) {
+        handleAirportSelect(topResult);
+      }
+    }
+
     // Delay closing to allow click selection
     setTimeout(() => setOpen(false), 100);
   };
@@ -236,7 +256,7 @@ export function AirportAutocomplete({
           onKeyDown={handleInputKeyDown}
           placeholder={placeholder}
           className={cn(
-            "h-9 font-mono text-lg tracking-wider",
+            "h-9",
             (error || (!isInputValid && value.length > 0)) &&
               "border-red-400 focus:border-red-400",
             disabled && "opacity-50 cursor-not-allowed"
@@ -271,9 +291,7 @@ export function AirportAutocomplete({
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-lg">
-                          {airport.iataCode}
-                        </span>
+                        <span className="font-bold">{airport.iataCode}</span>
                         {airport.isHistory && (
                           <span className="text-xs text-blue-400 bg-blue-900 px-1 rounded">
                             Recent

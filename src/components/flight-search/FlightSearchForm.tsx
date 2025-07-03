@@ -67,7 +67,7 @@ export function FlightSearchForm({
 
   // Validation functions
   const validateIataCode = (code: string): boolean => {
-    return /^[A-Z]{3}$/.test(code);
+    return /^[A-Z]{3}$/.test(code.toUpperCase());
   };
 
   const validateDate = (date: Date): boolean => {
@@ -246,7 +246,9 @@ export function FlightSearchForm({
 
   // Clear errors when inputs change
   const handleDepartureAirportChange = (value: string) => {
-    setDepartureAirport(value);
+    // Convert to uppercase for consistency
+    const upperValue = value.toUpperCase();
+    setDepartureAirport(upperValue);
 
     // Real-time validation
     const error = validateField("departureAirport");
@@ -263,7 +265,9 @@ export function FlightSearchForm({
   };
 
   const handleArrivalAirportChange = (value: string) => {
-    setArrivalAirport(value);
+    // Convert to uppercase for consistency
+    const upperValue = value.toUpperCase();
+    setArrivalAirport(upperValue);
 
     // Real-time validation
     const error = validateField("arrivalAirport");
@@ -314,6 +318,7 @@ export function FlightSearchForm({
               required
               otherAirportValue={arrivalAirport}
               className="w-full"
+              error={errors.departureAirport}
             />
           </div>
 
@@ -325,6 +330,7 @@ export function FlightSearchForm({
               required
               otherAirportValue={departureAirport}
               className="w-full"
+              error={errors.arrivalAirport}
             />
           </div>
         </div>

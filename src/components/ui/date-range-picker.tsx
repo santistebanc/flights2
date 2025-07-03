@@ -9,7 +9,6 @@ import DateInput from "./date-input";
 import { Label } from "./label";
 import { Switch } from "./switch";
 import { ChevronUpIcon, ChevronDownIcon } from "@radix-ui/react-icons";
-import { cn } from "@/utils";
 
 export interface DateRangePickerProps {
   /** Click handler for applying the updates from DateRangePicker. */
@@ -23,11 +22,12 @@ export interface DateRangePickerProps {
 }
 
 const formatDate = (date: Date, locale: string = "en-us"): string => {
-  return date.toLocaleDateString(locale, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  // Always day first, then month, then year
+  const day = date.getDate();
+  const year = date.getFullYear();
+  // Use locale for month name
+  const month = date.toLocaleString(locale, { month: "short" });
+  return `${day} ${month} ${year}`;
 };
 
 const getDateAdjustedForTimezone = (dateInput: Date | string): Date => {
@@ -101,6 +101,20 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     };
   }, []);
 
+  // Add refs for manual date inputs
+  const fromInputRef = useRef<HTMLInputElement>(null);
+  const toInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper to blur focused date input if it's one of ours
+  const handlePopoverMouseDown = () => {
+    const active = document.activeElement as HTMLElement | null;
+    if (fromInputRef.current && active === fromInputRef.current) {
+      fromInputRef.current.blur();
+    } else if (toInputRef.current && active === toInputRef.current) {
+      toInputRef.current.blur();
+    }
+  };
+
   // Function to handle date changes with validation
   const handleDateChange = (date: Date, isFromDate: boolean) => {
     const startOfToday = getStartOfToday();
@@ -134,7 +148,6 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     >
       <PopoverTrigger asChild>
         <Button
-          size={"lg"}
           variant="outline"
           className="border-gray-600 bg-gray-700 text-white hover:bg-gray-600 hover:border-gray-500 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 min-w-[280px]"
         >
@@ -156,7 +169,10 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto bg-gray-800 border-gray-600 text-white shadow-lg">
+      <PopoverContent
+        className="w-auto bg-gray-800 border-gray-600 text-white shadow-lg"
+        onMouseDown={handlePopoverMouseDown}
+      >
         <div className="flex py-2">
           <div className="flex">
             <div className="flex flex-col">
@@ -192,6 +208,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                 <div className="flex flex-col gap-2 ml-auto">
                   <div className="flex gap-2">
                     <DateInput
+                      ref={fromInputRef}
                       value={range.from}
                       onChange={(date: Date) => {
                         handleDateChange(date, true);
@@ -201,6 +218,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                       <>
                         <div className="py-1 text-gray-400">-</div>
                         <DateInput
+                          ref={toInputRef}
                           value={range.to}
                           onChange={(date: Date) => {
                             handleDateChange(date, false);
