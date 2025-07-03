@@ -19,6 +19,7 @@ interface AirportAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   onAirportSelect?: (airport: Airport) => void;
+  onAirportExists?: (exists: boolean | null) => void;
   placeholder?: string;
   label?: string;
   className?: string;
@@ -32,6 +33,7 @@ export function AirportAutocomplete({
   value,
   onChange,
   onAirportSelect,
+  onAirportExists,
   placeholder = "Search airports...",
   label,
   className,
@@ -234,6 +236,15 @@ export function AirportAutocomplete({
       if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   }, [highlightedIndex, open]);
+
+  // Notify parent component about airport existence
+  React.useEffect(() => {
+    if (value.length === 3 && isValidIataCode(value)) {
+      onAirportExists?.(currentAirport !== null);
+    } else if (value.length === 0) {
+      onAirportExists?.(null);
+    }
+  }, [currentAirport, value, onAirportExists]);
 
   const combinedResults = getCombinedResults();
 

@@ -49,6 +49,14 @@ export function FlightSearchForm({
     dates?: string;
   }>({});
 
+  // Track if airports exist in database
+  const [departureAirportExists, setDepartureAirportExists] = useState<
+    boolean | null
+  >(null);
+  const [arrivalAirportExists, setArrivalAirportExists] = useState<
+    boolean | null
+  >(null);
+
   // Load saved preferences when component mounts
   useEffect(() => {
     if (isLoaded) {
@@ -175,6 +183,9 @@ export function FlightSearchForm({
         if (!validateIataCode(departureAirport)) {
           return "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
         }
+        if (departureAirportExists === false) {
+          return "Airport not found in our database";
+        }
         if (departureAirport === arrivalAirport && arrivalAirport) {
           return "Departure and arrival airports must be different";
         }
@@ -186,6 +197,9 @@ export function FlightSearchForm({
         }
         if (!validateIataCode(arrivalAirport)) {
           return "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
+        }
+        if (arrivalAirportExists === false) {
+          return "Airport not found in our database";
         }
         if (departureAirport === arrivalAirport && departureAirport) {
           return "Departure and arrival airports must be different";
@@ -250,6 +264,9 @@ export function FlightSearchForm({
     const upperValue = value.toUpperCase();
     setDepartureAirport(upperValue);
 
+    // Reset existence check when value changes
+    setDepartureAirportExists(null);
+
     // Real-time validation
     const error = validateField("departureAirport");
     setErrors((prev) => ({
@@ -269,6 +286,9 @@ export function FlightSearchForm({
     const upperValue = value.toUpperCase();
     setArrivalAirport(upperValue);
 
+    // Reset existence check when value changes
+    setArrivalAirportExists(null);
+
     // Real-time validation
     const error = validateField("arrivalAirport");
     setErrors((prev) => ({
@@ -281,6 +301,25 @@ export function FlightSearchForm({
           ? undefined
           : prev.departureAirport,
     }));
+  };
+
+  // Handle airport existence updates
+  const handleDepartureAirportExists = (exists: boolean | null) => {
+    setDepartureAirportExists(exists);
+    // Re-validate if we now know the airport doesn't exist
+    if (exists === false && departureAirport) {
+      const error = validateField("departureAirport");
+      setErrors((prev) => ({ ...prev, departureAirport: error }));
+    }
+  };
+
+  const handleArrivalAirportExists = (exists: boolean | null) => {
+    setArrivalAirportExists(exists);
+    // Re-validate if we now know the airport doesn't exist
+    if (exists === false && arrivalAirport) {
+      const error = validateField("arrivalAirport");
+      setErrors((prev) => ({ ...prev, arrivalAirport: error }));
+    }
   };
 
   // Check if form is valid for enabling search button
@@ -318,6 +357,7 @@ export function FlightSearchForm({
               required
               otherAirportValue={arrivalAirport}
               className="w-full"
+              onAirportExists={handleDepartureAirportExists}
             />
           </div>
 
@@ -329,6 +369,7 @@ export function FlightSearchForm({
               required
               otherAirportValue={departureAirport}
               className="w-full"
+              onAirportExists={handleArrivalAirportExists}
             />
           </div>
         </div>
