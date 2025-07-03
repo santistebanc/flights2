@@ -128,8 +128,8 @@ Based on PRD: `prd-flight-scraping-app.md`
 - [ ] 4.0 Create Bundle Display and Results Management System
 
   - [x] 4.1 Create bundle card component to display flight information
-  - [ ] 4.2 Implement price calculation logic (minimum across booking options)
-  - [ ] 4.3 Create results list component with price sorting
+  - [x] 4.2 Implement price calculation logic (minimum across booking options)
+  - [x] 4.3 Create results list component with price sorting
   - [ ] 4.4 Add booking options display with agency information and links
   - [ ] 4.5 Implement "No results found" state and messaging
   - [ ] 4.6 Create loading states for results display
