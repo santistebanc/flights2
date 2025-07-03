@@ -188,7 +188,13 @@ The process consists of two phases:
   - Make a POST request to `https://www.flightsfinder.com/portal/sky/poll` with:
     - The cookie from the previous request (always use the latest cookie from the last response, whether it's the phase 1 request or another polling request)
     - The extracted values (\_token, session, suuid, deeplink) in the POST body
-    - All other parameters as in phase 1 (adults, children, infants, currency)
+    - Additional required parameters:
+      - `noc`: Current timestamp in milliseconds (e.g., "1751580174779")
+      - `s`: Site parameter set to "www"
+      - `adults`: 1
+      - `children`: 0
+      - `infants`: 0
+      - `currency`: "EUR"
     - Use the same headers as the browser (see user example)
   - The response will be a string split by '|' into 7 parts:
     - The first part is 'Y' or 'N'. If 'N', more results are available and you must poll again. If 'Y', all results have been received and polling can stop.
