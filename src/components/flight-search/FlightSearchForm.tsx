@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { IataInput } from "./IataInput";
 import { DateRangePicker } from "../ui/date-range-picker";
-import { Search, Plane, RotateCcw } from "lucide-react";
+import { SearchButton } from "./SearchButton";
+import { RotateCcw } from "lucide-react";
 import { cn } from "../../utils";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 
@@ -361,26 +362,13 @@ export function FlightSearchForm({
 
       {/* Search Button and Clear Preferences */}
       <div className="flex justify-center gap-4">
-        <Button
-          type="submit"
-          disabled={!isFormValid || isLoading}
-          className={cn(
-            "px-8 py-3 bg-yellow-400 text-black hover:bg-yellow-500 disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors",
-            "flex items-center gap-2 font-semibold text-lg"
-          )}
+        <SearchButton
+          isLoading={isLoading}
+          disabled={!isFormValid}
+          loadingText="Searching..."
         >
-          {isLoading ? (
-            <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
-              Searching...
-            </>
-          ) : (
-            <>
-              <Search className="h-5 w-5" />
-              Search Flights
-            </>
-          )}
-        </Button>
+          Search Flights
+        </SearchButton>
 
         <Button
           type="button"

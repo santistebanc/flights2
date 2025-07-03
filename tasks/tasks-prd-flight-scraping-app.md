@@ -20,7 +20,7 @@ Based on PRD: `prd-flight-scraping-app.md`
 - `components/flight-search/FlightSearchForm.tsx` - Main search form component that combines all flight search fields
 - `components/flight-search/IataInput.tsx` - IATA code input component with autocomplete
 - `components/flight-search/AirportAutocomplete.tsx` - Airport search autocomplete component
-- `components/flight-search/SearchButton.tsx` - Search button with loading states
+- `components/flight-search/SearchButton.tsx` - Reusable search button component with comprehensive loading states
 - `components/flight-results/BundleCard.tsx` - Individual bundle display card
 - `components/flight-results/ResultsList.tsx` - Results list with sorting
 - `components/flight-results/BookingOptions.tsx` - Booking options display
@@ -77,7 +77,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [x] 2.4 Create search form component that combines all flight search fields
   - [x] 2.5 Implement localStorage integration for saving search preferences
   - [x] 2.6 Add form validation for required fields (departure/arrival airports, dates)
-  - [ ] 2.7 Create search button component with loading states
+  - [x] 2.7 Create search button component with loading states
   - [ ] 2.8 Ensure responsive design for mobile and desktop use
   - [ ] 2.9 Add accessibility features (ARIA labels, keyboard navigation)
   - [ ] 2.10 Create airport search functionality with Convex queries
