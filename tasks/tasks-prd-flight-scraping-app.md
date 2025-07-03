@@ -95,7 +95,7 @@ Based on PRD: `prd-flight-scraping-app.md`
     - [x] 3.7.1 Implement and test modular HTML extraction functions for each scraper and phase (using sample HTML snippets)
     - [x] 3.7.2 Fix Kiwi Phase 2 flight extraction with robust regex-based parsing
     - [x] 3.7.3 Fix Skyscanner Phase 2 flight extraction with robust regex-based parsing
-  - [ ] 3.8 Implement duplicate handling logic (keep flights/bundles, replace bookingOptions; see deduplication in 3.10/3.11)
+  - [x] 3.8 Implement duplicate handling logic (keep flights/bundles, replace bookingOptions; see deduplication in 3.10/3.11)
   - [ ] 3.9 Add scraping error logging and monitoring
   - [ ] 3.10 Implement Kiwi Scraping Process
     - [ ] 3.10.1 Set up Kiwi scraping actor to receive FlightSearchParams

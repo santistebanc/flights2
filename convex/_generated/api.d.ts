@@ -14,6 +14,7 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as airports from "../airports.js";
+import type * as duplicate_handling from "../duplicate-handling.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -25,6 +26,7 @@ import type * as airports from "../airports.js";
  */
 declare const fullApi: ApiFromModules<{
   airports: typeof airports;
+  "duplicate-handling": typeof duplicate_handling;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
