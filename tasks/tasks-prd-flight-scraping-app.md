@@ -100,7 +100,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [x] 3.8 Implement duplicate handling logic (keep flights/bundles, replace bookingOptions; see deduplication in 3.10/3.11)
   - [x] 3.9 Add scraping error logging and monitoring
   - [ ] 3.10 Implement Kiwi Scraping Process
-    - [ ] 3.10.1 Set up Kiwi scraping actor to receive FlightSearchParams
+    - [x] 3.10.1 Set up Kiwi scraping actor to receive FlightSearchParams
     - [ ] 3.10.2 Implement phase 1: fetch HTML from flightsfinder.com/portal/kiwi with correct query params
     - [ ] 3.10.3 Extract cookie and \_token from HTML response
     - [ ] 3.10.4 Implement phase 2: POST to /portal/kiwi/search with correct headers, cookie, and token
