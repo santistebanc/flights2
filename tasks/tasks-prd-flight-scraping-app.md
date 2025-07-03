@@ -43,7 +43,6 @@ Based on PRD: `prd-flight-scraping-app.md`
 
 ### Test Files
 
-- `components/flight-search/FlightSearchForm.test.tsx` - Tests for search form component
 - `components/flight-results/BundleCard.test.tsx` - Tests for bundle display
 - `convex/flights.test.ts` - Tests for flight queries
 - `convex/scrapingActions.test.ts` - Tests for scraping actions
@@ -144,3 +143,4 @@ Based on PRD: `prd-flight-scraping-app.md`
 - Implement proper error handling for both actions and functions
 - Extend existing shadcn components where possible, maintaining design consistency
 - Ensure compatibility with existing codebase structure and patterns
+- Testing infrastructure needs to be set up (Jest + React Testing Library) for component testing
