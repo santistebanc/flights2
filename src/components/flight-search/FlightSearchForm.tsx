@@ -175,13 +175,18 @@ export function FlightSearchForm({
   const validateField = (
     field: "departureAirport" | "arrivalAirport" | "dates"
   ): string | undefined => {
+    // If both airports are filled and the same, show duplicate error for both
+    if (
+      departureAirport.trim() &&
+      arrivalAirport.trim() &&
+      departureAirport === arrivalAirport
+    ) {
+      return "Departure and arrival airports must be different";
+    }
     switch (field) {
       case "departureAirport":
         if (!departureAirport.trim()) {
           return "Departure airport is required";
-        }
-        if (departureAirport === arrivalAirport && arrivalAirport) {
-          return "Departure and arrival airports must be different";
         }
         if (!validateIataCode(departureAirport)) {
           return "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
@@ -194,9 +199,6 @@ export function FlightSearchForm({
       case "arrivalAirport":
         if (!arrivalAirport.trim()) {
           return "Arrival airport is required";
-        }
-        if (departureAirport === arrivalAirport && departureAirport) {
-          return "Departure and arrival airports must be different";
         }
         if (!validateIataCode(arrivalAirport)) {
           return "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
