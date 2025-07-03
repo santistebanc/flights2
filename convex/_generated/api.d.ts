@@ -14,7 +14,7 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as airports from "../airports.js";
-import type * as duplicate_handling from "../duplicate-handling.js";
+import type * as duplicate_handling from "../duplicate_handling.js";
 import type * as scraping_logs from "../scraping-logs.js";
 import type * as scrapingActions from "../scrapingActions.js";
 
@@ -28,7 +28,7 @@ import type * as scrapingActions from "../scrapingActions.js";
  */
 declare const fullApi: ApiFromModules<{
   airports: typeof airports;
-  "duplicate-handling": typeof duplicate_handling;
+  duplicate_handling: typeof duplicate_handling;
   "scraping-logs": typeof scraping_logs;
   scrapingActions: typeof scrapingActions;
 }>;
