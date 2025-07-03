@@ -4,6 +4,7 @@ import { api } from "../../../convex/_generated/api";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { cn } from "../../utils";
+import { useAirportHistory } from "../../hooks/useAirportHistory";
 
 interface Airport {
   _id: string;
@@ -48,6 +49,9 @@ export function AirportAutocomplete({
 
   // Debounced search term for API calls
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Airport history hook
+  const { history, addToHistory } = useAirportHistory();
 
   // Fetch airports from Convex
   const airports = useQuery(
@@ -97,36 +101,102 @@ export function AirportAutocomplete({
       setSelectedIndex(-1);
       inputRef.current?.blur();
 
+      // Add to history
+      addToHistory({
+        iataCode: airport.iataCode,
+        name: airport.name,
+        city: airport.city,
+        country: airport.country,
+      });
+
       // Reset the flag after a short delay
       setTimeout(() => {
         isUserTyping.current = false;
       }, 100);
     },
-    [onChange, onAirportSelect]
+    [onChange, onAirportSelect, addToHistory]
   );
+
+  // Get combined results (history + search results)
+  const getCombinedResults = useCallback(() => {
+    const results: Array<Airport & { isHistory?: boolean }> = [];
+
+    // Add history items if search term is empty or matches
+    if (searchTerm.length === 0 || debouncedSearchTerm.length === 0) {
+      // Show history items when input is empty or focused
+      history.forEach((historyItem) => {
+        results.push({
+          _id: `history-${historyItem.iataCode}`,
+          iataCode: historyItem.iataCode,
+          name: historyItem.name,
+          city: historyItem.city,
+          country: historyItem.country,
+          matchType: "iata" as const,
+          isHistory: true,
+        });
+      });
+    } else {
+      // Filter history items that match search term
+      const matchingHistory = history.filter(
+        (historyItem) =>
+          historyItem.iataCode
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          historyItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          historyItem.city.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      matchingHistory.forEach((historyItem) => {
+        results.push({
+          _id: `history-${historyItem.iataCode}`,
+          iataCode: historyItem.iataCode,
+          name: historyItem.name,
+          city: historyItem.city,
+          country: historyItem.country,
+          matchType: "iata" as const,
+          isHistory: true,
+        });
+      });
+    }
+
+    // Add search results (excluding duplicates from history)
+    if (airports) {
+      airports.forEach((airport) => {
+        const isDuplicate = results.some(
+          (result) => result.iataCode === airport.iataCode
+        );
+        if (!isDuplicate) {
+          results.push(airport);
+        }
+      });
+    }
+
+    return results;
+  }, [searchTerm, debouncedSearchTerm, history, airports]);
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (!airports || airports.length === 0) return;
+      const combinedResults = getCombinedResults();
+      if (!combinedResults || combinedResults.length === 0) return;
 
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
           setSelectedIndex((prev) =>
-            prev < airports.length - 1 ? prev + 1 : 0
+            prev < combinedResults.length - 1 ? prev + 1 : 0
           );
           break;
         case "ArrowUp":
           e.preventDefault();
           setSelectedIndex((prev) =>
-            prev > 0 ? prev - 1 : airports.length - 1
+            prev > 0 ? prev - 1 : combinedResults.length - 1
           );
           break;
         case "Enter":
           e.preventDefault();
-          if (selectedIndex >= 0 && airports[selectedIndex]) {
-            handleAirportSelect(airports[selectedIndex]);
+          if (selectedIndex >= 0 && combinedResults[selectedIndex]) {
+            handleAirportSelect(combinedResults[selectedIndex]);
           }
           break;
         case "Escape":
@@ -135,7 +205,7 @@ export function AirportAutocomplete({
           break;
       }
     },
-    [airports, selectedIndex, handleAirportSelect]
+    [selectedIndex, handleAirportSelect, getCombinedResults]
   );
 
   // Sync searchTerm with value prop (but not during user input)
@@ -154,7 +224,8 @@ export function AirportAutocomplete({
       isUserTyping.current = true;
       setSearchTerm(newValue);
       onChange(newValue);
-      setIsOpen(newValue.length > 0);
+      // Show dropdown if there's a search term or if there's history to show
+      setIsOpen(newValue.length > 0 || history.length > 0);
       setSelectedIndex(-1);
 
       // Reset the flag after a short delay
@@ -162,15 +233,16 @@ export function AirportAutocomplete({
         isUserTyping.current = false;
       }, 100);
     },
-    [onChange]
+    [onChange, history.length]
   );
 
   // Handle input focus
   const handleFocus = useCallback(() => {
-    if (searchTerm.length > 0) {
+    // Show dropdown if there's a search term or if there's history to show
+    if (searchTerm.length > 0 || history.length > 0) {
       setIsOpen(true);
     }
-  }, [searchTerm]);
+  }, [searchTerm, history.length]);
 
   // Handle input blur
   const handleBlur = useCallback(() => {
@@ -265,48 +337,64 @@ export function AirportAutocomplete({
         )}
 
         {/* Dropdown */}
-        {isOpen && airports && airports.length > 0 && (
-          <div
-            ref={dropdownRef}
-            className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto"
-          >
-            {airports.map((airport, index) => (
+        {isOpen &&
+          (() => {
+            const combinedResults = getCombinedResults();
+            return combinedResults.length > 0 ? (
               <div
-                key={airport._id}
-                className={cn(
-                  "px-3 py-2 cursor-pointer hover:bg-gray-700 transition-colors",
-                  index === selectedIndex && "bg-gray-700"
-                )}
-                onClick={() => handleAirportSelect(airport)}
+                ref={dropdownRef}
+                className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <span className="font-mono font-bold text-lg">
-                      {airport.iataCode}
-                    </span>
-                    <div className="text-sm text-gray-300">{airport.name}</div>
-                    <div className="text-xs text-gray-400">
-                      {airport.city}
-                      {airport.country && `, ${airport.country}`}
+                {combinedResults.map((airport, index) => (
+                  <div
+                    key={airport._id}
+                    className={cn(
+                      "px-3 py-2 cursor-pointer hover:bg-gray-700 transition-colors",
+                      index === selectedIndex && "bg-gray-700",
+                      airport.isHistory && "border-l-2 border-l-blue-400"
+                    )}
+                    onClick={() => handleAirportSelect(airport)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-lg">
+                            {airport.iataCode}
+                          </span>
+                          {airport.isHistory && (
+                            <span className="text-xs text-blue-400 bg-blue-900 px-1 rounded">
+                              Recent
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-300">
+                          {airport.name}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {airport.city}
+                          {airport.country && `, ${airport.country}`}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            ) : null;
+          })()}
 
         {/* No results */}
         {isOpen &&
-          airports &&
-          airports.length === 0 &&
-          debouncedSearchTerm.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50">
-              <div className="px-3 py-2 text-sm text-gray-400">
-                No airports found
+          (() => {
+            const combinedResults = getCombinedResults();
+            return combinedResults.length === 0 &&
+              debouncedSearchTerm.length > 0 ? (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50">
+                <div className="px-3 py-2 text-sm text-gray-400">
+                  No airports found
+                </div>
               </div>
-            </div>
-          )}
+            ) : null;
+          })()}
       </div>
     </div>
   );

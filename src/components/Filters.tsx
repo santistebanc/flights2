@@ -56,7 +56,7 @@ export function Filters() {
       style={{ position: "relative" }}
     >
       <div className="mx-auto">
-        {/* Top Row: Airport inputs, date picker, search button, settings button */}
+        {/* Top Row: Airport inputs, date picker, search button */}
         <div className="flex gap-3 items-center mb-3">
           {/* IataInput components */}
           <div className="flex-1">
@@ -89,7 +89,7 @@ export function Filters() {
               error={validation.errors.to}
             />
           </div>
-          {/* DateRangePicker restored */}
+          {/* DateRangePicker */}
           <div className="flex-1">
             <DateRangePicker
               dateFrom={localFilters.outboundDate}

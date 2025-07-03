@@ -141,13 +141,14 @@ This document outlines the requirements for extending the existing React/Tailwin
 - Provide clear visual feedback for scraping progress
 - Use intuitive icons and colors for different states (loading, success, error)
 - Ensure accessibility compliance with proper ARIA labels and keyboard navigation
+- Maintain consistent component sizing to prevent layout shifts (e.g., fixed width date picker that accommodates both single and round-trip date ranges)
 
 ### Component Modifications
 
 - Extend existing form components to support IATA code inputs with autocomplete
 - Add progress indicators for multi-source scraping
 - Create bundle display cards with pricing and booking information
-- Use existing date range picker component (no new implementation needed)
+- Use existing date range picker component with integrated round-trip toggle for better UX
 - Modify existing UI components to integrate with new flight search functionality
 - Ensure new components follow existing design patterns and styling
 - Implement airport search functionality with priority-based autocomplete

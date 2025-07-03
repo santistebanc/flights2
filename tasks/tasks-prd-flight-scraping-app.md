@@ -20,7 +20,6 @@ Based on PRD: `prd-flight-scraping-app.md`
 - `components/flight-search/FlightSearchForm.tsx` - Main search form component
 - `components/flight-search/IataInput.tsx` - IATA code input component with autocomplete
 - `components/flight-search/AirportAutocomplete.tsx` - Airport search autocomplete component
-- `components/flight-search/RoundTripToggle.tsx` - Round-trip toggle component
 - `components/flight-search/SearchButton.tsx` - Search button with loading states
 - `components/flight-results/BundleCard.tsx` - Individual bundle display card
 - `components/flight-results/ResultsList.tsx` - Results list with sorting
@@ -72,9 +71,10 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [x] 2.1.4 Remove forced capitalization from IATA inputs
   - [x] 2.1.5 Add validation to IataInput component (show red border for invalid IATA codes)
   - [x] 2.1.6 Add form validation to disable search button when any inputs are invalid
-  - [ ] 2.1.7 Implement IATA input history with localStorage persistence and priority-based autocomplete
-  - [ ] 2.2 Implement round-trip toggle component with proper state management
-  - [ ] 2.3 Integrate existing date range picker with flight search logic
+  - [x] 2.1.7 Implement IATA input history with localStorage persistence and priority-based autocomplete
+  - [x] 2.2 Integrate round-trip toggle into existing date range picker for better UX
+  - [x] 2.2.1 Implement fixed width date picker to prevent layout shifts
+  - [x] 2.3 Integrate existing date range picker with flight search logic
   - [ ] 2.4 Create search form component that combines all flight search fields
   - [ ] 2.5 Implement localStorage integration for saving search preferences
   - [ ] 2.6 Add form validation for required fields (departure/arrival airports, dates)
@@ -119,6 +119,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [ ] 5.8 Implement proper error boundaries and fallback UI
 
 - [ ] 6.0 Implement Data Cleanup and Validation Logic
+
   - [ ] 6.1 Create scheduled function to delete expired bundles (past flight dates)
   - [ ] 6.2 Implement data validation for scraped flight information
   - [ ] 6.3 Add data integrity checks and repair mechanisms
@@ -127,6 +128,12 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [ ] 6.6 Add data retention policies and automatic cleanup
   - [ ] 6.7 Create data health monitoring and alerting
   - [ ] 6.8 Implement backup and recovery procedures for critical data
+
+- [ ] FUTURE: Audit and complete airports database (low priority)
+  - Review current airports table for missing major/relevant airports (e.g., LAX)
+  - Import or update records as needed to ensure comprehensive coverage
+  - Consider using a reputable, up-to-date airport dataset for bulk import
+  - Test autocomplete and search for major global airports
 
 ### Notes
 

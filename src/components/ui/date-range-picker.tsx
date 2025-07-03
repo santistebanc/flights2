@@ -136,18 +136,18 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
         <Button
           size={"lg"}
           variant="outline"
-          className="border-gray-600 bg-gray-700 text-white hover:bg-gray-600 hover:border-gray-500 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400"
+          className="border-gray-600 bg-gray-700 text-white hover:bg-gray-600 hover:border-gray-500 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 min-w-[280px]"
         >
-          <div className="text-right">
+          <div className="text-right flex-1">
             <div className="py-1">
-              <div>{`${formatDate(range.from)}${
+              <div className="whitespace-nowrap">{`${formatDate(range.from)}${
                 isRoundTrip && range.to != null
                   ? " - " + formatDate(range.to)
                   : ""
               }`}</div>
             </div>
           </div>
-          <div className="pl-1 opacity-60 -mr-2 scale-125 text-gray-400">
+          <div className="pl-1 opacity-60 -mr-2 scale-125 text-gray-400 flex-shrink-0">
             {isOpen ? (
               <ChevronUpIcon width={24} />
             ) : (
@@ -183,6 +183,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                       }
                     }}
                     id="round-trip-mode"
+                    className="data-[state=checked]:bg-yellow-400 data-[state=unchecked]:bg-gray-600"
                   />
                   <Label htmlFor="round-trip-mode" className="text-gray-300">
                     Round Trip

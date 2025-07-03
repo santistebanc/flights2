@@ -60,3 +60,30 @@ When working with task lists, the AI must:
 4. Keep "Relevant Files" accurate and up to date.
 5. Before starting work, check which sub‑task is next.
 6. After implementing a sub‑task, update the file and then pause for user approval.
+
+## PRD Change Management
+
+**CRITICAL**: Before implementing any change requested by the user, the AI must:
+
+1. **Check PRD Compliance**: Verify if the requested change is already mentioned in the PRD (`tasks/prd-flight-scraping-app.md`).
+
+2. **If Change is NOT in PRD**:
+
+   - **Prompt the user**: "This change is not mentioned in the PRD. Would you like me to update the PRD to include this requirement? This will ensure the change is properly documented and tracked."
+   - **Wait for confirmation**: Only proceed after the user confirms they want the PRD updated.
+   - **Update PRD**: If confirmed, modify the PRD to include the new requirement in the appropriate section.
+   - **Update Task List**: Generate or modify existing tasks in `tasks/tasks-prd-flight-scraping-app.md` to reflect the new PRD requirements.
+   - **Document Changes**: List all PRD and task list modifications in the implementation summary.
+
+3. **If Change IS in PRD**: Proceed with implementation directly.
+
+4. **Always Document**: Whether the change was in the PRD or not, always document what was implemented and any files modified.
+
+**Example Workflow**:
+
+```
+User: "Make the datepicker a fixed width"
+AI: "This change is not mentioned in the PRD. Would you like me to update the PRD to include this requirement? This will ensure the change is properly documented and tracked."
+User: "Yes"
+AI: [Updates PRD with UI/UX requirements, updates task list, then implements the change]
+```
