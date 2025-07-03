@@ -85,7 +85,7 @@ Based on PRD: `prd-flight-scraping-app.md`
 
 - [ ] 3.0 Implement Multi-Source Scraping Engine
 
-  - [ ] 3.1 Create base scraping interface/abstract class for different sources
+  - [x] 3.1 Create base scraping interface/abstract class for different sources
   - [ ] 3.2 Implement Skyscanner scraper using Convex actions
   - [ ] 3.3 Implement Kiwi scraper using Convex actions
   - [ ] 3.4 Create scraping coordinator to handle parallel scraping operations
