@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Button } from "../ui/button";
 import { IataInput } from "./IataInput";
 import { DateRangePicker } from "../ui/date-range-picker";
 import { SearchButton } from "./SearchButton";
-import { RotateCcw } from "lucide-react";
 import { cn } from "../../utils";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 
@@ -32,8 +30,7 @@ export function FlightSearchForm({
   className,
 }: FlightSearchFormProps) {
   // localStorage hook
-  const { isLoaded, savePreferences, clearPreferences, getFormState } =
-    useLocalStorage();
+  const { isLoaded, savePreferences, getFormState } = useLocalStorage();
 
   // Form state
   const [departureAirport, setDepartureAirport] = useState("");
@@ -281,19 +278,6 @@ export function FlightSearchForm({
     }));
   };
 
-  // Handle clear preferences
-  const handleClearPreferences = () => {
-    clearPreferences();
-    setDepartureAirport("");
-    setArrivalAirport("");
-    setDateRange({
-      from: new Date(),
-      to: undefined,
-    });
-    setIsRoundTrip(false);
-    setErrors({});
-  };
-
   // Check if form is valid for enabling search button
   const isFormValid =
     departureAirport &&
@@ -309,34 +293,35 @@ export function FlightSearchForm({
     <form
       onSubmit={handleSubmit}
       className={cn(
-        "space-y-6 p-6 bg-gray-800 rounded-lg border border-gray-700",
+        "p-3 bg-gray-800/95 backdrop-blur-sm border-b border-gray-700",
         className
       )}
     >
-      <div className="space-y-4">
+      <div className="flex flex-col md:flex-row gap-3 items-center max-w-6xl mx-auto">
+        {/* FlightFinder Icon */}
+        <div className="flex-shrink-0">
+          <div className="text-2xl text-yellow-400 font-semibold">✈️</div>
+        </div>
+
         {/* Airport Inputs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
+        <div className="flex gap-3 flex-1">
+          <div className="flex-1">
             <IataInput
               value={departureAirport}
               onChange={handleDepartureAirportChange}
               placeholder="From"
-              label="Departure Airport"
               required
-              error={errors.departureAirport}
               otherAirportValue={arrivalAirport}
               className="w-full"
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex-1">
             <IataInput
               value={arrivalAirport}
               onChange={handleArrivalAirportChange}
               placeholder="To"
-              label="Arrival Airport"
               required
-              error={errors.arrivalAirport}
               otherAirportValue={departureAirport}
               className="w-full"
             />
@@ -344,56 +329,37 @@ export function FlightSearchForm({
         </div>
 
         {/* Date Range Picker */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-300">
-            Travel Dates
-          </label>
+        <div className="flex-shrink-0">
           <DateRangePicker
             dateFrom={dateRange.from}
             dateTo={dateRange.to}
             isRoundTrip={isRoundTrip}
             onUpdate={handleDateRangeUpdate}
           />
-          {errors.dates && (
-            <p className="text-sm text-red-400 mt-1">{errors.dates}</p>
-          )}
         </div>
-      </div>
 
-      {/* Search Button and Clear Preferences */}
-      <div className="flex justify-center gap-4">
-        <SearchButton
-          isLoading={isLoading}
-          disabled={!isFormValid}
-          loadingText="Searching..."
-        >
-          Search Flights
-        </SearchButton>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleClearPreferences}
-          className="px-4 py-3 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500 transition-colors"
-          title="Clear saved preferences"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
+        {/* Search Button */}
+        <div className="flex-shrink-0">
+          <SearchButton
+            isLoading={isLoading}
+            disabled={!isFormValid}
+            loadingText="Searching..."
+            size="default"
+          >
+            Search
+          </SearchButton>
+        </div>
       </div>
 
       {/* Form Status and Validation Summary */}
       {!isFormValid && (
-        <div className="space-y-2">
-          <div className="text-center text-sm text-gray-400">
-            Please fill in all required fields correctly to search for flights
-          </div>
-
+        <div className="mt-3 max-w-6xl mx-auto">
           {/* Validation Summary */}
           {(errors.departureAirport ||
             errors.arrivalAirport ||
             errors.dates) && (
-            <div className="bg-red-900/20 border border-red-500/30 rounded-md p-3">
-              <h4 className="text-sm font-medium text-red-400 mb-2">
+            <div className="bg-red-900/20 border border-red-500/30 rounded-md p-2">
+              <h4 className="text-sm font-medium text-red-400 mb-1">
                 Please fix the following issues:
               </h4>
               <ul className="text-sm text-red-300 space-y-1">

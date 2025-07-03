@@ -63,20 +63,16 @@ export default function App() {
       value={{ searchParams: safeSearchParams, setSearchParams }}
     >
       <div className="h-screen flex flex-col bg-gray-900 overflow-hidden">
-        <header className="sticky top-0 z-10 bg-gray-800/90 backdrop-blur-sm border-b border-gray-700 shadow-sm flex-shrink-0">
-          <div className="h-16 flex justify-between items-center px-4">
-            <h2 className="text-xl font-semibold text-yellow-400">
-              ✈️ FlightFinder
-            </h2>
-          </div>
-        </header>
+        {/* Sticky Search Form with Icon */}
+        <div className="sticky top-0 z-10 bg-gray-800/95 backdrop-blur-sm border-b border-gray-700 shadow-sm flex-shrink-0">
+          <FlightSearchForm
+            onSearch={handleSearch}
+            isLoading={false} // TODO: Connect to actual loading state
+          />
+        </div>
+
         <main className="flex-1 overflow-auto p-4">
           <div className="max-w-4xl mx-auto">
-            <FlightSearchForm
-              onSearch={handleSearch}
-              isLoading={false} // TODO: Connect to actual loading state
-            />
-
             {/* TODO: Add flight results display here */}
             <div className="mt-8 text-center text-gray-400">
               <p>Flight results will appear here after search</p>

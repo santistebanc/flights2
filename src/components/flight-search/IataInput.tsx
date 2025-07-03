@@ -4,7 +4,6 @@ interface IataInputProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  label?: string;
   className?: string;
   required?: boolean;
   error?: string;
@@ -16,7 +15,6 @@ export function IataInput({
   value,
   onChange,
   placeholder = "Airport code",
-  label,
   className,
   required = false,
   error,
@@ -28,7 +26,6 @@ export function IataInput({
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      label={label}
       className={className}
       required={required}
       error={error}
