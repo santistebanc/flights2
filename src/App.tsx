@@ -1,4 +1,7 @@
-import { Filters } from "./components/Filters";
+import {
+  FlightSearchForm,
+  FlightSearchParams,
+} from "./components/flight-search/FlightSearchForm";
 import { SearchContext, ScrapingSource } from "./SearchContext";
 import { useLocalStorage } from "./useLocalStorage";
 
@@ -37,6 +40,24 @@ export default function App() {
       : defaultSources,
   };
 
+  const handleSearch = (searchParams: FlightSearchParams) => {
+    // Convert FlightSearchParams to the format expected by SearchContext
+    const convertedParams = {
+      from: searchParams.departureAirport,
+      to: searchParams.arrivalAirport,
+      outboundDate: searchParams.departureDate.toISOString().split("T")[0],
+      inboundDate: searchParams.returnDate
+        ? searchParams.returnDate.toISOString().split("T")[0]
+        : "",
+      isRoundTrip: searchParams.isRoundTrip,
+      sources: safeSearchParams.sources,
+    };
+
+    setSearchParams(convertedParams);
+    // TODO: Trigger actual flight search here
+    console.log("Search triggered with:", searchParams);
+  };
+
   return (
     <SearchContext.Provider
       value={{ searchParams: safeSearchParams, setSearchParams }}
@@ -48,10 +69,19 @@ export default function App() {
               ✈️ FlightFinder
             </h2>
           </div>
-          <Filters />
         </header>
-        <main className="flex-1 overflow-auto">
-          {/* TODO: Add the FlightSearch component here */}
+        <main className="flex-1 overflow-auto p-4">
+          <div className="max-w-4xl mx-auto">
+            <FlightSearchForm
+              onSearch={handleSearch}
+              isLoading={false} // TODO: Connect to actual loading state
+            />
+
+            {/* TODO: Add flight results display here */}
+            <div className="mt-8 text-center text-gray-400">
+              <p>Flight results will appear here after search</p>
+            </div>
+          </div>
         </main>
       </div>
     </SearchContext.Provider>
