@@ -154,9 +154,10 @@ export function extractBookingOptionsFromPhase2Html(
       let currentLink = "";
 
       // Extract agency name
-      const agencyMatch = similarMatch.match(/(Kiwi\.com|WAYA|Mytrip)/);
+      // Extract agency name from the first <p> tag (more robust than hardcoding names)
+      const agencyMatch = similarMatch.match(/<p>([^<]+)<\/p>/);
       if (agencyMatch) {
-        currentAgency = agencyMatch[1];
+        currentAgency = agencyMatch[1].trim();
       }
 
       // Extract price
