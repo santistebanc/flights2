@@ -137,7 +137,6 @@ This document outlines the requirements for extending the existing React/Tailwin
 ### UI/UX Requirements
 
 - Use existing shadcn components where possible, with modifications as needed
-- Implement responsive design for mobile and desktop use
 - Provide clear visual feedback for scraping progress
 - Use intuitive icons and colors for different states (loading, success, error)
 - Ensure accessibility compliance with proper ARIA labels and keyboard navigation
