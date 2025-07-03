@@ -93,6 +93,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [ ] 3.6 Add rate limiting and polite crawling practices (not needed at the moment)
   - [x] 3.7 Create data transformation layer: implement robust, source-specific HTML parsing and extraction logic for each scraper, covering both phases (session/token extraction for Phase 1, entity extraction for Phase 2)
     - [x] 3.7.1 Implement and test modular HTML extraction functions for each scraper and phase (using sample HTML snippets)
+    - [x] 3.7.2 Fix Kiwi Phase 2 flight extraction with robust regex-based parsing
   - [ ] 3.8 Implement duplicate handling logic (keep flights/bundles, replace bookingOptions; see deduplication in 3.10/3.11)
   - [ ] 3.9 Add scraping error logging and monitoring
   - [ ] 3.10 Implement Kiwi Scraping Process
