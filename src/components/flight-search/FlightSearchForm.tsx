@@ -288,9 +288,6 @@ export function FlightSearchForm({
     const upperValue = value.toUpperCase();
     setArrivalAirport(upperValue);
 
-    // Debug log
-    console.log("[DEBUG] handleArrivalAirportChange:", upperValue);
-
     // Reset existence check when value changes
     setArrivalAirportExists(null);
 
@@ -320,8 +317,6 @@ export function FlightSearchForm({
 
   const handleArrivalAirportExists = (exists: boolean | null) => {
     setArrivalAirportExists(exists);
-    // Debug log
-    console.log("[DEBUG] handleArrivalAirportExists:", exists, arrivalAirport);
     // Re-validate if we now know the airport doesn't exist
     if (exists === false && arrivalAirport) {
       const error = validateField("arrivalAirport");
