@@ -35,33 +35,71 @@ export function extractSessionDataFromPhase1Html(html: string): {
       if (tagname === "script" && inScriptTag) {
         inScriptTag = false;
 
-        // Look for various session data in script content
-        const tokenMatch = scriptContent.match(
-          /token\s*[:=]\s*['"`]([^'"`]+)['"`]/i
+        // Look for session data in script content - handle both patterns
+        // Pattern 1: 'key': 'value' (from AJAX data)
+        const tokenMatch1 = scriptContent.match(
+          /['"]_token['"]\s*:\s*['"`]([^'"`]+)['"`]/
         );
-        if (tokenMatch) {
-          token = tokenMatch[1];
+        if (tokenMatch1) {
+          token = tokenMatch1[1];
         }
 
-        const sessionMatch = scriptContent.match(
-          /session\s*[:=]\s*['"`]([^'"`]+)['"`]/i
+        const sessionMatch1 = scriptContent.match(
+          /['"]session['"]\s*:\s*['"`]([^'"`]+)['"`]/
         );
-        if (sessionMatch) {
-          session = sessionMatch[1];
+        if (sessionMatch1) {
+          session = sessionMatch1[1];
         }
 
-        const suuidMatch = scriptContent.match(
-          /suuid\s*[:=]\s*['"`]([^'"`]+)['"`]/i
+        const suuidMatch1 = scriptContent.match(
+          /['"]suuid['"]\s*:\s*['"`]([^'"`]+)['"`]/
         );
-        if (suuidMatch) {
-          suuid = suuidMatch[1];
+        if (suuidMatch1) {
+          suuid = suuidMatch1[1];
         }
 
-        const deeplinkMatch = scriptContent.match(
-          /deeplink\s*[:=]\s*['"`]([^'"`]+)['"`]/i
+        const deeplinkMatch1 = scriptContent.match(
+          /['"]deeplink['"]\s*:\s*['"`]([^'"`]+)['"`]/
         );
-        if (deeplinkMatch) {
-          deeplink = deeplinkMatch[1];
+        if (deeplinkMatch1) {
+          deeplink = deeplinkMatch1[1];
+        }
+
+        // Pattern 2: key: 'value' (from object properties) - fallback
+        if (!token) {
+          const tokenMatch2 = scriptContent.match(
+            /token\s*[:=]\s*['"`]([^'"`]+)['"`]/i
+          );
+          if (tokenMatch2) {
+            token = tokenMatch2[1];
+          }
+        }
+
+        if (!session) {
+          const sessionMatch2 = scriptContent.match(
+            /session\s*[:=]\s*['"`]([^'"`]+)['"`]/i
+          );
+          if (sessionMatch2) {
+            session = sessionMatch2[1];
+          }
+        }
+
+        if (!suuid) {
+          const suuidMatch2 = scriptContent.match(
+            /suuid\s*[:=]\s*['"`]([^'"`]+)['"`]/i
+          );
+          if (suuidMatch2) {
+            suuid = suuidMatch2[1];
+          }
+        }
+
+        if (!deeplink) {
+          const deeplinkMatch2 = scriptContent.match(
+            /deeplink\s*[:=]\s*['"`]([^'"`]+)['"`]/i
+          );
+          if (deeplinkMatch2) {
+            deeplink = deeplinkMatch2[1];
+          }
         }
       }
     },

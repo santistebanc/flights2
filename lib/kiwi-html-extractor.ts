@@ -29,12 +29,23 @@ export function extractSessionDataFromPhase1Html(html: string): {
       if (tagname === "script" && inScriptTag) {
         inScriptTag = false;
 
-        // Look for token in script content
-        const tokenMatch = scriptContent.match(
-          /_token\s*[:=]\s*['"`]([^'"`]+)['"`]/
+        // Look for token in script content - handle both patterns
+        // Pattern 1: '_token': 'value' (from AJAX data)
+        const tokenMatch1 = scriptContent.match(
+          /['"]_token['"]\s*:\s*['"`]([^'"`]+)['"`]/
         );
-        if (tokenMatch) {
-          token = tokenMatch[1];
+        if (tokenMatch1) {
+          token = tokenMatch1[1];
+        }
+
+        // Pattern 2: _token: 'value' (from object properties)
+        if (!token) {
+          const tokenMatch2 = scriptContent.match(
+            /_token\s*[:=]\s*['"`]([^'"`]+)['"`]/
+          );
+          if (tokenMatch2) {
+            token = tokenMatch2[1];
+          }
         }
       }
     },
