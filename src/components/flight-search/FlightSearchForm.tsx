@@ -71,21 +71,73 @@ export function FlightSearchForm({
     return /^[A-Z]{3}$/.test(code);
   };
 
+  const validateDate = (date: Date): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date >= today;
+  };
+
+  const validateDateRange = (
+    from: Date,
+    isRoundTrip: boolean,
+    to?: Date
+  ): string | undefined => {
+    if (!from) {
+      return "Departure date is required";
+    }
+
+    if (!validateDate(from)) {
+      return "Departure date cannot be in the past";
+    }
+
+    if (isRoundTrip) {
+      if (!to) {
+        return "Return date is required for round trips";
+      }
+
+      if (!validateDate(to)) {
+        return "Return date cannot be in the past";
+      }
+
+      if (from >= to) {
+        return "Return date must be after departure date";
+      }
+
+      // Check if return date is too far in the future (e.g., more than 1 year)
+      const maxDate = new Date();
+      maxDate.setFullYear(maxDate.getFullYear() + 1);
+      if (to > maxDate) {
+        return "Return date cannot be more than 1 year in the future";
+      }
+    }
+
+    // Check if departure date is too far in the future (e.g., more than 1 year)
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() + 1);
+    if (from > maxDate) {
+      return "Departure date cannot be more than 1 year in the future";
+    }
+
+    return undefined;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
 
     // Validate departure airport
-    if (!departureAirport) {
+    if (!departureAirport.trim()) {
       newErrors.departureAirport = "Departure airport is required";
     } else if (!validateIataCode(departureAirport)) {
-      newErrors.departureAirport = "Please enter a valid 3-letter airport code";
+      newErrors.departureAirport =
+        "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
     }
 
     // Validate arrival airport
-    if (!arrivalAirport) {
+    if (!arrivalAirport.trim()) {
       newErrors.arrivalAirport = "Arrival airport is required";
     } else if (!validateIataCode(arrivalAirport)) {
-      newErrors.arrivalAirport = "Please enter a valid 3-letter airport code";
+      newErrors.arrivalAirport =
+        "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
     }
 
     // Check for duplicate airports
@@ -99,21 +151,54 @@ export function FlightSearchForm({
     }
 
     // Validate dates
-    if (!dateRange.from) {
-      newErrors.dates = "Departure date is required";
-    } else if (isRoundTrip && !dateRange.to) {
-      newErrors.dates = "Return date is required for round trips";
-    } else if (
-      isRoundTrip &&
-      dateRange.from &&
-      dateRange.to &&
-      dateRange.from >= dateRange.to
-    ) {
-      newErrors.dates = "Return date must be after departure date";
+    const dateError = validateDateRange(
+      dateRange.from,
+      isRoundTrip,
+      dateRange.to
+    );
+    if (dateError) {
+      newErrors.dates = dateError;
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Real-time validation for individual fields
+  const validateField = (
+    field: "departureAirport" | "arrivalAirport" | "dates"
+  ): string | undefined => {
+    switch (field) {
+      case "departureAirport":
+        if (!departureAirport.trim()) {
+          return "Departure airport is required";
+        }
+        if (!validateIataCode(departureAirport)) {
+          return "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
+        }
+        if (departureAirport === arrivalAirport && arrivalAirport) {
+          return "Departure and arrival airports must be different";
+        }
+        return undefined;
+
+      case "arrivalAirport":
+        if (!arrivalAirport.trim()) {
+          return "Arrival airport is required";
+        }
+        if (!validateIataCode(arrivalAirport)) {
+          return "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
+        }
+        if (departureAirport === arrivalAirport && departureAirport) {
+          return "Departure and arrival airports must be different";
+        }
+        return undefined;
+
+      case "dates":
+        return validateDateRange(dateRange.from, isRoundTrip, dateRange.to);
+
+      default:
+        return undefined;
+    }
   };
 
   // Handle form submission
@@ -151,25 +236,48 @@ export function FlightSearchForm({
     setDateRange(values.range);
     setIsRoundTrip(values.isRoundTrip);
 
-    // Clear date errors when dates are updated
-    if (errors.dates) {
-      setErrors((prev) => ({ ...prev, dates: undefined }));
-    }
+    // Real-time validation for dates
+    const error = validateDateRange(
+      values.range.from,
+      values.isRoundTrip,
+      values.range.to
+    );
+    setErrors((prev) => ({ ...prev, dates: error }));
   };
 
   // Clear errors when inputs change
   const handleDepartureAirportChange = (value: string) => {
     setDepartureAirport(value);
-    if (errors.departureAirport) {
-      setErrors((prev) => ({ ...prev, departureAirport: undefined }));
-    }
+
+    // Real-time validation
+    const error = validateField("departureAirport");
+    setErrors((prev) => ({
+      ...prev,
+      departureAirport: error,
+      // Clear arrival airport error if it was due to duplicate airports
+      arrivalAirport:
+        prev.arrivalAirport ===
+        "Departure and arrival airports must be different"
+          ? undefined
+          : prev.arrivalAirport,
+    }));
   };
 
   const handleArrivalAirportChange = (value: string) => {
     setArrivalAirport(value);
-    if (errors.arrivalAirport) {
-      setErrors((prev) => ({ ...prev, arrivalAirport: undefined }));
-    }
+
+    // Real-time validation
+    const error = validateField("arrivalAirport");
+    setErrors((prev) => ({
+      ...prev,
+      arrivalAirport: error,
+      // Clear departure airport error if it was due to duplicate airports
+      departureAirport:
+        prev.departureAirport ===
+        "Departure and arrival airports must be different"
+          ? undefined
+          : prev.departureAirport,
+    }));
   };
 
   // Handle clear preferences
@@ -285,10 +393,43 @@ export function FlightSearchForm({
         </Button>
       </div>
 
-      {/* Form Status */}
+      {/* Form Status and Validation Summary */}
       {!isFormValid && (
-        <div className="text-center text-sm text-gray-400">
-          Please fill in all required fields correctly to search for flights
+        <div className="space-y-2">
+          <div className="text-center text-sm text-gray-400">
+            Please fill in all required fields correctly to search for flights
+          </div>
+
+          {/* Validation Summary */}
+          {(errors.departureAirport ||
+            errors.arrivalAirport ||
+            errors.dates) && (
+            <div className="bg-red-900/20 border border-red-500/30 rounded-md p-3">
+              <h4 className="text-sm font-medium text-red-400 mb-2">
+                Please fix the following issues:
+              </h4>
+              <ul className="text-sm text-red-300 space-y-1">
+                {errors.departureAirport && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">•</span>
+                    <span>Departure Airport: {errors.departureAirport}</span>
+                  </li>
+                )}
+                {errors.arrivalAirport && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">•</span>
+                    <span>Arrival Airport: {errors.arrivalAirport}</span>
+                  </li>
+                )}
+                {errors.dates && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">•</span>
+                    <span>Travel Dates: {errors.dates}</span>
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </form>

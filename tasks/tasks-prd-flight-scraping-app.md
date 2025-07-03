@@ -76,7 +76,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [x] 2.3 Integrate existing date range picker with flight search logic
   - [x] 2.4 Create search form component that combines all flight search fields
   - [x] 2.5 Implement localStorage integration for saving search preferences
-  - [ ] 2.6 Add form validation for required fields (departure/arrival airports, dates)
+  - [x] 2.6 Add form validation for required fields (departure/arrival airports, dates)
   - [ ] 2.7 Create search button component with loading states
   - [ ] 2.8 Ensure responsive design for mobile and desktop use
   - [ ] 2.9 Add accessibility features (ARIA labels, keyboard navigation)
