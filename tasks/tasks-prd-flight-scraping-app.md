@@ -17,7 +17,7 @@ Based on PRD: `prd-flight-scraping-app.md`
 
 ### Frontend Components
 
-- `components/flight-search/FlightSearchForm.tsx` - Main search form component
+- `components/flight-search/FlightSearchForm.tsx` - Main search form component that combines all flight search fields
 - `components/flight-search/IataInput.tsx` - IATA code input component with autocomplete
 - `components/flight-search/AirportAutocomplete.tsx` - Airport search autocomplete component
 - `components/flight-search/SearchButton.tsx` - Search button with loading states
@@ -43,7 +43,7 @@ Based on PRD: `prd-flight-scraping-app.md`
 
 ### Test Files
 
-- `components/flight-search/FlightSearchForm.test.tsx` - Tests for search form
+- `components/flight-search/FlightSearchForm.test.tsx` - Tests for search form component
 - `components/flight-results/BundleCard.test.tsx` - Tests for bundle display
 - `convex/flights.test.ts` - Tests for flight queries
 - `convex/scrapingActions.test.ts` - Tests for scraping actions
@@ -75,7 +75,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [x] 2.2 Integrate round-trip toggle into existing date range picker for better UX
   - [x] 2.2.1 Implement fixed width date picker to prevent layout shifts
   - [x] 2.3 Integrate existing date range picker with flight search logic
-  - [ ] 2.4 Create search form component that combines all flight search fields
+  - [x] 2.4 Create search form component that combines all flight search fields
   - [ ] 2.5 Implement localStorage integration for saving search preferences
   - [ ] 2.6 Add form validation for required fields (departure/arrival airports, dates)
   - [ ] 2.7 Create search button component with loading states
