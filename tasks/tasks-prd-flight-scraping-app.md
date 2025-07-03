@@ -94,6 +94,29 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [ ] 3.7 Create data transformation layer to normalize scraped data
   - [ ] 3.8 Implement duplicate handling logic (keep flights/bundles, replace bookingOptions)
   - [ ] 3.9 Add scraping error logging and monitoring
+  - [ ] 3.10 Implement Kiwi Scraping Process
+    - [ ] 3.10.1 Set up Kiwi scraping actor to receive FlightSearchParams
+    - [ ] 3.10.2 Implement phase 1: fetch HTML from flightsfinder.com/portal/kiwi with correct query params
+    - [ ] 3.10.3 Extract cookie and \_token from HTML response
+    - [ ] 3.10.4 Implement phase 2: POST to /portal/kiwi/search with correct headers, cookie, and token
+    - [ ] 3.10.5 Parse response, split by '|', extract result HTML (7th part)
+    - [ ] 3.10.6 Scrape HTML for flights, bundles, and booking options
+    - [ ] 3.10.7 For each flight, lookup airport DB ids by IATA code (Convex query)
+    - [ ] 3.10.8 Generate uniqueIds for deduplication (flights, bundles, booking options)
+    - [ ] 3.10.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
+    - [ ] 3.10.10 Log success and handle errors at each step
+  - [ ] 3.11 Implement Skyscanner Scraping Process
+    - [ ] 3.11.1 Set up Skyscanner scraping actor to receive FlightSearchParams
+    - [ ] 3.11.2 Implement phase 1: fetch HTML from flightsfinder.com/portal/sky with correct query params
+    - [ ] 3.11.3 Extract cookie, \_token, session, suuid, and deeplink from HTML response
+    - [ ] 3.11.4 Implement phase 2: polling POSTs to /portal/sky/poll with correct headers, cookie, and extracted values
+    - [ ] 3.11.5 Parse each poll response, split by '|', extract result HTML (7th part)
+    - [ ] 3.11.6 Scrape HTML for flights, bundles, and booking options
+    - [ ] 3.11.7 For each flight, lookup airport DB ids by IATA code (Convex query)
+    - [ ] 3.11.8 Generate uniqueIds for deduplication (flights, bundles, booking options)
+    - [ ] 3.11.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
+    - [ ] 3.11.10 Log success and handle errors at each step
+    - [ ] 3.11.11 Implement polling loop: repeat until first part of response is 'Y', always use latest cookie
 
 - [ ] 4.0 Create Bundle Display and Results Management System
 

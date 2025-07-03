@@ -75,6 +75,167 @@ This document outlines the requirements for extending the existing React/Tailwin
 
 8. The system must implement specific scraping methods for each source (to be defined later)
 
+### Kiwi Scraping Process
+
+The scraping for Kiwi will be performed in an actor that receives the following parameters (FlightSearchParams):
+
+- departureAirport: string (IATA code)
+- arrivalAirport: string (IATA code)
+- departureDate: Date
+- returnDate?: Date
+- isRoundTrip: boolean
+
+The process consists of two phases:
+
+#### Phase 1: Initial Fetch
+
+- Make a fetch call to: `https://www.flightsfinder.com/portal/kiwi` with the following query parameters:
+  - type: 'return' or 'oneway' (based on isRoundTrip)
+  - currency: 'EUR'
+  - cabinclass: 'M'
+  - originplace: departureAirport (IATA code)
+  - destinationplace: arrivalAirport (IATA code)
+  - outbounddate: departureDate formatted as `DD/MM/YYYY`
+  - inbounddate: returnDate formatted as `DD/MM/YYYY` (if round trip)
+  - adults: 1
+  - children: 0
+  - infants: 0
+- Save the cookie returned in the response for use in phase 2.
+- In the HTML response, locate the <script> tag at the bottom of <body> and extract the value of the `_token` property (e.g., '\_token': 'iXTVMnr7mtz704XEsNmO4rsyltbn9HLTz459z9BQ').
+
+#### Phase 2: Polling and Results Fetch
+
+- Make a POST request to `https://www.flightsfinder.com/portal/kiwi/search` with:
+  - The cookie from phase 1
+  - The extracted token as '\_token' in the POST body
+  - All other parameters as in phase 1 (originplace, destinationplace, outbounddate, inbounddate, cabinclass, adults, children, infants, currency, type, bags-cabin: 0, bags-checked: 0)
+  - Use the same headers as the browser (see user example)
+- The response will be a string split by '|' into 7 parts:
+  - The second part is the number of results
+  - The seventh part is the actual results in HTML
+- Scrape the seventh part HTML to extract lists of:
+  - ScrapedFlight
+  - ScrapedBundle
+  - ScrapedBookingOption
+
+#### Entity Shapes
+
+- **ScrapedFlight**
+  - uniqueId: generated from flightNumber, departureAirportIataCode, arrivalAirportIataCode, and departureDateTime
+  - flightNumber: string
+  - departureAirportId: actual DB id (query Convex using IATA code)
+  - arrivalAirportId: actual DB id (query Convex using IATA code)
+  - departureDateTime: Unix timestamp in ms, adjusted by timezone (get from airports table)
+  - arrivalDateTime: Unix timestamp in ms (calculate by adding duration to departureDateTime)
+- **ScrapedBundle**
+  - uniqueId: generated from all outboundFlights + inboundFlights
+  - outboundFlightUniqueIds: array of uniqueIds
+  - inboundFlightUniqueIds: array of uniqueIds
+- **ScrapedBookingOption**
+  - uniqueId: generated from targetId, agency, price, and currency
+  - targetUniqueId: uniqueId of the bundle
+  - agency: string
+  - price: number
+  - linkToBook: string
+  - currency: string
+  - extractedAt: Unix timestamp in ms
+
+#### Database Insertion Order
+
+1. Insert scrapedFlights to flights table (bulk insert)
+2. Insert scrapedBundles to bundles table (map outbound/inbound uniqueIds to DB ids from flights)
+3. Insert scrapedbookingOptions to bookingOptions table (map targetUniqueId to DB id from bundles)
+
+#### Error Handling
+
+- Log success and handle errors at each step.
+- Ensure deduplication by using uniqueId fields for each entity.
+
+### Skyscanner Scraping Process
+
+The scraping for Skyscanner will be performed in an actor that receives the following parameters (FlightSearchParams):
+
+- departureAirport: string (IATA code)
+- arrivalAirport: string (IATA code)
+- departureDate: Date
+- returnDate?: Date
+- isRoundTrip: boolean
+
+The process consists of two phases:
+
+#### Phase 1: Initial Fetch
+
+- Make a fetch call to: `https://www.flightsfinder.com/portal/sky` with the following query parameters:
+  - originplace: departureAirport (IATA code)
+  - destinationplace: arrivalAirport (IATA code)
+  - outbounddate: departureDate formatted as `YYYY-MM-DD`
+  - inbounddate: returnDate formatted as `YYYY-MM-DD` (if round trip)
+  - cabinclass: 'Economy'
+  - adults: 1
+  - children: 0
+  - infants: 0
+  - currency: 'EUR'
+- Save the cookie returned in the response for use in phase 2.
+- In the HTML response, locate the <script> tag at the bottom of <body> and extract the following values:
+  - \_token
+  - session
+  - suuid
+  - deeplink
+
+#### Phase 2: Polling for Results
+
+- Enter a polling loop:
+  - Make a POST request to `https://www.flightsfinder.com/portal/sky/poll` with:
+    - The cookie from the previous request (always use the latest cookie from the last response, whether it's the phase 1 request or another polling request)
+    - The extracted values (\_token, session, suuid, deeplink) in the POST body
+    - All other parameters as in phase 1 (adults, children, infants, currency)
+    - Use the same headers as the browser (see user example)
+  - The response will be a string split by '|' into 7 parts:
+    - The first part is 'Y' or 'N'. If 'N', more results are available and you must poll again. If 'Y', all results have been received and polling can stop.
+    - The second part is the number of total results to be expected
+    - The seventh part is the actual results in HTML
+  - Scrape the seventh part HTML to extract lists of:
+    - ScrapedFlight
+    - ScrapedBundle
+    - ScrapedBookingOption
+  - After each poll, update the cookie for the next request
+  - Wait 100ms between polls
+- Once all results are received ('Y'), exit the polling loop and log success.
+
+#### Entity Shapes
+
+- **ScrapedFlight**
+  - uniqueId: generated from flightNumber, departureAirportIataCode, arrivalAirportIataCode, and departureDateTime
+  - flightNumber: string
+  - departureAirportId: actual DB id (query Convex using IATA code)
+  - arrivalAirportId: actual DB id (query Convex using IATA code)
+  - departureDateTime: Unix timestamp in ms, adjusted by timezone (get from airports table)
+  - arrivalDateTime: Unix timestamp in ms (calculate by adding duration to departureDateTime)
+- **ScrapedBundle**
+  - uniqueId: generated from all outboundFlights + inboundFlights
+  - outboundFlightUniqueIds: array of uniqueIds
+  - inboundFlightUniqueIds: array of uniqueIds
+- **ScrapedBookingOption**
+  - uniqueId: generated from targetId, agency, price, and currency
+  - targetUniqueId: uniqueId of the bundle
+  - agency: string
+  - price: number
+  - linkToBook: string
+  - currency: string
+  - extractedAt: Unix timestamp in ms
+
+#### Database Insertion Order
+
+1. Insert scrapedFlights to flights table (bulk insert)
+2. Insert scrapedBundles to bundles table (map outbound/inbound uniqueIds to DB ids from flights)
+3. Insert scrapedBookingOptions to bookingOptions table (map targetUniqueId to DB id from bundles)
+
+#### Error Handling
+
+- Log success and handle errors at each step.
+- Ensure deduplication by using uniqueId fields for each entity.
+- Handle 419 responses by always using the latest cookie from the previous poll response.
+
 ### Data Storage
 
 9. The system must store flight data in three main tables:
