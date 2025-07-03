@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { IataInput } from "./IataInput";
 import { DateRangePicker } from "../ui/date-range-picker";
 import { SearchButton } from "./SearchButton";
 import { cn } from "../../utils";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { PlaneTakeoff } from "lucide-react";
+import { AirportAutocomplete } from "./AirportAutocomplete";
 
 interface FlightSearchFormProps {
   onSearch: (searchParams: FlightSearchParams) => void;
@@ -300,13 +301,13 @@ export function FlightSearchForm({
       <div className="flex flex-col md:flex-row gap-3 items-center max-w-6xl mx-auto">
         {/* FlightFinder Icon */}
         <div className="flex-shrink-0">
-          <div className="text-2xl text-yellow-400 font-semibold">✈️</div>
+          <PlaneTakeoff className="h-8 w-8 text-yellow-400" />
         </div>
 
         {/* Airport Inputs */}
         <div className="flex gap-3 flex-1">
           <div className="flex-1">
-            <IataInput
+            <AirportAutocomplete
               value={departureAirport}
               onChange={handleDepartureAirportChange}
               placeholder="From"
@@ -317,7 +318,7 @@ export function FlightSearchForm({
           </div>
 
           <div className="flex-1">
-            <IataInput
+            <AirportAutocomplete
               value={arrivalAirport}
               onChange={handleArrivalAirportChange}
               placeholder="To"

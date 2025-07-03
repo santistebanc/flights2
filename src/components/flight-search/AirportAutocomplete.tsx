@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import * as React from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { cn } from "../../utils";
-import { useAirportHistory } from "../../hooks/useAirportHistory";
+import { cn } from "@/utils";
+import { Check } from "lucide-react";
+import { useAirportHistory } from "@/hooks/useAirportHistory";
+import { Input } from "@/components/ui/input";
 
 interface Airport {
   _id: string;
@@ -40,15 +40,10 @@ export function AirportAutocomplete({
   disabled = false,
   otherAirportValue,
 }: AirportAutocompleteProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Debounced search term for API calls
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [open, setOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState("");
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = React.useState<number>(-1);
 
   // Airport history hook
   const { history, addToHistory } = useAirportHistory();
@@ -56,9 +51,7 @@ export function AirportAutocomplete({
   // Fetch airports from Convex
   const airports = useQuery(
     api.airports.searchAirports,
-    debouncedSearchTerm.length > 0
-      ? { searchTerm: debouncedSearchTerm, limit: 8 }
-      : "skip"
+    searchValue.length > 0 ? { searchTerm: searchValue, limit: 8 } : "skip"
   );
 
   // Check if current value is a valid IATA code
@@ -81,48 +74,12 @@ export function AirportAutocomplete({
     value.length === 0 ||
     (isValidIataCode(value) && currentAirport !== null && !isDuplicateAirport);
 
-  // Debounce search term
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  // Handle airport selection
-  const handleAirportSelect = useCallback(
-    (airport: Airport) => {
-      isUserTyping.current = true;
-      onChange(airport.iataCode);
-      setSearchTerm(airport.iataCode);
-      onAirportSelect?.(airport);
-      setIsOpen(false);
-      setSelectedIndex(-1);
-      inputRef.current?.blur();
-
-      // Add to history
-      addToHistory({
-        iataCode: airport.iataCode,
-        name: airport.name,
-        city: airport.city,
-        country: airport.country,
-      });
-
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        isUserTyping.current = false;
-      }, 100);
-    },
-    [onChange, onAirportSelect, addToHistory]
-  );
-
   // Get combined results (history + search results)
-  const getCombinedResults = useCallback(() => {
+  const getCombinedResults = React.useCallback(() => {
     const results: Array<Airport & { isHistory?: boolean }> = [];
 
     // Add history items if search term is empty or matches
-    if (searchTerm.length === 0 || debouncedSearchTerm.length === 0) {
+    if (searchValue.length === 0) {
       // Show history items when input is empty or focused
       history.forEach((historyItem) => {
         results.push({
@@ -141,9 +98,9 @@ export function AirportAutocomplete({
         (historyItem) =>
           historyItem.iataCode
             .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          historyItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          historyItem.city.toLowerCase().includes(searchTerm.toLowerCase())
+            .includes(searchValue.toLowerCase()) ||
+          historyItem.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+          historyItem.city.toLowerCase().includes(searchValue.toLowerCase())
       );
 
       matchingHistory.forEach((historyItem) => {
@@ -172,151 +129,111 @@ export function AirportAutocomplete({
     }
 
     return results;
-  }, [searchTerm, debouncedSearchTerm, history, airports]);
+  }, [searchValue, history, airports]);
 
-  // Handle keyboard navigation
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      const combinedResults = getCombinedResults();
-      if (!combinedResults || combinedResults.length === 0) return;
+  // Handle airport selection
+  const handleAirportSelect = React.useCallback(
+    (airport: Airport) => {
+      onChange(airport.iataCode);
+      onAirportSelect?.(airport);
+      setOpen(false);
 
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault();
-          setSelectedIndex((prev) =>
-            prev < combinedResults.length - 1 ? prev + 1 : 0
-          );
-          break;
-        case "ArrowUp":
-          e.preventDefault();
-          setSelectedIndex((prev) =>
-            prev > 0 ? prev - 1 : combinedResults.length - 1
-          );
-          break;
-        case "Enter":
-          e.preventDefault();
-          if (selectedIndex >= 0 && combinedResults[selectedIndex]) {
-            handleAirportSelect(combinedResults[selectedIndex]);
-          }
-          break;
-        case "Escape":
-          setIsOpen(false);
-          setSelectedIndex(-1);
-          break;
-      }
+      // Add to history
+      addToHistory({
+        iataCode: airport.iataCode,
+        name: airport.name,
+        city: airport.city,
+        country: airport.country,
+      });
     },
-    [selectedIndex, handleAirportSelect, getCombinedResults]
+    [onChange, onAirportSelect, addToHistory]
   );
 
-  // Sync searchTerm with value prop (but not during user input)
-  const isUserTyping = useRef(false);
+  // Get display value
+  const getDisplayValue = () => {
+    if (value.length === 0) return "";
 
-  useEffect(() => {
-    if (!isUserTyping.current) {
-      setSearchTerm(value);
+    if (currentAirport) {
+      return `${currentAirport.iataCode} - ${currentAirport.name}`;
     }
-  }, [value]);
+
+    return value;
+  };
 
   // Handle input change
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      isUserTyping.current = true;
-      setSearchTerm(newValue);
-      onChange(newValue);
-      // Show dropdown if there's a search term or if there's history to show
-      setIsOpen(newValue.length > 0 || history.length > 0);
-      setSelectedIndex(-1);
-
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        isUserTyping.current = false;
-      }, 100);
-    },
-    [onChange, history.length]
-  );
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchValue(e.target.value);
+    onChange(e.target.value);
+    setOpen(true);
+    setHighlightedIndex(-1);
+  };
 
   // Handle input focus
-  const handleFocus = useCallback(() => {
-    // Show dropdown if there's a search term or if there's history to show
-    if (searchTerm.length > 0 || history.length > 0) {
-      setIsOpen(true);
-    }
-  }, [searchTerm, history.length]);
+  const handleInputFocus = () => {
+    setOpen(true);
+  };
 
   // Handle input blur
-  const handleBlur = useCallback(() => {
-    // Delay closing to allow for clicks on suggestions
-    setTimeout(() => {
-      setIsOpen(false);
-      setSelectedIndex(-1);
-    }, 150);
-  }, []);
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Delay closing to allow click selection
+    setTimeout(() => setOpen(false), 100);
+  };
 
-  // Auto-scroll to selected item
-  useEffect(() => {
-    if (selectedIndex >= 0 && dropdownRef.current) {
-      const selectedElement = dropdownRef.current.children[
-        selectedIndex
-      ] as HTMLElement;
-      if (selectedElement) {
-        selectedElement.scrollIntoView({
-          block: "nearest",
-          behavior: "smooth",
-        });
-      }
+  // Handle keyboard navigation
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const results = getCombinedResults();
+    if (!open && ["ArrowDown", "ArrowUp"].includes(e.key)) {
+      setOpen(true);
+      return;
     }
-  }, [selectedIndex]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-        setSelectedIndex(-1);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Get match type color
-  const getMatchTypeColor = (matchType: Airport["matchType"]) => {
-    switch (matchType) {
-      case "iata":
-        return "text-green-400";
-      case "name":
-        return "text-blue-400";
-      case "city":
-        return "text-yellow-400";
-      case "country":
-        return "text-gray-400";
-      default:
-        return "text-gray-400";
+    if (!results.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
+    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleAirportSelect(results[highlightedIndex]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
     }
   };
+
+  // Keep input value in sync with prop value
+  React.useEffect(() => {
+    setSearchValue(value);
+  }, [value]);
+
+  // Scroll highlighted item into view
+  const listRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (open && highlightedIndex >= 0 && listRef.current) {
+      const el = listRef.current.children[highlightedIndex] as HTMLElement;
+      if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [highlightedIndex, open]);
+
+  const combinedResults = getCombinedResults();
 
   return (
     <div className={cn("space-y-2", className)}>
       {label && (
-        <Label className="text-sm font-medium text-gray-200">
+        <label className="text-sm font-medium text-gray-200">
           {label}
           {required && <span className="text-red-400 ml-1">*</span>}
-        </Label>
+        </label>
       )}
-      <div className="relative" ref={containerRef}>
+      <div className="relative">
         <Input
           ref={inputRef}
           type="text"
-          value={searchTerm}
+          value={searchValue}
           onChange={handleInputChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+          onKeyDown={handleInputKeyDown}
           placeholder={placeholder}
           className={cn(
             "h-9 font-mono text-lg tracking-wider",
@@ -328,73 +245,61 @@ export function AirportAutocomplete({
           autoComplete="off"
           spellCheck={false}
         />
-
-        {/* Error message */}
-        {error && (
-          <div className="absolute -bottom-6 left-0 text-xs text-red-400">
-            {error}
-          </div>
-        )}
-
-        {/* Dropdown */}
-        {isOpen &&
-          (() => {
-            const combinedResults = getCombinedResults();
-            return combinedResults.length > 0 ? (
-              <div
-                ref={dropdownRef}
-                className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto"
-              >
-                {combinedResults.map((airport, index) => (
-                  <div
-                    key={airport._id}
-                    className={cn(
-                      "px-3 py-2 cursor-pointer hover:bg-gray-700 transition-colors",
-                      index === selectedIndex && "bg-gray-700",
-                      airport.isHistory && "border-l-2 border-l-blue-400"
-                    )}
-                    onClick={() => handleAirportSelect(airport)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-lg">
-                            {airport.iataCode}
+        {open && (
+          <div
+            ref={listRef}
+            className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto"
+          >
+            {combinedResults.length > 0 ? (
+              combinedResults.map((airport, idx) => (
+                <div
+                  key={airport._id}
+                  className={cn(
+                    "px-3 py-2 cursor-pointer hover:bg-gray-700 transition-colors flex flex-col items-start",
+                    idx === highlightedIndex && "bg-gray-700",
+                    airport.isHistory && "border-l-2 border-l-blue-400"
+                  )}
+                  onMouseDown={() => handleAirportSelect(airport)}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === airport.iataCode ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-lg">
+                          {airport.iataCode}
+                        </span>
+                        {airport.isHistory && (
+                          <span className="text-xs text-blue-400 bg-blue-900 px-1 rounded">
+                            Recent
                           </span>
-                          {airport.isHistory && (
-                            <span className="text-xs text-blue-400 bg-blue-900 px-1 rounded">
-                              Recent
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-300">
-                          {airport.name}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {airport.city}
-                          {airport.country && `, ${airport.country}`}
-                        </div>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        {airport.name}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {airport.city}
+                        {airport.country && `, ${airport.country}`}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : null;
-          })()}
-
-        {/* No results */}
-        {isOpen &&
-          (() => {
-            const combinedResults = getCombinedResults();
-            return combinedResults.length === 0 &&
-              debouncedSearchTerm.length > 0 ? (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50">
-                <div className="px-3 py-2 text-sm text-gray-400">
-                  No airports found
                 </div>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-sm text-gray-400">
+                No airports found.
               </div>
-            ) : null;
-          })()}
+            )}
+          </div>
+        )}
+        {/* Error message */}
+        {error && <div className="text-xs text-red-400 mt-1">{error}</div>}
       </div>
     </div>
   );
