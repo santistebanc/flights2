@@ -85,7 +85,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [cancelled] 2.9 Add accessibility features (ARIA labels, keyboard navigation)
   - [x] 2.10 Create airport search functionality with Convex queries
 
-- [ ] 3.0 Implement Multi-Source Scraping Engine
+- [x] 3.0 Implement Multi-Source Scraping Engine
 
   - [x] 3.1 Create base scraping interface/abstract class for different sources
   - [x] 3.2 Implement Skyscanner scraper using Convex actions
@@ -111,19 +111,19 @@ Based on PRD: `prd-flight-scraping-app.md`
     - [x] 3.10.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
     - [x] 3.10.10 Log success and handle errors at each step
     - [x] 3.10.11 Ensure each step (fetching, parsing, extraction, DB insertion) is modular and testable
-  - [ ] 3.11 Implement Skyscanner Scraping Process
-    - [ ] 3.11.1 Set up Skyscanner scraping actor to receive FlightSearchParams
-    - [ ] 3.11.2 Implement phase 1: fetch HTML from flightsfinder.com/portal/sky with correct query params
-    - [ ] 3.11.3 Extract cookie, \_token, session, suuid, and deeplink from HTML response
-    - [ ] 3.11.4 Implement phase 2: polling POSTs to /portal/sky/poll with correct headers, cookie, and extracted values
-    - [ ] 3.11.5 Parse each poll response, split by '|', extract result HTML (7th part)
-    - [ ] 3.11.6 Scrape HTML for flights, bundles, and booking options
-    - [ ] 3.11.7 For each flight, lookup airport DB ids by IATA code (Convex query)
-    - [ ] 3.11.8 Generate uniqueIds for deduplication (flights, bundles, booking options)
-    - [ ] 3.11.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
-    - [ ] 3.11.10 Log success and handle errors at each step
-    - [ ] 3.11.11 Implement polling loop: repeat until first part of response is 'Y', always use latest cookie
-    - [ ] 3.11.12 Ensure each step (fetching, parsing, extraction, DB insertion) is modular and testable
+  - [x] 3.11 Implement Skyscanner Scraping Process
+    - [x] 3.11.1 Set up Skyscanner scraping actor to receive FlightSearchParams
+    - [x] 3.11.2 Implement phase 1: fetch HTML from flightsfinder.com/portal/sky with correct query params
+    - [x] 3.11.3 Extract cookie, \_token, session, suuid, and deeplink from HTML response
+    - [x] 3.11.4 Implement phase 2: polling POSTs to /portal/sky/poll with correct headers, cookie, and extracted values
+    - [x] 3.11.5 Parse each poll response, split by '|', extract result HTML (7th part)
+    - [x] 3.11.6 Scrape HTML for flights, bundles, and booking options
+    - [x] 3.11.7 For each flight, lookup airport DB ids by IATA code (Convex query)
+    - [x] 3.11.8 Generate uniqueIds for deduplication (flights, bundles, booking options)
+    - [x] 3.11.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
+    - [x] 3.11.10 Log success and handle errors at each step
+    - [x] 3.11.11 Implement polling loop: repeat until first part of response is 'Y', always use latest cookie
+    - [x] 3.11.12 Ensure each step (fetching, parsing, extraction, DB insertion) is modular and testable
 
 - [ ] 4.0 Create Bundle Display and Results Management System
 
