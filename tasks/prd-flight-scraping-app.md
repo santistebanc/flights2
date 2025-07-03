@@ -280,6 +280,12 @@ The process consists of two phases:
 
 19. The system must provide clear error messages for invalid search parameters
 
+### Data Transformation Layer (HTML Extraction)
+
+- For this project, the data transformation layer consists of robust, source-specific HTML parsing and extraction logic. Each scraper (Kiwi, Skyscanner, etc.) must implement its own logic to convert raw HTML (from the 7th part of the response) into standardized ScrapedFlight, ScrapedBundle, and ScrapedBookingOption entities.
+- **Each scraper has two phases, and the HTML returned in each phase is different. Phase 1 requires extraction of session/token data; Phase 2 requires extraction of flight/bundle/booking option entities. Separate extraction logic and tests are needed for each phase.**
+- This logic must be modular and testable, as HTML extraction is a common source of bugs. Unit tests should be written for the extraction functions using sample HTML snippets from each source and phase.
+
 ## Non-Goals (Out of Scope)
 
 1. **User Authentication:** No user accounts or login system required
@@ -353,6 +359,10 @@ The process consists of two phases:
 - Implement proper cleanup of expired data using Convex scheduled functions
 - Optimize airport autocomplete queries using popularity score indexing
 - Follow Convex best practices for query optimization and indexing
+
+### Engineering/Testability Note
+
+- Each step of the scraping process (fetching, parsing, token/cookie extraction, entity extraction, DB insertion, etc.) should be implemented in a way that is easily testable. This is critical for robust development and debugging, as scrapers are often a source of subtle bugs.
 
 ## Success Metrics
 

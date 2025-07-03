@@ -6,7 +6,32 @@ import {
 } from "./skyscanner-html-extractor";
 
 describe("skyscanner-html-extractor", () => {
-  const phase1Html = `<html><body><!-- TODO: Add real Phase 1 sample HTML here --></body></html>`;
+  const phase1Html = `
+    <html>
+      <head>
+        <title>Skyscanner - Search Flights</title>
+      </head>
+      <body>
+        <div id="app">
+          <script>
+            window.__INITIAL_STATE__ = {
+              token: "sk_abc123def456",
+              session: "sess_789ghi012jkl",
+              suuid: "uuid_345mno678pqr",
+              deeplink: "https://www.skyscanner.com/flights/nyc/lax/2024-01-15",
+              user: { id: 456 },
+              search: { origin: "NYC", destination: "LAX" }
+            };
+          </script>
+          <script>
+            // Other scripts...
+            var config = { apiKey: "xyz789" };
+          </script>
+        </div>
+      </body>
+    </html>
+  `;
+
   const phase2Html = `<html><body><!-- TODO: Add real Phase 2 sample HTML here --></body></html>`;
 
   it("extracts session data from Phase 1 HTML", () => {
@@ -15,7 +40,21 @@ describe("skyscanner-html-extractor", () => {
     expect(session).toHaveProperty("session");
     expect(session).toHaveProperty("suuid");
     expect(session).toHaveProperty("deeplink");
-    // TODO: Add more specific assertions when sample HTML is available
+    expect(session.token).toBe("sk_abc123def456");
+    expect(session.session).toBe("sess_789ghi012jkl");
+    expect(session.suuid).toBe("uuid_345mno678pqr");
+    expect(session.deeplink).toBe(
+      "https://www.skyscanner.com/flights/nyc/lax/2024-01-15"
+    );
+  });
+
+  it("handles HTML without session data gracefully", () => {
+    const htmlWithoutSession = `<html><body><script>var x = 1;</script></body></html>`;
+    const session = extractSessionDataFromPhase1Html(htmlWithoutSession);
+    expect(session.token).toBe("");
+    expect(session.session).toBe("");
+    expect(session.suuid).toBe("");
+    expect(session.deeplink).toBe("");
   });
 
   it("extracts flights from Phase 2 HTML", () => {

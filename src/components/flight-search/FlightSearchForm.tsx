@@ -32,6 +32,7 @@ export function FlightSearchForm({
 }: FlightSearchFormProps) {
   // localStorage hook
   const { isLoaded, savePreferences, getFormState } = useLocalStorage();
+  const [loadedFromLocalStorage, setLoadedFromLocalStorage] = useState(false);
 
   // Form state
   const [departureAirport, setDepartureAirport] = useState("");
@@ -59,7 +60,7 @@ export function FlightSearchForm({
 
   // Load saved preferences when component mounts
   useEffect(() => {
-    if (isLoaded) {
+    if (isLoaded && !loadedFromLocalStorage) {
       const savedState = getFormState();
       if (savedState) {
         setDepartureAirport(savedState.departureAirport);
@@ -69,6 +70,7 @@ export function FlightSearchForm({
           to: savedState.returnDate,
         });
         setIsRoundTrip(savedState.isRoundTrip);
+        setLoadedFromLocalStorage(true);
       }
     }
   }, [isLoaded, getFormState]);
