@@ -61,7 +61,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [x] 1.7 Add indexes for efficient querying by date ranges and airports
   - [x] 1.8 Test schema compatibility with existing data and queries
 
-- [ ] 2.0 Enhance Search Interface with Flight-Specific Components
+- [x] 2.0 Enhance Search Interface with Flight-Specific Components
 
   - [x] 2.1 Create IATA code input components with validation (3-character airport codes)
   - [x] 2.1.1 Add autocomplete functionality to IATA inputs with priority-based search
