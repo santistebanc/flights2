@@ -181,12 +181,12 @@ export class KiwiScraper extends BaseFlightScraper {
     }
 
     // Default values for other parameters
-    searchParams.append("cabinclass", "Economy");
+    searchParams.append("cabinclass", "M");
     searchParams.append("adults", "1");
     searchParams.append("children", "0");
     searchParams.append("infants", "0");
-    searchParams.append("currency", "USD");
-    searchParams.append("type", params.isRoundTrip ? "roundtrip" : "oneway");
+    searchParams.append("currency", "EUR");
+    searchParams.append("type", params.isRoundTrip ? "return" : "oneway");
     searchParams.append("bags-cabin", "0");
     searchParams.append("bags-checked", "0");
 
@@ -215,12 +215,12 @@ export class KiwiScraper extends BaseFlightScraper {
     }
 
     // Default values for other parameters
-    postData.append("cabinclass", "Economy");
+    postData.append("cabinclass", "M");
     postData.append("adults", "1");
     postData.append("children", "0");
     postData.append("infants", "0");
-    postData.append("currency", "USD");
-    postData.append("type", params.isRoundTrip ? "roundtrip" : "oneway");
+    postData.append("currency", "EUR");
+    postData.append("type", params.isRoundTrip ? "return" : "oneway");
     postData.append("bags-cabin", "0");
     postData.append("bags-checked", "0");
 
@@ -228,9 +228,12 @@ export class KiwiScraper extends BaseFlightScraper {
   }
 
   /**
-   * Format date for Kiwi API
+   * Format date for Kiwi API (DD/MM/YYYY format)
    */
   private formatDate(date: Date): string {
-    return date.toISOString().split("T")[0]; // YYYY-MM-DD format
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   }
 }

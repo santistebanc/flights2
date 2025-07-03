@@ -99,18 +99,18 @@ Based on PRD: `prd-flight-scraping-app.md`
     - [x] 3.7.3 Fix Skyscanner Phase 2 flight extraction with robust regex-based parsing
   - [x] 3.8 Implement duplicate handling logic (keep flights/bundles, replace bookingOptions; see deduplication in 3.10/3.11)
   - [x] 3.9 Add scraping error logging and monitoring
-  - [ ] 3.10 Implement Kiwi Scraping Process
+  - [x] 3.10 Implement Kiwi Scraping Process
     - [x] 3.10.1 Set up Kiwi scraping actor to receive FlightSearchParams
-    - [ ] 3.10.2 Implement phase 1: fetch HTML from flightsfinder.com/portal/kiwi with correct query params
-    - [ ] 3.10.3 Extract cookie and \_token from HTML response
-    - [ ] 3.10.4 Implement phase 2: POST to /portal/kiwi/search with correct headers, cookie, and token
-    - [ ] 3.10.5 Parse response, split by '|', extract result HTML (7th part)
-    - [ ] 3.10.6 Scrape HTML for flights, bundles, and booking options
-    - [ ] 3.10.7 For each flight, lookup airport DB ids by IATA code (Convex query)
-    - [ ] 3.10.8 Generate uniqueIds for deduplication (flights, bundles, booking options)
-    - [ ] 3.10.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
-    - [ ] 3.10.10 Log success and handle errors at each step
-    - [ ] 3.10.11 Ensure each step (fetching, parsing, extraction, DB insertion) is modular and testable
+    - [x] 3.10.2 Implement phase 1: fetch HTML from flightsfinder.com/portal/kiwi with correct query params
+    - [x] 3.10.3 Extract cookie and \_token from HTML response
+    - [x] 3.10.4 Implement phase 2: POST to /portal/kiwi/search with correct headers, cookie, and token
+    - [x] 3.10.5 Parse response, split by '|', extract result HTML (7th part)
+    - [x] 3.10.6 Scrape HTML for flights, bundles, and booking options
+    - [x] 3.10.7 For each flight, lookup airport DB ids by IATA code (Convex query)
+    - [x] 3.10.8 Generate uniqueIds for deduplication (flights, bundles, booking options)
+    - [x] 3.10.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
+    - [x] 3.10.10 Log success and handle errors at each step
+    - [x] 3.10.11 Ensure each step (fetching, parsing, extraction, DB insertion) is modular and testable
   - [ ] 3.11 Implement Skyscanner Scraping Process
     - [ ] 3.11.1 Set up Skyscanner scraping actor to receive FlightSearchParams
     - [ ] 3.11.2 Implement phase 1: fetch HTML from flightsfinder.com/portal/sky with correct query params
