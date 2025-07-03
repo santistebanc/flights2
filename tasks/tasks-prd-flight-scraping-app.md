@@ -71,6 +71,7 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [x] 2.1.5 Add validation to IataInput component (show red border for invalid IATA codes)
   - [x] 2.1.6 Add form validation to disable search button when any inputs are invalid
   - [x] 2.1.7 Implement IATA input history with localStorage persistence and priority-based autocomplete
+  - [x] 2.1.8 Redo airport inputs with shadcn-compatible autocomplete structure
   - [x] 2.2 Integrate round-trip toggle into existing date range picker for better UX
   - [x] 2.2.1 Implement fixed width date picker to prevent layout shifts
   - [x] 2.3 Integrate existing date range picker with flight search logic

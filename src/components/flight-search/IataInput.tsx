@@ -1,4 +1,4 @@
-import { AirportAutocomplete } from "./AirportAutocomplete";
+import { AirportAutocomplete } from "./AirportAutocompleteShadcn";
 
 interface IataInputProps {
   value: string;
