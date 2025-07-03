@@ -1,10 +1,12 @@
 ---
-description:
-globs:
+description: PRD generation from user prompt guidelines
+globs: "**/*.md"
 alwaysApply: false
 ---
 
-# Rule: Generating a Product Requirements Document (PRD)
+# PRD Generation from User Prompt
+
+**NOTE:** For all project-wide task completion, PRD change management, and workflow protocols, defer to `.cursor/rules/project-management.mdc`. This file only contains additional details for generating PRDs from user prompts.
 
 ## Goal
 
@@ -62,8 +64,6 @@ Assume the primary reader of the PRD is a **junior developer**. Therefore, requi
 - **Format:** Markdown (`.md`)
 - **Location:** `/tasks/`
 - **Filename:** `prd-[feature-name].md`
-
-## Final instructions
 
 1. Do NOT start implementing the PRD
 2. Make sure to ask the user clarifying questions

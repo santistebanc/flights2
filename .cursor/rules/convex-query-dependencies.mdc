@@ -1,3 +1,9 @@
+---
+description: Convex query dependency management to prevent infinite loops
+globs: "**/*.{ts,tsx,js,jsx}"
+alwaysApply: false
+---
+
 # Rule: Convex Query Dependency Management
 
 ## Goal
@@ -140,8 +146,3 @@ useEffect(() => {
 - [ ] No console warnings about missing dependencies
 - [ ] Performance is acceptable with large datasets
 - [ ] No infinite loops in development mode
-      description:
-      globs:
-      alwaysApply: false
-
----

@@ -1,161 +1,124 @@
-# FlightFinder ✈️
+# Flight Scraping Application
 
-A modern, real-time flight search application that helps users find and compare flight deals across multiple airlines and travel agencies. Built with React, TypeScript, and Convex for seamless real-time updates and data management.
+## 🚨 MANDATORY: Task Completion Protocol
+
+**CRITICAL**: This project follows a strict task completion protocol that MUST be followed for every task:
+
+### Task Completion Steps (MANDATORY):
+
+1. **Mark task complete** in `tasks/tasks-prd-flight-scraping-app.md`
+2. **Document all files changed** with descriptions
+3. **Run validation** (`npm test` or `npx tsc --noEmit`)
+4. **Stage and commit** with proper conventional commit format
+5. **Wait for user approval** before next task
+
+### PRD Change Management:
+
+- Check if changes are in PRD (`tasks/prd-flight-scraping-app.md`)
+- If not, prompt user to update PRD first
+- Update task list accordingly
+
+**See `.cursor/rules/project-management.mdc` for full protocol details.**
+
+---
+
+## Project Overview
+
+A full-stack flight scraping application built with React, TypeScript, and Convex. The system scrapes flight data from multiple sources (Skyscanner and Kiwi) based on user-defined search criteria, stores the results in a database, and displays matching flight bundles to users.
 
 ## Features
 
-### 🎯 **Smart Flight Search**
-- **One-way & Round Trip**: Toggle between one-way and round trip flights with an intuitive date picker
-- **Real-time Results**: Get instant flight results as you search with live updates
-- **Future Date Validation**: Automatically prevents selection of past dates
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
-
-### 📊 **Advanced Timeline View**
-- **Virtual Scrolling**: High-performance rendering of large flight datasets using TanStack Virtual
-- **Horizontal Scrolling**: Smooth horizontal navigation through extensive flight data
-- **Price Comparison**: View the lowest price deals per offer with clickable price popups
-- **Deal Aggregation**: See unique dealer prices with automatic filtering of duplicate offers
-
-### 🎨 **Modern Dark Theme**
-- **Dark UI**: Beautiful dark theme with yellow accents for optimal viewing experience
-- **Custom Scrollbars**: Styled scrollbars that match the app's design language
-- **Smooth Animations**: Polished interactions and transitions throughout the app
-
-### 🔍 **Search & Filtering**
-- **Origin & Destination**: Search flights between any airports
-- **Date Range Selection**: Flexible date picking with range support
-- **Compact Filters**: Streamlined search interface for quick access
-- **Filter Persistence**: Search filters are automatically saved to localStorage and restored on page reload
-
-### 💾 **Data Persistence**
-- **Local Storage**: Search filters persist across browser sessions
-- **Automatic Restoration**: Filters are automatically restored when the app loads
-- **Cross-Session**: Your search preferences are maintained even after closing the browser
+- **Multi-Source Flight Aggregation**: Scrape and aggregate flight data from Skyscanner and Kiwi in parallel
+- **Real-Time User Experience**: Provide immediate feedback on scraping progress without blocking the user interface
+- **Flexible Search Capabilities**: Support both one-way and round-trip searches with comprehensive filtering options
+- **Efficient Data Management**: Store and retrieve flight data efficiently with automatic cleanup of expired entries
+- **Responsive Performance**: Deliver search results within 30 seconds when possible
+- **Graceful Error Handling**: Continue operation even when individual scraping sources fail
 
 ## Tech Stack
 
-### Frontend
-- **React 19** with TypeScript for type-safe development
-- **Vite** for fast development and building
-- **Tailwind CSS** for styling with custom dark theme
-- **TanStack Virtual** for high-performance virtual scrolling
-- **shadcn/ui** components for accessible UI elements
+- **Frontend**: React 19, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Convex (database, real-time updates, serverless functions)
+- **Scraping**: Multi-source web scraping with rate limiting and error handling
+- **State Management**: React Context + localStorage for persistence
 
-### Backend
-- **Convex** for real-time database and backend services
-- **Convex Auth** with anonymous authentication
-- **Real-time queries** for live flight data updates
+## Quick Start
 
-### Development Tools
-- **TypeScript** for type safety
-- **ESLint** for code quality
-- **Prettier** for code formatting
+1. **Install dependencies**:
 
-## Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd flights
-   ```
-
-2. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. **Start the development server**
+2. **Start development servers**:
+
    ```bash
    npm run dev
    ```
 
-4. **Open your browser**
-   Navigate to `http://localhost:5173` to see the application
+3. **Open the application**:
+   - Frontend: http://localhost:5173
+   - Convex Dashboard: https://dashboard.convex.dev
 
 ## Project Structure
 
 ```
-flights/
-├── src/
-│   ├── components/          # React components
-│   │   ├── ui/             # Reusable UI components
-│   │   ├── auth/           # Authentication components
-│   │   └── CompactFilters.tsx
-│   ├── contexts/           # React contexts
-│   ├── hooks/              # Custom React hooks
-│   │   └── useLocalStorage.ts
-│   ├── FlightSearch.tsx    # Main flight search component
-│   └── App.tsx            # Root application component
-├── convex/                 # Backend code (Convex functions)
-│   ├── schema.ts          # Database schema
-│   ├── offers.ts          # Flight offers queries
-│   └── http.ts            # HTTP endpoints
-└── public/                # Static assets
+├── convex/                 # Convex backend (database, functions, actions)
+├── src/                    # React frontend
+│   ├── components/         # UI components
+│   ├── hooks/             # Custom React hooks
+│   └── utils/             # Utility functions
+├── tasks/                  # Project documentation
+│   ├── prd-flight-scraping-app.md
+│   └── tasks-prd-flight-scraping-app.md
+└── .cursor/rules/         # Cursor IDE rules and protocols
 ```
+
+## Development Guidelines
+
+- **One-way & Round Trip**: Toggle between one-way and round trip flights with an intuitive date picker
+- **IATA Code Input**: Smart autocomplete for airport codes with validation and history
+- **Real-time Progress**: Live progress indicators for multi-source scraping operations
+- **Responsive Design**: Mobile-first design that works on all devices
+- **Accessibility**: Full keyboard navigation and screen reader support
 
 ## Key Components
 
 ### DateRangePicker
+
 - Custom date picker with round trip toggle
-- Future date validation
-- Dark theme styling
-- Single date and range selection modes
-- Auto-selects today's date by default
+- Fixed width to prevent layout shifts
+- Integrated validation and error handling
 
-### Timeline
-- Virtual scrolling for performance
-- Horizontal scrolling support
-- Price column with deal popups
-- Real-time data updates
+### IataInput
 
-### CompactFilters
-- Streamlined search interface
-- Origin/destination inputs
-- Date range selection
-- Search button
+- IATA code input with autocomplete
+- Priority-based search (exact match, history, popularity)
+- Real-time validation against airport database
 
-### useLocalStorage Hook
-- Custom React hook for localStorage persistence
-- Automatic JSON serialization/deserialization
-- Error handling for localStorage access
-- SSR-safe implementation
+### FlightSearchForm
 
-## Development
+- Combined search interface with all flight search fields
+- LocalStorage integration for search preferences
+- Comprehensive form validation
 
-### Available Scripts
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
+## Database Schema
 
-### Convex Backend
-The backend is powered by Convex with:
-- Real-time database queries
-- HTTP endpoints for external API integration
-- Anonymous authentication
-- Automatic deployment
+The application uses Convex with the following main tables:
 
-## Deployment
-
-This app is designed to be deployed on Convex with automatic hosting. The frontend can be deployed to any static hosting service like Vercel, Netlify, or GitHub Pages.
+- **airports**: Airport information with IATA codes and popularity scores
+- **flights**: Individual flight records with departure/arrival details
+- **bundles**: Flight bundles combining outbound and inbound flights
+- **bookingOptions**: Pricing and booking information for each bundle
+- **scrapingLogs**: Monitoring and debugging information for scraping operations
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+1. Follow the task completion protocol for all changes
+2. Check the PRD before implementing new features
+3. Update task list as work progresses
+4. Ensure all changes are properly documented and committed
 
 ## License
 
-This project is licensed under the MIT License.
-
----
-
-Built with ❤️ using [Convex](https://convex.dev) and [React](https://reactjs.org/)
+This project is private and proprietary.

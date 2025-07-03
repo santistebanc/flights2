@@ -1,6 +1,6 @@
 ---
-description:
-globs:
+description: Debugging cleanup best practices to ensure minimal, clean fixes
+globs: "**/*.{ts,tsx,js,jsx}"
 alwaysApply: false
 ---
 

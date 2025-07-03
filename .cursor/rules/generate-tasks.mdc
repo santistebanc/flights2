@@ -1,10 +1,12 @@
 ---
-description:
-globs:
+description: Task list generation from PRD guidelines
+globs: "**/*.md"
 alwaysApply: false
 ---
 
-# Rule: Generating a Task List from a PRD
+# Task List Generation from PRD
+
+**NOTE:** For all project-wide task completion, PRD change management, and workflow protocols, defer to `.cursor/rules/project-management.mdc`. This file only contains additional details for generating task lists from PRDs.
 
 ## Goal
 

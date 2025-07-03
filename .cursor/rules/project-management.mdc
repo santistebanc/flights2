@@ -1,4 +1,10 @@
-# Project Management Rules
+---
+description: CRITICAL - Project Management & Task Completion Protocol
+globs: "**/*"
+alwaysApply: true
+---
+
+# 🚨 CRITICAL: Project Management & Task Completion Protocol
 
 ## Meta Rule: Cursor Rules File Formatting
 
@@ -7,7 +13,43 @@
   - Fill out all fields (description, globs, alwaysApply)
   - Never duplicate the frontmatter or place it at the end of the file
 
-## PRD Change Management
+## 🎯 MANDATORY Task Completion Protocol
+
+**CRITICAL**: After completing ANY sub-task, the AI MUST follow this exact sequence:
+
+### 1. Mark Task Complete
+
+- Immediately change `[ ]` to `[x]` in `tasks/tasks-prd-flight-scraping-app.md`
+
+### 2. Document Changes
+
+- **List ALL files touched/modified** with brief descriptions of what was changed
+- Include both code files and documentation files
+
+### 3. Run Validation
+
+- **First**: Run the full test suite (`npm test`, `pytest`, etc.)
+- **If no test script**: Run TypeScript check (`npx tsc --noEmit`)
+- **Only proceed if validation passes**
+
+### 4. Stage and Commit
+
+- **Stage changes**: `git add .`
+- **Clean up**: Remove any temporary files before committing
+- **Commit with proper format**:
+  ```bash
+  git commit -m "feat: complete task X.X - brief description" \
+    -m "- Key change 1" \
+    -m "- Key change 2" \
+    -m "Related to Task X.X in PRD"
+  ```
+
+### 5. Wait for User Approval
+
+- **STOP and wait for user go-ahead** before proceeding to next sub-task
+- **Ask**: "Would you like me to continue with the next sub-task?"
+
+## 📋 PRD Change Management
 
 **CRITICAL**: Before implementing any change requested by the user, the AI must:
 
@@ -25,27 +67,22 @@
 
 4. **Always Document**: Whether the change was in the PRD or not, always document what was implemented and any files modified.
 
-**Example Workflow**:
+## 🔄 Development Workflow
 
-```
-User: "Make the datepicker a fixed width"
-AI: "This change is not mentioned in the PRD. Would you like me to update the PRD to include this requirement? This will ensure the change is properly documented and tracked."
-User: "Yes"
-AI: [Updates PRD with UI/UX requirements, updates task list, then implements the change]
-```
+- **Always check the PRD first** before implementing any changes
+- **Follow the task list structure** and update it as work progresses
+- **Document all changes** made to the codebase
+- **Ensure changes align** with the project's goals and requirements
+- **Maintain consistency** with existing code patterns and architecture
+- **One sub-task at a time** - never start the next until user approves
 
-## Development Workflow
+## 📁 Current Project Context
 
-- Always check the PRD first before implementing any changes
-- Follow the task list structure and update it as work progresses
-- Document all changes made to the codebase
-- Ensure changes align with the project's goals and requirements
-- Maintain consistency with existing code patterns and architecture
-  description:
-  globs:
-  alwaysApply: false
+- **PRD**: `tasks/prd-flight-scraping-app.md`
+- **Task List**: `tasks/tasks-prd-flight-scraping-app.md`
+- **Current Focus**: Section 2 - Enhance Search Interface with Flight-Specific Components
+- **Next Task**: 2.4 Create search form component that combines all flight search fields
 
-- Maintain consistency with existing code patterns and architecture
-  description:
-  globs:
-  alwaysApply: false
+## ⚠️ REMINDER
+
+This protocol MUST be followed for EVERY task completion, even after Cursor restarts. The rules are stored in `.cursor/rules/project-management.mdc` and apply to all files (`**/*`) with `alwaysApply: true`.

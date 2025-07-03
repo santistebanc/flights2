@@ -1,46 +1,18 @@
 ---
-description:
-globs:
+description: Task list formatting and maintenance guidelines
+globs: "**/*.md"
 alwaysApply: false
 ---
 
 # Task List Management
 
-Guidelines for managing task lists in markdown files to track progress on completing a PRD
-
-## Task Implementation
-
-- **One sub-task at a time:** Do **NOT** start the next sub‑task until you ask the user for permission and they say "yes" or "y"
-- **Completion protocol:**
-
-  1. When you finish a **sub‑task**, immediately mark it as completed by changing `[ ]` to `[x]`.
-  2. **List all files touched/modified** during the sub-task completion with a brief description of what was changed.
-  3. If **all** subtasks underneath a parent task are now `[x]`, follow this sequence:
-
-  - **First**: Run the full test suite (`pytest`, `npm test`, `bin/rails test`, etc.)
-  - **Only if all tests pass**: Stage changes (`git add .`)
-  - **Clean up**: Remove any temporary files and temporary code before committing
-  - **Commit**: Use a descriptive commit message that:
-
-    - Uses conventional commit format (`feat:`, `fix:`, `refactor:`, etc.)
-    - Summarizes what was accomplished in the parent task
-    - Lists key changes and additions
-    - References the task number and PRD context
-    - **Formats the message as a single-line command using `-m` flags**, e.g.:
-
-      ```
-      git commit -m "feat: add payment validation logic" -m "- Validates card type and expiry" -m "- Adds unit tests for edge cases" -m "Related to T123 in PRD"
-      ```
-
-  3. Once all the subtasks are marked completed and changes have been committed, mark the **parent task** as completed.
-
-- Stop after each sub‑task and wait for the user's go‑ahead.
+**NOTE:** For all project-wide task completion, PRD change management, and workflow protocols, defer to `.cursor/rules/project-management.mdc`. This file only contains additional details for task list formatting and maintenance.
 
 ## Task List Maintenance
 
 1. **Update the task list as you work:**
 
-   - Mark tasks and subtasks as completed (`[x]`) per the protocol above.
+   - Mark tasks and subtasks as completed (`[x]`) per the protocol in project-management.mdc.
    - Add new tasks as they emerge.
 
 2. **Maintain the "Relevant Files" section:**
@@ -52,38 +24,15 @@ Guidelines for managing task lists in markdown files to track progress on comple
 When working with task lists, the AI must:
 
 1. Regularly update the task list file after finishing any significant work.
-2. Follow the completion protocol:
-   - Mark each finished **sub‑task** `[x]`.
-   - **List all files touched/modified** with brief descriptions of changes.
-   - Mark the **parent task** `[x]` once **all** its subtasks are `[x]`.
-3. Add newly discovered tasks.
-4. Keep "Relevant Files" accurate and up to date.
-5. Before starting work, check which sub‑task is next.
-6. After implementing a sub‑task, update the file and then pause for user approval.
+2. Add newly discovered tasks.
+3. Keep "Relevant Files" accurate and up to date.
+4. Before starting work, check which sub‑task is next.
+5. After implementing a sub‑task, update the file and then pause for user approval.
 
-## PRD Change Management
-
-**CRITICAL**: Before implementing any change requested by the user, the AI must:
-
-1. **Check PRD Compliance**: Verify if the requested change is already mentioned in the PRD (`tasks/prd-flight-scraping-app.md`).
-
-2. **If Change is NOT in PRD**:
-
-   - **Prompt the user**: "This change is not mentioned in the PRD. Would you like me to update the PRD to include this requirement? This will ensure the change is properly documented and tracked."
-   - **Wait for confirmation**: Only proceed after the user confirms they want the PRD updated.
-   - **Update PRD**: If confirmed, modify the PRD to include the new requirement in the appropriate section.
-   - **Update Task List**: Generate or modify existing tasks in `tasks/tasks-prd-flight-scraping-app.md` to reflect the new PRD requirements.
-   - **Document Changes**: List all PRD and task list modifications in the implementation summary.
-
-3. **If Change IS in PRD**: Proceed with implementation directly.
-
-4. **Always Document**: Whether the change was in the PRD or not, always document what was implemented and any files modified.
-
-**Example Workflow**:
-
-```
-User: "Make the datepicker a fixed width"
 AI: "This change is not mentioned in the PRD. Would you like me to update the PRD to include this requirement? This will ensure the change is properly documented and tracked."
 User: "Yes"
 AI: [Updates PRD with UI/UX requirements, updates task list, then implements the change]
+
+```
+
 ```
