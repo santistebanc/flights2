@@ -271,7 +271,9 @@ export class SkyscannerScraper extends BaseFlightScraper {
       postData.append("deeplink", phase1Result.deeplink);
     }
 
-    // Add search parameters
+    // Add additional required parameters
+    postData.append("noc", Date.now().toString()); // Current timestamp
+    postData.append("s", "www"); // Site parameter
     postData.append("adults", "1");
     postData.append("children", "0");
     postData.append("infants", "0");
