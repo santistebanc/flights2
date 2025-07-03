@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { IataInput } from "./IataInput";
 import { DateRangePicker } from "../ui/date-range-picker";
-import { Search, Plane } from "lucide-react";
+import { Search, Plane, RotateCcw } from "lucide-react";
 import { cn } from "../../utils";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
 
 interface FlightSearchFormProps {
   onSearch: (searchParams: FlightSearchParams) => void;
@@ -29,6 +30,10 @@ export function FlightSearchForm({
   isLoading = false,
   className,
 }: FlightSearchFormProps) {
+  // localStorage hook
+  const { isLoaded, savePreferences, clearPreferences, getFormState } =
+    useLocalStorage();
+
   // Form state
   const [departureAirport, setDepartureAirport] = useState("");
   const [arrivalAirport, setArrivalAirport] = useState("");
@@ -44,6 +49,22 @@ export function FlightSearchForm({
     arrivalAirport?: string;
     dates?: string;
   }>({});
+
+  // Load saved preferences when component mounts
+  useEffect(() => {
+    if (isLoaded) {
+      const savedState = getFormState();
+      if (savedState) {
+        setDepartureAirport(savedState.departureAirport);
+        setArrivalAirport(savedState.arrivalAirport);
+        setDateRange({
+          from: savedState.departureDate,
+          to: savedState.returnDate,
+        });
+        setIsRoundTrip(savedState.isRoundTrip);
+      }
+    }
+  }, [isLoaded, getFormState]);
 
   // Validation functions
   const validateIataCode = (code: string): boolean => {
@@ -108,6 +129,16 @@ export function FlightSearchForm({
         isRoundTrip,
       };
 
+      // Save preferences to localStorage
+      savePreferences({
+        departureAirport,
+        arrivalAirport,
+        departureDate: dateRange.from.toISOString(),
+        returnDate:
+          isRoundTrip && dateRange.to ? dateRange.to.toISOString() : undefined,
+        isRoundTrip,
+      });
+
       onSearch(searchParams);
     }
   };
@@ -139,6 +170,19 @@ export function FlightSearchForm({
     if (errors.arrivalAirport) {
       setErrors((prev) => ({ ...prev, arrivalAirport: undefined }));
     }
+  };
+
+  // Handle clear preferences
+  const handleClearPreferences = () => {
+    clearPreferences();
+    setDepartureAirport("");
+    setArrivalAirport("");
+    setDateRange({
+      from: new Date(),
+      to: undefined,
+    });
+    setIsRoundTrip(false);
+    setErrors({});
   };
 
   // Check if form is valid for enabling search button
@@ -207,8 +251,8 @@ export function FlightSearchForm({
         </div>
       </div>
 
-      {/* Search Button */}
-      <div className="flex justify-center">
+      {/* Search Button and Clear Preferences */}
+      <div className="flex justify-center gap-4">
         <Button
           type="submit"
           disabled={!isFormValid || isLoading}
@@ -228,6 +272,16 @@ export function FlightSearchForm({
               Search Flights
             </>
           )}
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleClearPreferences}
+          className="px-4 py-3 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500 transition-colors"
+          title="Clear saved preferences"
+        >
+          <RotateCcw className="h-4 w-4" />
         </Button>
       </div>
 
