@@ -318,7 +318,6 @@ export function FlightSearchForm({
               required
               otherAirportValue={arrivalAirport}
               className="w-full"
-              error={errors.departureAirport}
             />
           </div>
 
@@ -330,7 +329,6 @@ export function FlightSearchForm({
               required
               otherAirportValue={departureAirport}
               className="w-full"
-              error={errors.arrivalAirport}
             />
           </div>
         </div>
