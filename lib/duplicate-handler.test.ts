@@ -46,7 +46,7 @@ describe("duplicate-handler", () => {
 
   const mockBookingOption1: ScrapedBookingOption = {
     uniqueId:
-      "booking_kiwi_bundle_flight_EI337_BER_DUB_1733097600000_flight_FR123_BER_CDG_1733097600000_150",
+      "booking_kiwi_bundle_flight_EI337_BER_DUB_1733097600000_flight_FR123_BER_CDG_1733097600000_150_EUR",
     targetUniqueId:
       "bundle_flight_EI337_BER_DUB_1733097600000_flight_FR123_BER_CDG_1733097600000",
     agency: "kiwi",
@@ -58,7 +58,7 @@ describe("duplicate-handler", () => {
 
   const mockBookingOption2: ScrapedBookingOption = {
     uniqueId:
-      "booking_skyscanner_bundle_flight_EI337_BER_DUB_1733097600000_flight_FR123_BER_CDG_1733097600000_145",
+      "booking_skyscanner_bundle_flight_EI337_BER_DUB_1733097600000_flight_FR123_BER_CDG_1733097600000_145_EUR",
     targetUniqueId:
       "bundle_flight_EI337_BER_DUB_1733097600000_flight_FR123_BER_CDG_1733097600000",
     agency: "skyscanner",
@@ -117,7 +117,7 @@ describe("duplicate-handler", () => {
       const existingFlightIds = new Set<string>();
       const existingBundleIds = new Set<string>();
       const existingBookingOptionIds = new Set([
-        "booking_kiwi_bundle_flight_EI337_BER_DUB_1733097600000_flight_FR123_BER_CDG_1733097600000_150",
+        "booking_kiwi_bundle_flight_EI337_BER_DUB_1733097600000_flight_FR123_BER_CDG_1733097600000_150_EUR",
       ]);
 
       const result = handleDuplicates(
@@ -245,7 +245,7 @@ describe("duplicate-handler", () => {
     it("should generate correct unique ID for booking option", () => {
       const uniqueId = generateBookingOptionUniqueId(mockBookingOption1);
       expect(uniqueId).toBe(
-        "booking_kiwi_bundle_flight_EI337_BER_DUB_1733097600000_flight_FR123_BER_CDG_1733097600000_150"
+        "booking_kiwi_bundle_flight_EI337_BER_DUB_1733097600000_flight_FR123_BER_CDG_1733097600000_150_EUR"
       );
     });
   });

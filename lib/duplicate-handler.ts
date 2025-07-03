@@ -113,7 +113,7 @@ export function generateBundleUniqueId(bundle: ScrapedBundle): string {
 export function generateBookingOptionUniqueId(
   bookingOption: ScrapedBookingOption
 ): string {
-  return `booking_${bookingOption.agency}_${bookingOption.targetUniqueId}_${bookingOption.price}`;
+  return `booking_${bookingOption.agency}_${bookingOption.targetUniqueId}_${bookingOption.price}_${bookingOption.currency}`;
 }
 
 /**
