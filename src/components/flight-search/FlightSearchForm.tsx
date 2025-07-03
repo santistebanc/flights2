@@ -180,14 +180,14 @@ export function FlightSearchForm({
         if (!departureAirport.trim()) {
           return "Departure airport is required";
         }
+        if (departureAirport === arrivalAirport && arrivalAirport) {
+          return "Departure and arrival airports must be different";
+        }
         if (!validateIataCode(departureAirport)) {
           return "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
         }
         if (departureAirportExists === false) {
           return "Airport not found in our database";
-        }
-        if (departureAirport === arrivalAirport && arrivalAirport) {
-          return "Departure and arrival airports must be different";
         }
         return undefined;
 
@@ -195,14 +195,14 @@ export function FlightSearchForm({
         if (!arrivalAirport.trim()) {
           return "Arrival airport is required";
         }
+        if (departureAirport === arrivalAirport && departureAirport) {
+          return "Departure and arrival airports must be different";
+        }
         if (!validateIataCode(arrivalAirport)) {
           return "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
         }
         if (arrivalAirportExists === false) {
           return "Airport not found in our database";
-        }
-        if (departureAirport === arrivalAirport && departureAirport) {
-          return "Departure and arrival airports must be different";
         }
         return undefined;
 
