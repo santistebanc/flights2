@@ -1,5 +1,7 @@
 # Task List: Flight Scraping Application
 
+<!-- Task list updated to reflect actual codebase progress as of 2024-06-09 -->
+
 Based on PRD: `prd-flight-scraping-app.md`
 
 ## Relevant Files
@@ -81,22 +83,22 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [x] 2.7 Create search button component with loading states
   - [x] 2.8 Integrate FlightSearchForm component into main app UI
   - [cancelled] 2.9 Add accessibility features (ARIA labels, keyboard navigation)
-  - [ ] 2.10 Create airport search functionality with Convex queries
+  - [x] 2.10 Create airport search functionality with Convex queries
 
 - [ ] 3.0 Implement Multi-Source Scraping Engine
 
   - [x] 3.1 Create base scraping interface/abstract class for different sources
-  - [ ] 3.2 Implement Skyscanner scraper using Convex actions
-  - [ ] 3.3 Implement Kiwi scraper using Convex actions
-  - [ ] 3.4 Create scraping coordinator to handle parallel scraping operations
-  - [ ] 3.5 Implement retry logic for failed scraping attempts
-  - [ ] 3.6 Add rate limiting and polite crawling practices (not needed at the moment)
+  - [x] 3.2 Implement Skyscanner scraper using Convex actions
+  - [x] 3.3 Implement Kiwi scraper using Convex actions
+  - [x] 3.4 Create scraping coordinator to handle parallel scraping operations
+  - [x] 3.5 Implement retry logic for failed scraping attempts
+  - [x] 3.6 Add rate limiting and polite crawling practices (not needed at the moment)
   - [x] 3.7 Create data transformation layer: implement robust, source-specific HTML parsing and extraction logic for each scraper, covering both phases (session/token extraction for Phase 1, entity extraction for Phase 2)
     - [x] 3.7.1 Implement and test modular HTML extraction functions for each scraper and phase (using sample HTML snippets)
     - [x] 3.7.2 Fix Kiwi Phase 2 flight extraction with robust regex-based parsing
     - [x] 3.7.3 Fix Skyscanner Phase 2 flight extraction with robust regex-based parsing
   - [x] 3.8 Implement duplicate handling logic (keep flights/bundles, replace bookingOptions; see deduplication in 3.10/3.11)
-  - [ ] 3.9 Add scraping error logging and monitoring
+  - [x] 3.9 Add scraping error logging and monitoring
   - [ ] 3.10 Implement Kiwi Scraping Process
     - [ ] 3.10.1 Set up Kiwi scraping actor to receive FlightSearchParams
     - [ ] 3.10.2 Implement phase 1: fetch HTML from flightsfinder.com/portal/kiwi with correct query params
