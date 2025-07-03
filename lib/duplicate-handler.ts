@@ -89,7 +89,7 @@ export function handleDuplicates(
  * @returns Unique ID string
  */
 export function generateFlightUniqueId(flight: ScrapedFlight): string {
-  return `flight_${flight.flightNumber}_${flight.departureAirportId}_${flight.arrivalAirportId}`;
+  return `flight_${flight.flightNumber}_${flight.departureAirportId}_${flight.arrivalAirportId}_${flight.departureDateTime}`;
 }
 
 /**
