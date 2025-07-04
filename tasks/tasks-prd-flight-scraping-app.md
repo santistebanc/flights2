@@ -150,7 +150,7 @@ Based on PRD: `prd-flight-scraping-app.md`
     - Real-time progress tracking and updates
     - Results fetching and display management
     - Error handling and user feedback
-  - [ ] 5.2 Wire up search form submission to trigger scraping operations
+  - [x] 5.2 Wire up search form submission to trigger scraping operations
     - Connect FlightSearchForm onSubmit to useFlightSearch hook
     - Validate form data before triggering search
     - Prevent multiple simultaneous searches
