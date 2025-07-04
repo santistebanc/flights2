@@ -12,9 +12,7 @@ import {
 } from "../../types/scraper";
 import {
   extractSessionDataFromPhase1Html,
-  extractFlightsFromPhase2Html,
   extractBundlesFromPhase2Html,
-  extractBookingOptionsFromPhase2Html,
 } from "../skyscanner-html-extractor";
 
 export class SkyscannerScraper extends BaseFlightScraper {
@@ -98,9 +96,7 @@ export class SkyscannerScraper extends BaseFlightScraper {
 
     try {
       let currentCookie = phase1Result.cookie;
-      let allFlights: ScrapedFlight[] = [];
       let allBundles: ScrapedBundle[] = [];
-      let allBookingOptions: ScrapedBookingOption[] = [];
       let isComplete = false;
       let pollCount = 0;
       const maxPolls = 50; // Prevent infinite polling
@@ -171,23 +167,15 @@ export class SkyscannerScraper extends BaseFlightScraper {
         }
 
         if (resultHtml && resultHtml.length > 0) {
-          // Extract entities from this batch of results
-          const flights = extractFlightsFromPhase2Html(resultHtml, {
-            departureDate: params.departureDate,
-            returnDate: params.returnDate,
-          });
+          // Extract bundles from this batch of results (includes flights and booking options)
           const bundles = extractBundlesFromPhase2Html(resultHtml);
-          const bookingOptions =
-            extractBookingOptionsFromPhase2Html(resultHtml);
 
           // Add to cumulative results
-          allFlights.push(...flights);
           allBundles.push(...bundles);
-          allBookingOptions.push(...bookingOptions);
 
           this.logProgress(
             "phase2",
-            `Extracted ${flights.length} flights, ${bundles.length} bundles, ${bookingOptions.length} booking options from poll ${pollCount}`
+            `Extracted ${bundles.length} bundles from poll ${pollCount}`
           );
         }
 
@@ -200,20 +188,16 @@ export class SkyscannerScraper extends BaseFlightScraper {
       if (!isComplete) {
         this.logProgress(
           "phase2",
-          "Polling stopped due to max attempts reached"
+          `Polling incomplete after ${maxPolls} attempts`
         );
       }
 
       this.logProgress(
         "phase2",
-        `Phase 2 completed: ${allFlights.length} total flights, ${allBundles.length} total bundles, ${allBookingOptions.length} total booking options`
+        `Phase 2 completed: ${allBundles.length} total bundles`
       );
 
-      return {
-        flights: allFlights,
-        bundles: allBundles,
-        bookingOptions: allBookingOptions,
-      };
+      return { bundles: allBundles };
     } catch (error) {
       const scrapingError = {
         phase: "phase2" as const,

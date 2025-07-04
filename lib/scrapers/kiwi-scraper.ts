@@ -12,9 +12,7 @@ import {
 } from "../../types/scraper";
 import {
   extractSessionDataFromPhase1Html,
-  extractFlightsFromPhase2Html,
   extractBundlesFromPhase2Html,
-  extractBookingOptionsFromPhase2Html,
 } from "../kiwi-html-extractor";
 
 export class KiwiScraper extends BaseFlightScraper {
@@ -139,20 +137,15 @@ export class KiwiScraper extends BaseFlightScraper {
 
       this.logProgress(
         "phase2",
-        `Found ${numResults} results, extracting entities`
+        `Found ${numResults} results, extracting bundles`
       );
 
-      // Extract flights, bundles, and booking options from HTML
-      const flights = extractFlightsFromPhase2Html(resultHtml);
+      // Extract bundles from HTML (includes flights and booking options)
       const bundles = extractBundlesFromPhase2Html(resultHtml);
-      const bookingOptions = extractBookingOptionsFromPhase2Html(resultHtml);
 
-      this.logProgress(
-        "phase2",
-        `Extracted ${flights.length} flights, ${bundles.length} bundles, ${bookingOptions.length} booking options`
-      );
+      this.logProgress("phase2", `Extracted ${bundles.length} bundles`);
 
-      return { flights, bundles, bookingOptions };
+      return { bundles };
     } catch (error) {
       const scrapingError = {
         phase: "phase2" as const,
