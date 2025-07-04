@@ -278,10 +278,39 @@ function extractBookingOptionsFromModal(
     const agencyText = $similar.find("p").first().text().trim();
     const agency = agencyText || "Unknown";
 
-    // Extract price
+    // Extract price with improved parsing
     const priceText = $similar.find("p").eq(1).text().trim();
-    const priceMatch = priceText.match(/€(\d+)/);
-    const price = priceMatch ? parseInt(priceMatch[1]) : 0;
+    console.log(`[Kiwi] Raw price text: "${priceText}" for agency: ${agency}`);
+
+    // Try multiple price extraction patterns
+    let price = 0;
+    const pricePatterns = [
+      /€(\d+(?:\.\d{2})?)/, // €291 or €291.50
+      /EUR\s*(\d+(?:\.\d{2})?)/, // EUR 291 or EUR 291.50
+      /(\d+(?:\.\d{2})?)\s*€/, // 291€ or 291.50€
+      /(\d+(?:\.\d{2})?)\s*EUR/, // 291 EUR or 291.50 EUR
+      /(\d+(?:\.\d{2})?)/, // Just numbers (fallback)
+    ];
+
+    for (const pattern of pricePatterns) {
+      const priceMatch = priceText.match(pattern);
+      if (priceMatch) {
+        const extractedPrice = parseFloat(priceMatch[1]);
+        if (!isNaN(extractedPrice) && extractedPrice > 0) {
+          price = extractedPrice;
+          console.log(
+            `[Kiwi] Extracted price: ${price} using pattern: ${pattern}`
+          );
+          break;
+        }
+      }
+    }
+
+    if (price === 0) {
+      console.warn(
+        `[Kiwi] Failed to extract price from: "${priceText}" for agency: ${agency}`
+      );
+    }
 
     // Extract booking link
     const $link = $similar.find("a");

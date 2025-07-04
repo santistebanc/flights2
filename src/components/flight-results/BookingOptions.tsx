@@ -69,23 +69,33 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
   // Get agency display name and color
   const getAgencyInfo = (agency: string) => {
     const agencyLower = agency.toLowerCase();
-
-    // Common agency mappings
+    // Use dark theme-friendly badge colors
     if (agencyLower.includes("kiwi") || agencyLower.includes("skyscanner")) {
-      return { name: agency, color: "bg-blue-100 text-blue-800" };
+      return {
+        name: agency,
+        color: "bg-blue-900 text-blue-200 border-blue-700",
+      };
     }
     if (agencyLower.includes("booking") || agencyLower.includes("book")) {
-      return { name: agency, color: "bg-green-100 text-green-800" };
+      return {
+        name: agency,
+        color: "bg-green-900 text-green-200 border-green-700",
+      };
     }
     if (agencyLower.includes("expedia") || agencyLower.includes("hotels")) {
-      return { name: agency, color: "bg-purple-100 text-purple-800" };
+      return {
+        name: agency,
+        color: "bg-purple-900 text-purple-200 border-purple-700",
+      };
     }
     if (agencyLower.includes("trip") || agencyLower.includes("travel")) {
-      return { name: agency, color: "bg-orange-100 text-orange-800" };
+      return {
+        name: agency,
+        color: "bg-orange-900 text-orange-200 border-orange-700",
+      };
     }
-
     // Default
-    return { name: agency, color: "bg-gray-100 text-gray-800" };
+    return { name: agency, color: "bg-muted text-foreground border-border" };
   };
 
   const handleBookNow = (linkToBook: string, agency: string) => {
@@ -107,12 +117,17 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
   }
 
   return (
-    <Card className={cn("", className)}>
+    <Card
+      className={cn("bg-background border border-muted shadow-sm", className)}
+    >
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             Booking Options
-            <Badge variant="outline" className="text-xs">
+            <Badge
+              variant="outline"
+              className="text-xs border-muted text-muted-foreground"
+            >
               {bookingOptions.length} available
             </Badge>
           </CardTitle>
@@ -129,7 +144,6 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
           </div>
         </div>
       </CardHeader>
-
       <CardContent className="space-y-3">
         {/* Price range indicator */}
         {bookingOptions.length > 1 && (
@@ -141,55 +155,59 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
             </span>
           </div>
         )}
-
         {/* Booking options list */}
         <div className="space-y-2">
           {visibleOptions.map((option, index) => {
             const agencyInfo = getAgencyInfo(option.agency);
             const isBestPrice = option.price === minPrice;
-
             return (
               <div
                 key={option._id}
                 className={cn(
                   "flex items-center justify-between p-3 rounded-lg border transition-colors",
                   isBestPrice
-                    ? "bg-green-50 border-green-200"
-                    : "bg-background border-border hover:bg-muted/50"
+                    ? "bg-green-900 border-green-700"
+                    : "bg-muted border-muted hover:bg-muted/80"
                 )}
               >
                 <div className="flex items-center gap-3 flex-1">
                   {/* Agency badge */}
                   <Badge
                     variant="outline"
-                    className={cn("text-xs font-medium", agencyInfo.color)}
+                    className={cn(
+                      "text-xs font-medium border",
+                      agencyInfo.color
+                    )}
                   >
                     {agencyInfo.name}
                   </Badge>
-
                   {/* Best price indicator */}
                   {isBestPrice && (
-                    <Badge variant="default" className="text-xs bg-green-600">
+                    <Badge
+                      variant="default"
+                      className="text-xs bg-green-700 text-green-100 border-green-600"
+                    >
                       <Star className="w-3 h-3 mr-1" />
                       Best Price
                     </Badge>
                   )}
-
                   {/* Position indicator for top options */}
                   {index < 3 && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge
+                      variant="outline"
+                      className="text-xs border-muted text-muted-foreground"
+                    >
                       #{index + 1}
                     </Badge>
                   )}
                 </div>
-
                 <div className="flex items-center gap-3">
                   {/* Price */}
                   <div className="text-right">
                     <div
                       className={cn(
                         "font-bold text-lg",
-                        isBestPrice ? "text-green-700" : "text-foreground"
+                        isBestPrice ? "text-green-300" : "text-foreground"
                       )}
                     >
                       {formatPrice(option.price, option.currency)}
@@ -198,7 +216,6 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
                       Updated {formatExtractionTime(option.extractedAt)}
                     </div>
                   </div>
-
                   {/* Book button */}
                   <Button
                     size="sm"
@@ -206,8 +223,10 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
                       handleBookNow(option.linkToBook, option.agency)
                     }
                     className={cn(
-                      "flex items-center gap-1",
-                      isBestPrice ? "bg-green-600 hover:bg-green-700" : ""
+                      "flex items-center gap-1 border border-green-700",
+                      isBestPrice
+                        ? "bg-green-700 hover:bg-green-800 text-green-100"
+                        : "bg-background hover:bg-muted text-foreground"
                     )}
                   >
                     <ExternalLink className="w-3 h-3" />
@@ -218,7 +237,6 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
             );
           })}
         </div>
-
         {/* Show more/less toggle */}
         {bookingOptions.length > maxVisible && (
           <div className="pt-2">
@@ -242,9 +260,8 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
             </Button>
           </div>
         )}
-
         {/* Additional info */}
-        <div className="pt-4 border-t text-xs text-muted-foreground">
+        <div className="pt-4 border-t border-muted text-xs text-muted-foreground">
           <p>
             Prices are updated in real-time. Click "Book Now" to proceed to the
             booking site.

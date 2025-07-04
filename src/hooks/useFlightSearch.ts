@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FlightSearchParams } from "../../types/scraper";
+import { ConvexClient } from "convex/browser";
 
 export type SearchState =
   | "idle" // No search performed yet
@@ -65,6 +66,9 @@ export function useFlightSearch(): UseFlightSearchReturn {
   // Convex actions
   const scrapeKiwi = useAction(api.scrapingActions.scrapeKiwi);
   const scrapeSkyscanner = useAction(api.scrapingActions.scrapeSkyscanner);
+
+  // Convex client for direct query
+  const convex = new ConvexClient(import.meta.env.VITE_CONVEX_URL as string);
 
   // Validation function
   const validateSearchParams = useCallback((params: FlightSearchParams) => {
@@ -264,18 +268,42 @@ export function useFlightSearch(): UseFlightSearchReturn {
 
         if (kiwiSuccess || skyscannerSuccess) {
           // At least one source succeeded
-          // TODO: Fetch and display results from the database
-          // For now, we'll simulate results
-          const totalRecords =
-            (newProgress.kiwi.recordsProcessed || 0) +
-            (newProgress.skyscanner.recordsProcessed || 0);
+          // Fetch and display results from the database
+          const results = await convex.query(api.bundles.getBundlesForSearch, {
+            departureIata: params.departureAirport.toUpperCase(),
+            arrivalIata: params.arrivalAirport.toUpperCase(),
+            outboundDate: params.departureDate.toISOString().split("T")[0],
+            inboundDate: params.returnDate
+              ? params.returnDate.toISOString().split("T")[0]
+              : undefined,
+            isRoundTrip: params.isRoundTrip,
+          });
 
-          if (totalRecords > 0) {
+          console.log("Search results from database:", results);
+          console.log("Number of bundles found:", results.length);
+
+          // Debug booking options
+          results.forEach((bundle, index) => {
+            console.log(`Bundle ${index + 1}:`, {
+              bundleId: bundle._id,
+              uniqueId: bundle.uniqueId,
+              outboundFlights: bundle.outboundFlights.length,
+              inboundFlights: bundle.inboundFlights?.length || 0,
+              bookingOptions: bundle.bookingOptions.length,
+              bookingOptionPrices: bundle.bookingOptions.map((bo) => ({
+                agency: bo.agency,
+                price: bo.price,
+                currency: bo.currency,
+              })),
+            });
+          });
+
+          if (results && results.length > 0) {
+            setResults(results);
             setSearchState("success");
-            // TODO: Replace with actual results from database
-            setResults([]); // Placeholder
           } else {
             setSearchState("no-results");
+            setResults([]);
           }
         } else {
           // Both sources failed
