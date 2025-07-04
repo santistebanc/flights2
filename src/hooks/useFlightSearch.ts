@@ -1,0 +1,333 @@
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useAction } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { FlightSearchParams } from "../../types/scraper";
+
+export type SearchState =
+  | "idle" // No search performed yet
+  | "loading" // Search in progress
+  | "success" // Search completed with results
+  | "error" // Search failed
+  | "no-results"; // Search completed with no results
+
+export interface ScrapingProgress {
+  kiwi: {
+    status: "idle" | "phase1" | "phase2" | "completed" | "error";
+    message: string;
+    recordsProcessed?: number;
+  };
+  skyscanner: {
+    status: "idle" | "phase1" | "phase2" | "completed" | "error";
+    message: string;
+    recordsProcessed?: number;
+  };
+}
+
+export interface SearchError {
+  message: string;
+  details?: string;
+  source?: "kiwi" | "skyscanner" | "general";
+}
+
+export interface UseFlightSearchReturn {
+  // State
+  searchState: SearchState;
+  isSearching: boolean;
+  progress: ScrapingProgress;
+  error: SearchError | null;
+  results: any[] | null; // TODO: Replace with proper bundle type
+
+  // Actions
+  performSearch: (params: FlightSearchParams) => Promise<void>;
+  resetSearch: () => void;
+  retrySearch: () => Promise<void>;
+
+  // Validation
+  validateSearchParams: (params: FlightSearchParams) => {
+    isValid: boolean;
+    errors: Record<string, string>;
+  };
+}
+
+export function useFlightSearch(): UseFlightSearchReturn {
+  // State management
+  const [searchState, setSearchState] = useState<SearchState>("idle");
+  const [progress, setProgress] = useState<ScrapingProgress>({
+    kiwi: { status: "idle", message: "" },
+    skyscanner: { status: "idle", message: "" },
+  });
+  const [error, setError] = useState<SearchError | null>(null);
+  const [results, setResults] = useState<any[] | null>(null);
+
+  // Store last search params for retry functionality
+  const lastSearchParams = useRef<FlightSearchParams | null>(null);
+
+  // Convex actions
+  const scrapeKiwi = useAction(api.scrapingActions.scrapeKiwi);
+  const scrapeSkyscanner = useAction(api.scrapingActions.scrapeSkyscanner);
+
+  // Validation function
+  const validateSearchParams = useCallback((params: FlightSearchParams) => {
+    const errors: Record<string, string> = {};
+
+    // Validate IATA codes
+    const isValidIataCode = (code: string): boolean => {
+      return /^[A-Z]{3}$/.test(code.toUpperCase());
+    };
+
+    if (!params.departureAirport.trim()) {
+      errors.departureAirport = "Departure airport is required";
+    } else if (!isValidIataCode(params.departureAirport)) {
+      errors.departureAirport =
+        "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
+    }
+
+    if (!params.arrivalAirport.trim()) {
+      errors.arrivalAirport = "Arrival airport is required";
+    } else if (!isValidIataCode(params.arrivalAirport)) {
+      errors.arrivalAirport =
+        "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
+    }
+
+    // Check for duplicate airports
+    if (
+      params.departureAirport &&
+      params.arrivalAirport &&
+      params.departureAirport.toUpperCase() ===
+        params.arrivalAirport.toUpperCase()
+    ) {
+      errors.arrivalAirport =
+        "Departure and arrival airports must be different";
+    }
+
+    // Validate dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!params.departureDate) {
+      errors.departureDate = "Departure date is required";
+    } else if (params.departureDate < today) {
+      errors.departureDate = "Departure date cannot be in the past";
+    }
+
+    if (params.isRoundTrip) {
+      if (!params.returnDate) {
+        errors.returnDate = "Return date is required for round trips";
+      } else if (params.returnDate < today) {
+        errors.returnDate = "Return date cannot be in the past";
+      } else if (params.returnDate <= params.departureDate) {
+        errors.returnDate = "Return date must be after departure date";
+      }
+    }
+
+    // Check if dates are too far in the future (more than 1 year)
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() + 1);
+
+    if (params.departureDate > maxDate) {
+      errors.departureDate =
+        "Departure date cannot be more than 1 year in the future";
+    }
+
+    if (
+      params.isRoundTrip &&
+      params.returnDate &&
+      params.returnDate > maxDate
+    ) {
+      errors.returnDate =
+        "Return date cannot be more than 1 year in the future";
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors,
+    };
+  }, []);
+
+  // Reset function
+  const resetSearch = useCallback(() => {
+    setSearchState("idle");
+    setProgress({
+      kiwi: { status: "idle", message: "" },
+      skyscanner: { status: "idle", message: "" },
+    });
+    setError(null);
+    setResults(null);
+    lastSearchParams.current = null;
+  }, []);
+
+  // Main search function
+  const performSearch = useCallback(
+    async (params: FlightSearchParams) => {
+      // Validate parameters first
+      const validation = validateSearchParams(params);
+      if (!validation.isValid) {
+        setError({
+          message: "Invalid search parameters",
+          details: Object.values(validation.errors).join(", "),
+          source: "general",
+        });
+        setSearchState("error");
+        return;
+      }
+
+      // Store params for retry functionality
+      lastSearchParams.current = params;
+
+      // Reset state and start search
+      setSearchState("loading");
+      setError(null);
+      setResults(null);
+      setProgress({
+        kiwi: { status: "phase1", message: "Starting Kiwi search..." },
+        skyscanner: {
+          status: "phase1",
+          message: "Starting Skyscanner search...",
+        },
+      });
+
+      try {
+        // Prepare parameters for Convex actions
+        const kiwiParams = {
+          departureAirport: params.departureAirport.toUpperCase(),
+          arrivalAirport: params.arrivalAirport.toUpperCase(),
+          departureDate: params.departureDate.toISOString(),
+          returnDate: params.returnDate?.toISOString(),
+          isRoundTrip: params.isRoundTrip,
+        };
+
+        const skyscannerParams = {
+          departureAirport: params.departureAirport.toUpperCase(),
+          arrivalAirport: params.arrivalAirport.toUpperCase(),
+          departureDate: params.departureDate.toISOString(),
+          returnDate: params.returnDate?.toISOString(),
+          isRoundTrip: params.isRoundTrip,
+        };
+
+        // Start both scraping operations in parallel
+        const [kiwiResult, skyscannerResult] = await Promise.allSettled([
+          scrapeKiwi(kiwiParams),
+          scrapeSkyscanner(skyscannerParams),
+        ]);
+
+        // Update progress based on results
+        const newProgress: ScrapingProgress = { ...progress };
+
+        if (kiwiResult.status === "fulfilled") {
+          const result = kiwiResult.value;
+          if (result.success) {
+            newProgress.kiwi = {
+              status: "completed",
+              message: result.message,
+              recordsProcessed: result.recordsProcessed,
+            };
+          } else {
+            newProgress.kiwi = {
+              status: "error",
+              message: result.message,
+            };
+          }
+        } else {
+          newProgress.kiwi = {
+            status: "error",
+            message: kiwiResult.reason?.message || "Kiwi search failed",
+          };
+        }
+
+        if (skyscannerResult.status === "fulfilled") {
+          const result = skyscannerResult.value;
+          if (result.success) {
+            newProgress.skyscanner = {
+              status: "completed",
+              message: result.message,
+              recordsProcessed: result.recordsProcessed,
+            };
+          } else {
+            newProgress.skyscanner = {
+              status: "error",
+              message: result.message,
+            };
+          }
+        } else {
+          newProgress.skyscanner = {
+            status: "error",
+            message:
+              skyscannerResult.reason?.message || "Skyscanner search failed",
+          };
+        }
+
+        setProgress(newProgress);
+
+        // Determine overall search state
+        const kiwiSuccess = newProgress.kiwi.status === "completed";
+        const skyscannerSuccess = newProgress.skyscanner.status === "completed";
+
+        if (kiwiSuccess || skyscannerSuccess) {
+          // At least one source succeeded
+          // TODO: Fetch and display results from the database
+          // For now, we'll simulate results
+          const totalRecords =
+            (newProgress.kiwi.recordsProcessed || 0) +
+            (newProgress.skyscanner.recordsProcessed || 0);
+
+          if (totalRecords > 0) {
+            setSearchState("success");
+            // TODO: Replace with actual results from database
+            setResults([]); // Placeholder
+          } else {
+            setSearchState("no-results");
+          }
+        } else {
+          // Both sources failed
+          setSearchState("error");
+          setError({
+            message: "Search failed",
+            details:
+              "Both Kiwi and Skyscanner searches failed. Please try again later.",
+            source: "general",
+          });
+        }
+      } catch (error) {
+        setSearchState("error");
+        setError({
+          message: "Search failed",
+          details:
+            error instanceof Error ? error.message : "Unknown error occurred",
+          source: "general",
+        });
+        setProgress({
+          kiwi: { status: "error", message: "Search failed" },
+          skyscanner: { status: "error", message: "Search failed" },
+        });
+      }
+    },
+    [validateSearchParams, scrapeKiwi, scrapeSkyscanner, progress]
+  );
+
+  // Retry function
+  const retrySearch = useCallback(async () => {
+    if (lastSearchParams.current) {
+      await performSearch(lastSearchParams.current);
+    }
+  }, [performSearch]);
+
+  // Computed values
+  const isSearching = searchState === "loading";
+
+  return {
+    // State
+    searchState,
+    isSearching,
+    progress,
+    error,
+    results,
+
+    // Actions
+    performSearch,
+    resetSearch,
+    retrySearch,
+
+    // Validation
+    validateSearchParams,
+  };
+}

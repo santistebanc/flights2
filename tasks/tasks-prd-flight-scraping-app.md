@@ -144,7 +144,7 @@ Based on PRD: `prd-flight-scraping-app.md`
 
 - [ ] 5.0 Implement Search-to-Results Integration and State Management
 
-  - [ ] 5.1 Create useFlightSearch hook to manage entire search lifecycle
+  - [x] 5.1 Create useFlightSearch hook to manage entire search lifecycle
     - Form validation and submission logic
     - Triggering scraping operations for both Kiwi and Skyscanner
     - Real-time progress tracking and updates
