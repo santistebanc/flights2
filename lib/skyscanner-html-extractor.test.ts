@@ -378,7 +378,7 @@ describe("skyscanner-html-extractor", () => {
 
     // Check outbound flights
     expect(bundle.outboundFlights[0]).toEqual({
-      flightNumber: "KL1770",
+      flightNumber: "KLMKL1770",
       departureAirportIataCode: "BER",
       arrivalAirportIataCode: "AMS",
       departureTime: "06:00",
@@ -387,7 +387,7 @@ describe("skyscanner-html-extractor", () => {
     });
 
     expect(bundle.outboundFlights[1]).toEqual({
-      flightNumber: "KL1503",
+      flightNumber: "KLMKL1503",
       departureAirportIataCode: "AMS",
       arrivalAirportIataCode: "MAD",
       departureTime: "09:30",
@@ -397,7 +397,7 @@ describe("skyscanner-html-extractor", () => {
 
     // Check inbound flights
     expect(bundle.inboundFlights[0]).toEqual({
-      flightNumber: "KL1500",
+      flightNumber: "KLMKL1500",
       departureAirportIataCode: "MAD",
       arrivalAirportIataCode: "AMS",
       departureTime: "06:00",
@@ -406,7 +406,7 @@ describe("skyscanner-html-extractor", () => {
     });
 
     expect(bundle.inboundFlights[1]).toEqual({
-      flightNumber: "KL1775",
+      flightNumber: "KLMKL1775",
       departureAirportIataCode: "AMS",
       arrivalAirportIataCode: "BER",
       departureTime: "10:05",
