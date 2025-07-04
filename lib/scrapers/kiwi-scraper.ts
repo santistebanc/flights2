@@ -91,71 +91,171 @@ export class KiwiScraper extends BaseFlightScraper {
   ): Promise<ScrapingPhase2Result> {
     this.logProgress("phase2", "Starting Kiwi Phase 2 scraping");
 
-    try {
-      // Build POST data for Phase 2
-      const postData = this.buildPhase2PostData(params, phase1Result.token);
-      const url = `${this.baseUrl}/portal/kiwi/search`;
+    let currentCookie = phase1Result.cookie;
+    let currentToken = phase1Result.token;
+    let retryCount = 0;
+    const maxRetries = 2;
 
-      this.logProgress("phase2", `POSTing to ${url}`);
+    while (retryCount <= maxRetries) {
+      try {
+        // Build POST data for Phase 2
+        const postData = this.buildPhase2PostData(params, currentToken);
+        const url = `${this.baseUrl}/portal/kiwi/search`;
 
-      // Make the POST request
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-          Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.5",
-          "Accept-Encoding": "gzip, deflate",
-          "Content-Type": "application/x-www-form-urlencoded",
-          Cookie: phase1Result.cookie || "",
-          Connection: "keep-alive",
-          "Upgrade-Insecure-Requests": "1",
-        },
-        body: postData,
-      });
+        this.logProgress(
+          "phase2",
+          `POSTing to ${url} (attempt ${retryCount + 1})`
+        );
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+        // Make the POST request
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate",
+            "Content-Type": "application/x-www-form-urlencoded",
+            Cookie: currentCookie || "",
+            Connection: "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+          },
+          body: postData,
+        });
 
-      const responseText = await response.text();
+        // Always update cookie from response headers (even on success)
+        const newCookie = response.headers.get("set-cookie");
+        if (newCookie) {
+          currentCookie = newCookie;
+          this.logProgress("phase2", "Updated cookie from response headers");
+        }
 
-      this.logProgress("phase2", "Parsing response and extracting flight data");
+        // Handle 419 error specifically
+        if (response.status === 419) {
+          this.logProgress(
+            "phase2",
+            `HTTP 419 error on attempt ${retryCount + 1}`
+          );
 
-      // Parse the response (split by '|' and extract 7th part)
-      const parts = responseText.split("|");
-      if (parts.length < 7) {
-        throw new Error(
-          `Invalid response format: expected at least 7 parts, got ${parts.length}`
+          // Check if response includes a new token in the body
+          const responseText = await response.text();
+          const newToken = this.extractTokenFromResponse(responseText);
+
+          if (newToken) {
+            currentToken = newToken;
+            this.logProgress("phase2", "Updated token from 419 response");
+            retryCount++;
+            continue; // Retry with new token
+          } else {
+            // No new token in response, need to refresh session
+            this.logProgress(
+              "phase2",
+              "No new token found, refreshing session via Phase 1"
+            );
+
+            // Repeat Phase 1 to get fresh session
+            const newPhase1Result = await this.executePhase1(params);
+            currentCookie = newPhase1Result.cookie;
+            currentToken = newPhase1Result.token;
+            retryCount++;
+            continue; // Retry with fresh session
+          }
+        }
+
+        // Handle other HTTP errors
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+
+        this.logProgress(
+          "phase2",
+          "Parsing response and extracting flight data"
+        );
+
+        // Parse the response (split by '|' and extract 7th part)
+        const parts = responseText.split("|");
+        if (parts.length < 7) {
+          throw new Error(
+            `Invalid response format: expected at least 7 parts, got ${parts.length}`
+          );
+        }
+
+        const resultHtml = parts[6]; // 7th part (0-indexed)
+        const numResults = parseInt(parts[1] || "0", 10);
+
+        this.logProgress(
+          "phase2",
+          `Found ${numResults} results, extracting bundles`
+        );
+
+        // Extract bundles from HTML (includes flights and booking options)
+        const bundles = extractBundlesFromPhase2Html(resultHtml);
+
+        this.logProgress("phase2", `Extracted ${bundles.length} bundles`);
+
+        return { bundles };
+      } catch (error) {
+        // If it's not a 419 error, or we've exhausted retries, throw the error
+        if (
+          retryCount >= maxRetries ||
+          (error instanceof Error && !error.message.includes("419"))
+        ) {
+          const scrapingError = {
+            phase: "phase2" as const,
+            message:
+              error instanceof Error
+                ? error.message
+                : "Unknown error in Phase 2",
+            details: error,
+            timestamp: Date.now(),
+          };
+          this.logError(scrapingError);
+          throw error;
+        }
+
+        // For 419 errors, continue to retry
+        retryCount++;
+        this.logProgress(
+          "phase2",
+          `Retrying after error (attempt ${retryCount + 1}/${maxRetries + 1})`
         );
       }
+    }
 
-      const resultHtml = parts[6]; // 7th part (0-indexed)
-      const numResults = parseInt(parts[1] || "0", 10);
+    // This should never be reached, but just in case
+    throw new Error("Max retries exceeded for Phase 2");
+  }
 
-      this.logProgress(
-        "phase2",
-        `Found ${numResults} results, extracting bundles`
+  /**
+   * Extract token from response body (for 419 error recovery)
+   */
+  private extractTokenFromResponse(responseText: string): string | null {
+    try {
+      // Try to extract token from response body if it contains HTML
+      if (responseText.includes("_token")) {
+        const tokenMatch = responseText.match(
+          /['"]_token['"]\s*:\s*['"]([^'"]+)['"]/
+        );
+        if (tokenMatch) {
+          return tokenMatch[1];
+        }
+      }
+
+      // Try to extract from meta tag
+      const metaMatch = responseText.match(
+        /<meta[^>]*name=["']csrf-token["'][^>]*content=["']([^'"]+)["']/
       );
+      if (metaMatch) {
+        return metaMatch[1];
+      }
 
-      // Extract bundles from HTML (includes flights and booking options)
-      const bundles = extractBundlesFromPhase2Html(resultHtml);
-
-      this.logProgress("phase2", `Extracted ${bundles.length} bundles`);
-
-      return { bundles };
+      return null;
     } catch (error) {
-      const scrapingError = {
-        phase: "phase2" as const,
-        message:
-          error instanceof Error ? error.message : "Unknown error in Phase 2",
-        details: error,
-        timestamp: Date.now(),
-      };
-      this.logError(scrapingError);
-      throw error;
+      return null;
     }
   }
 
