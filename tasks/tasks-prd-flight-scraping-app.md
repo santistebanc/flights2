@@ -136,28 +136,72 @@ Based on PRD: `prd-flight-scraping-app.md`
   - [ ] 4.7 Add pagination for large result sets using Convex pagination
   - [ ] 4.8 Implement bundle filtering and search within results
   - [ ] 4.9 Add responsive design for results display
+  - [ ] 4.10 Integrate ResultsList and BundleCard into the main app UI
+    - Render search results below the search form
+    - Wire up search logic to display results using the new components
+    - Ensure loading, error, and empty states are handled
+    - Ensure the UI is responsive and visually consistent
 
-- [ ] 5.0 Add Real-time Progress Tracking and Error Handling
+- [ ] 5.0 Implement Search-to-Results Integration and State Management
 
-  - [ ] 5.1 Create progress tracking system using Convex subscriptions
-  - [ ] 5.2 Implement real-time progress indicators for each scraping source
-  - [ ] 5.3 Add error state management and user notifications
-  - [ ] 5.4 Create graceful degradation when sources are unavailable
-  - [ ] 5.5 Implement partial results display when some sources fail
-  - [ ] 5.6 Add error logging and monitoring dashboard
-  - [ ] 5.7 Create retry mechanisms for failed operations
-  - [ ] 5.8 Implement proper error boundaries and fallback UI
+  - [ ] 5.1 Create useFlightSearch hook to manage entire search lifecycle
+    - Form validation and submission logic
+    - Triggering scraping operations for both Kiwi and Skyscanner
+    - Real-time progress tracking and updates
+    - Results fetching and display management
+    - Error handling and user feedback
+  - [ ] 5.2 Wire up search form submission to trigger scraping operations
+    - Connect FlightSearchForm onSubmit to useFlightSearch hook
+    - Validate form data before triggering search
+    - Prevent multiple simultaneous searches
+  - [ ] 5.3 Implement real-time scraping progress display
+    - Show progress for both Kiwi and Skyscanner simultaneously
+    - Display current phase (Phase 1/Phase 2) for each source
+    - Show estimated completion time
+  - [ ] 5.4 Create comprehensive state management for all search states
+    - Initial state (no search performed)
+    - Loading state (search in progress with progress indicators)
+    - Results state (search completed with results displayed)
+    - Error state (search failed with clear error messages)
+    - Empty results state (search completed with no results)
+  - [ ] 5.5 Implement proper cleanup and state transitions
+    - Clear previous search results when new search is initiated
+    - Reset progress indicators between searches
+    - Handle component unmounting during active searches
+  - [ ] 5.6 Add user feedback and error messaging
+    - Loading indicators with descriptive text
+    - Error messages with actionable suggestions
+    - Success confirmations for completed searches
+  - [ ] 5.7 Ensure seamless UI integration
+    - Prevent layout shifts during state transitions
+    - Maintain consistent spacing and alignment
+    - Ensure responsive design across all states
+  - [ ] 5.8 Implement search history and persistence
+    - Save search parameters to localStorage
+    - Restore previous search state on page reload
+    - Allow users to retry failed searches
 
-- [ ] 6.0 Implement Data Cleanup and Validation Logic
+- [ ] 6.0 Add Real-time Progress Tracking and Error Handling
 
-  - [ ] 6.1 Create scheduled function to delete expired bundles (past flight dates)
-  - [ ] 6.2 Implement data validation for scraped flight information
-  - [ ] 6.3 Add data integrity checks and repair mechanisms
-  - [ ] 6.4 Create monitoring for data quality and consistency
-  - [ ] 6.5 Implement cleanup of orphaned data (unreferenced flights/bundles)
-  - [ ] 6.6 Add data retention policies and automatic cleanup
-  - [ ] 6.7 Create data health monitoring and alerting
-  - [ ] 6.8 Implement backup and recovery procedures for critical data
+  - [ ] 6.1 Create progress tracking system using Convex subscriptions
+  - [ ] 6.2 Implement real-time progress indicators for each scraping source
+  - [ ] 6.3 Add error state management and user notifications
+  - [ ] 6.4 Create graceful degradation when sources are unavailable
+  - [ ] 6.5 Implement partial results display when some sources fail
+  - [ ] 6.6 Add error logging and monitoring dashboard
+  - [ ] 6.7 Create retry mechanisms for failed operations
+  - [ ] 6.8 Implement proper error boundaries and fallback UI
+
+- [ ] 7.0 Implement Data Cleanup and Validation Logic
+
+  - [ ] 7.1 Create scheduled function to delete expired bundles (past flight dates)
+  - [ ] 7.2 Implement data validation for scraped flight information
+  - [ ] 7.3 Add data integrity checks and repair mechanisms
+  - [ ] 7.4 Create monitoring for data quality and consistency
+  - [ ] 7.5 Implement cleanup of orphaned data (unreferenced flights/bundles)
+  - [ ] 7.6 Add data retention policies and automatic cleanup
+  - [ ] 7.7 Create data health monitoring and alerting
+  - [ ] 7.8 Implement backup and recovery procedures for critical data
 
 - [ ] FUTURE: Audit and complete airports database (low priority)
   - Review current airports table for missing major/relevant airports (e.g., LAX)

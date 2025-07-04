@@ -278,13 +278,45 @@ The process consists of two phases:
 
 16. The system must display booking options with agency information and booking links for each bundle
 
+### UI Integration and Search-to-Results Flow
+
+17. The system must integrate the search form with results display in a unified user experience
+
+18. The system must implement a search hook that manages the entire search lifecycle:
+
+    - Form validation and submission
+    - Triggering scraping operations for both Kiwi and Skyscanner
+    - Real-time progress tracking and updates
+    - Results fetching and display
+    - Error handling and user feedback
+
+19. The system must wire up the search form to trigger scraping operations when submitted
+
+20. The system must display real-time scraping progress for both sources simultaneously
+
+21. The system must handle all search states:
+
+    - Initial state (no search performed)
+    - Loading state (search in progress)
+    - Results state (search completed with results)
+    - Error state (search failed)
+    - Empty results state (search completed with no results)
+
+22. The system must implement proper state management to prevent multiple simultaneous searches
+
+23. The system must provide clear user feedback for each state with appropriate loading indicators and error messages
+
+24. The system must ensure the search form and results list work together seamlessly without layout shifts
+
+25. The system must implement proper cleanup of previous search results when a new search is initiated
+
 ### Error Handling
 
-17. The system must handle website structure changes gracefully by logging errors and continuing operation
+26. The system must handle website structure changes gracefully by logging errors and continuing operation
 
-18. The system must show partial results if some scraping sources are unavailable
+27. The system must show partial results if some scraping sources are unavailable
 
-19. The system must provide clear error messages for invalid search parameters
+28. The system must provide clear error messages for invalid search parameters
 
 ### Data Transformation Layer (HTML Extraction)
 
