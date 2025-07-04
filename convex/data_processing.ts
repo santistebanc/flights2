@@ -220,19 +220,29 @@ export const processAndInsertScrapedData = internalMutation({
           const outboundFlightUniqueIds: string[] = [];
           const inboundFlightUniqueIds: string[] = [];
 
-          // Map outbound flights
-          bundle.outboundFlights.forEach((flight) => {
-            const flightId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}`;
-            if (flightUniqueIdToDbId[flightId]) {
-              outboundFlightUniqueIds.push(flightId);
+          // Map outbound flights - use the same uniqueId format as generated for flights
+          bundle.outboundFlights.forEach((flight, flightIndex) => {
+            const departureDate = calculateFlightDepartureDate(
+              bundle.outboundDate,
+              flightIndex,
+              bundle.outboundFlights
+            );
+            const flightUniqueId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${departureDate}`;
+            if (flightUniqueIdToDbId[flightUniqueId]) {
+              outboundFlightUniqueIds.push(flightUniqueId);
             }
           });
 
-          // Map inbound flights
-          bundle.inboundFlights.forEach((flight) => {
-            const flightId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}`;
-            if (flightUniqueIdToDbId[flightId]) {
-              inboundFlightUniqueIds.push(flightId);
+          // Map inbound flights - use the same uniqueId format as generated for flights
+          bundle.inboundFlights.forEach((flight, flightIndex) => {
+            const departureDate = calculateFlightDepartureDate(
+              bundle.inboundDate,
+              flightIndex,
+              bundle.inboundFlights
+            );
+            const flightUniqueId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${departureDate}`;
+            if (flightUniqueIdToDbId[flightUniqueId]) {
+              inboundFlightUniqueIds.push(flightUniqueId);
             }
           });
 
@@ -256,22 +266,64 @@ export const processAndInsertScrapedData = internalMutation({
       // Step 6: Convert booking options to database format
       const bookingOptionsForDb = allBookingOptions.map(
         (option, optionIndex) => {
-          // Find the bundle this booking option belongs to
-          const bundleIndex = args.scrapeResult.bundles.findIndex((bundle) =>
-            bundle.bookingOptions.some(
+          // Find the bundle this booking option belongs to by matching the exact bundle
+          let targetBundleUniqueId = "";
+
+          for (let i = 0; i < args.scrapeResult.bundles.length; i++) {
+            const bundle = args.scrapeResult.bundles[i];
+            const hasMatchingBookingOption = bundle.bookingOptions.some(
               (bo) =>
                 bo.agency === option.agency &&
                 bo.price === option.price &&
-                bo.linkToBook === option.linkToBook
-            )
-          );
+                bo.linkToBook === option.linkToBook &&
+                bo.currency === option.currency &&
+                bo.extractedAt === option.extractedAt
+            );
 
-          const bundleId =
-            bundleIndex >= 0 ? `bundle_${bundleIndex}` : `bundle_0`;
+            if (hasMatchingBookingOption) {
+              // Generate the same bundle uniqueId as above
+              const outboundFlightUniqueIds: string[] = [];
+              const inboundFlightUniqueIds: string[] = [];
+
+              // Map outbound flights
+              bundle.outboundFlights.forEach((flight, flightIndex) => {
+                const departureDate = calculateFlightDepartureDate(
+                  bundle.outboundDate,
+                  flightIndex,
+                  bundle.outboundFlights
+                );
+                const flightUniqueId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${departureDate}`;
+                if (flightUniqueIdToDbId[flightUniqueId]) {
+                  outboundFlightUniqueIds.push(flightUniqueId);
+                }
+              });
+
+              // Map inbound flights
+              bundle.inboundFlights.forEach((flight, flightIndex) => {
+                const departureDate = calculateFlightDepartureDate(
+                  bundle.inboundDate,
+                  flightIndex,
+                  bundle.inboundFlights
+                );
+                const flightUniqueId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${departureDate}`;
+                if (flightUniqueIdToDbId[flightUniqueId]) {
+                  inboundFlightUniqueIds.push(flightUniqueId);
+                }
+              });
+
+              targetBundleUniqueId = `bundle_${outboundFlightUniqueIds.join("_")}_${inboundFlightUniqueIds.join("_")}`;
+              break;
+            }
+          }
+
+          // Fallback to first bundle if no match found (shouldn't happen in normal operation)
+          if (!targetBundleUniqueId && bundlesForDb.length > 0) {
+            targetBundleUniqueId = bundlesForDb[0].uniqueId;
+          }
 
           return {
             uniqueId: `booking_${option.agency}_${option.price}_${option.linkToBook}_${option.currency}_${option.extractedAt}`,
-            targetUniqueId: bundleId,
+            targetUniqueId: targetBundleUniqueId,
             agency: option.agency,
             price: option.price,
             linkToBook: option.linkToBook,
@@ -497,7 +549,7 @@ export const savePollData = internalMutation({
       );
 
       // Step 3: Insert flights (keep original if duplicate uniqueId exists)
-      const flightIds: Id<"flights">[] = [];
+      const flightUniqueIdToDbId: Record<string, Id<"flights">> = {};
       for (const flight of flightsForDb) {
         // Check if flight already exists
         const existingFlight = await ctx.db
@@ -507,15 +559,14 @@ export const savePollData = internalMutation({
 
         if (!existingFlight) {
           const flightId = await ctx.db.insert("flights", flight);
-          flightIds.push(flightId);
+          flightUniqueIdToDbId[flight.uniqueId] = flightId;
         } else {
-          flightIds.push(existingFlight._id);
+          flightUniqueIdToDbId[flight.uniqueId] = existingFlight._id;
         }
       }
 
       // Step 4: Create bundles
       const bundleIds: Id<"bundles">[] = [];
-      let bundleIndex = 0;
 
       for (const bundle of args.scrapeResult.bundles) {
         // Get flight IDs for this bundle
@@ -547,14 +598,12 @@ export const savePollData = internalMutation({
         // Create bundle
         const bundleData = {
           uniqueId: `bundle_${outboundFlightUniqueIds.join("_")}_${inboundFlightUniqueIds.join("_")}`,
-          outboundFlightIds: outboundFlightUniqueIds.map((uniqueId) => {
-            const flight = flightsForDb.find((f) => f.uniqueId === uniqueId);
-            return flight ? flight.uniqueId : uniqueId;
-          }) as Id<"flights">[],
-          inboundFlightIds: inboundFlightUniqueIds.map((uniqueId) => {
-            const flight = flightsForDb.find((f) => f.uniqueId === uniqueId);
-            return flight ? flight.uniqueId : uniqueId;
-          }) as Id<"flights">[],
+          outboundFlightIds: outboundFlightUniqueIds
+            .map((uniqueId) => flightUniqueIdToDbId[uniqueId])
+            .filter(Boolean) as Id<"flights">[],
+          inboundFlightIds: inboundFlightUniqueIds
+            .map((uniqueId) => flightUniqueIdToDbId[uniqueId])
+            .filter(Boolean) as Id<"flights">[],
         };
 
         // Check if bundle already exists
@@ -571,8 +620,6 @@ export const savePollData = internalMutation({
         } else {
           bundleIds.push(existingBundle._id);
         }
-
-        bundleIndex++;
       }
 
       // Step 5: Insert booking options (replace if duplicate uniqueId exists)
@@ -580,8 +627,68 @@ export const savePollData = internalMutation({
       let bookingOptionsReplaced = 0;
 
       for (const bundle of args.scrapeResult.bundles) {
-        const bundleIndex = args.scrapeResult.bundles.indexOf(bundle);
-        const bundleId = bundleIds[bundleIndex];
+        // Generate the same bundle uniqueId as above to find the correct bundle ID
+        const outboundFlightUniqueIds: string[] = [];
+        const inboundFlightUniqueIds: string[] = [];
+
+        // Map outbound flights
+        bundle.outboundFlights.forEach((flight, flightIndex) => {
+          const departureDate = calculateFlightDepartureDate(
+            bundle.outboundDate,
+            flightIndex,
+            bundle.outboundFlights
+          );
+          const uniqueId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${departureDate}`;
+          outboundFlightUniqueIds.push(uniqueId);
+        });
+
+        // Map inbound flights
+        bundle.inboundFlights.forEach((flight, flightIndex) => {
+          const departureDate = calculateFlightDepartureDate(
+            bundle.inboundDate,
+            flightIndex,
+            bundle.inboundFlights
+          );
+          const uniqueId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${departureDate}`;
+          inboundFlightUniqueIds.push(uniqueId);
+        });
+
+        const bundleUniqueId = `bundle_${outboundFlightUniqueIds.join("_")}_${inboundFlightUniqueIds.join("_")}`;
+
+        // Find the bundle ID by looking up the bundle we just created
+        const bundleIndex = bundleIds.findIndex((_, index) => {
+          const bundleData = args.scrapeResult.bundles[index];
+          const bundleOutboundFlightUniqueIds: string[] = [];
+          const bundleInboundFlightUniqueIds: string[] = [];
+
+          // Map outbound flights
+          bundleData.outboundFlights.forEach((flight, flightIndex) => {
+            const departureDate = calculateFlightDepartureDate(
+              bundleData.outboundDate,
+              flightIndex,
+              bundleData.outboundFlights
+            );
+            const uniqueId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${departureDate}`;
+            bundleOutboundFlightUniqueIds.push(uniqueId);
+          });
+
+          // Map inbound flights
+          bundleData.inboundFlights.forEach((flight, flightIndex) => {
+            const departureDate = calculateFlightDepartureDate(
+              bundleData.inboundDate,
+              flightIndex,
+              bundleData.inboundFlights
+            );
+            const uniqueId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${departureDate}`;
+            bundleInboundFlightUniqueIds.push(uniqueId);
+          });
+
+          const currentBundleUniqueId = `bundle_${bundleOutboundFlightUniqueIds.join("_")}_${bundleInboundFlightUniqueIds.join("_")}`;
+          return currentBundleUniqueId === bundleUniqueId;
+        });
+
+        const bundleId =
+          bundleIndex >= 0 ? bundleIds[bundleIndex] : bundleIds[0];
 
         for (const option of bundle.bookingOptions) {
           const bookingOptionData = {
