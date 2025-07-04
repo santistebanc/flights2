@@ -19,8 +19,9 @@ export const processAndInsertScrapedData = internalMutation({
         flightNumber: v.string(),
         departureAirportIataCode: v.string(),
         arrivalAirportIataCode: v.string(),
-        departureDateTime: v.number(),
-        arrivalDateTime: v.number(),
+        departureDate: v.string(), // YYYY-MM-DD format
+        departureTime: v.string(), // HH:MM format
+        duration: v.number(), // duration in minutes
       })
     ),
     bundles: v.array(
@@ -54,7 +55,7 @@ export const processAndInsertScrapedData = internalMutation({
     try {
       // Step 1: Look up airport IDs for all flights
       const airportIdMapping = await ctx.runQuery(
-        internal.dataProcessing.getAirportIdMapping,
+        internal.data_processing.getAirportIdMapping,
         {
           iataCodes: [
             ...new Set([
@@ -65,19 +66,50 @@ export const processAndInsertScrapedData = internalMutation({
         }
       );
 
-      // Step 2: Convert flights to database format
-      const flightsForDb = args.flights
-        .map((flight) => ({
-          uniqueId: flight.uniqueId,
-          flightNumber: flight.flightNumber,
-          departureAirportId: airportIdMapping[flight.departureAirportIataCode],
-          arrivalAirportId: airportIdMapping[flight.arrivalAirportIataCode],
-          departureDateTime: flight.departureDateTime,
-          arrivalDateTime: flight.arrivalDateTime,
-        }))
-        .filter(
-          (flight) => flight.departureAirportId && flight.arrivalAirportId
-        );
+      // Step 2: Convert flights to database format with proper datetime calculation
+      const flightsForDb = await Promise.all(
+        args.flights
+          .filter(
+            (flight) =>
+              airportIdMapping[flight.departureAirportIataCode] &&
+              airportIdMapping[flight.arrivalAirportIataCode]
+          )
+          .map(async (flight) => {
+            // Get departure airport timezone
+            const departureAirport = await ctx.db.get(
+              airportIdMapping[flight.departureAirportIataCode]
+            );
+            // Convert timezone string to offset (e.g., "UTC+2" -> 120 minutes)
+            let timezoneOffset = 0; // Default to UTC
+            if (departureAirport?.timezone) {
+              const timezoneMatch =
+                departureAirport.timezone.match(/UTC([+-]\d+)/);
+              if (timezoneMatch) {
+                timezoneOffset = parseInt(timezoneMatch[1]) * 60; // Convert hours to minutes
+              }
+            }
+
+            // Build departure datetime: combine date, time, and apply timezone offset
+            const departureDateTimeStr = `${flight.departureDate}T${flight.departureTime}:00`;
+            const departureDateTime =
+              new Date(departureDateTimeStr).getTime() -
+              timezoneOffset * 60 * 1000;
+
+            // Calculate arrival datetime by adding duration
+            const arrivalDateTime =
+              departureDateTime + flight.duration * 60 * 1000;
+
+            return {
+              uniqueId: flight.uniqueId,
+              flightNumber: flight.flightNumber,
+              departureAirportId:
+                airportIdMapping[flight.departureAirportIataCode],
+              arrivalAirportId: airportIdMapping[flight.arrivalAirportIataCode],
+              departureDateTime,
+              arrivalDateTime,
+            };
+          })
+      );
 
       // Step 3: Insert flights and get ID mapping
       const flightUniqueIdToDbId = await ctx.runMutation(

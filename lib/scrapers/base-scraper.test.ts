@@ -27,9 +27,7 @@ class TestScraper extends BaseFlightScraper {
   ): Promise<ScrapingPhase2Result> {
     this.logProgress("phase2", "Executing phase 2");
     return {
-      flights: [],
       bundles: [],
-      bookingOptions: [],
     };
   }
 
@@ -192,9 +190,7 @@ describe("BaseFlightScraper", () => {
       const result = await scraper.scrape(params);
 
       expect(result).toEqual({
-        flights: [],
         bundles: [],
-        bookingOptions: [],
       });
     });
 

@@ -1,0 +1,88 @@
+<html>
+  <head>
+    <title>Find Prices...</title>
+    <script>
+      // Other scripts...
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="text/javascript">
+      var CFFLive = {
+        polling: true,
+        intervalRef: null,
+        objAllResults: Object,
+        objFilteredResults: Object,
+        current_page: 1,
+        results_added: false,
+        pollSession: function () {
+          //$('#msgoverlay', parent.document).fadeOut(200);
+          $.ajax({
+            type: "POST",
+            url: "/portal/kiwi/search",
+            complete: function (transport) {
+              var resp = transport.responseText;
+              var resp_array = resp.split("|");
+
+              if (resp_array[6].length > 0) {
+                CFFLive.setTableData(resp_array);
+              }
+
+              if (resp_array[0] == "Y") {
+                CFFLive.endPolling();
+                //$('.main .heading').addClass('loaded');
+                //$('.spinner').fadeOut();
+                $("#hidden-on-load").fadeIn(200);
+
+                if (parseInt(resp_array[1]) == 0) {
+                  CFFLive.results_added = true;
+                  $("#tb-best-price").html("-");
+                  $("#tb-best-time").html("-");
+                  $("#tb-cheapest-price").html("-");
+                  $("#tb-cheapest-time").html("-");
+                  $("#tb-fastest-price").html("-");
+                  $("#tb-fastest-time").html("-");
+
+                  $("#found_zone").html("<span>No Results Found</span>");
+                  $(".jplist-pagination").hide();
+                  $("#results").html(
+                    "<p>No results found. Please change destination or dates.</p>"
+                  );
+                }
+              } else {
+                if (parseInt(resp_array[1]) != 0) {
+                  //$('.loading-iframe p', parent.document).html('Loading results, please wait (found ' + resp_array[1] + ')...');
+                  $("#found_zone").html(
+                    "<span>Searching (found " + resp_array[1] + ")...</span>"
+                  );
+                }
+                //setTimeout(CFFLive.pollSession, 100);
+              }
+            },
+            data: {
+              _token: "1XiMiR5s6GbdvkWghMEH6maCeZVGNOXdlINUjVhI",
+              originplace: "BER",
+              destinationplace: "MAD",
+              outbounddate: "10/10/2025",
+              inbounddate: "",
+              cabinclass: "M",
+              adults: "1",
+              children: "0",
+              infants: "0",
+              currency: "EUR",
+              type: "oneway",
+              "bags-cabin": "0",
+              "bags-checked": "0",
+            },
+          });
+        },
+      };
+
+      $(document).ready(function () {
+        //$('.loading-iframe p', parent.document).html('Loading...');
+        CFFLive.checkResults();
+        CFFLive.pollSession();
+      });
+    </script>
+  </body>
+</html>

@@ -7,23 +7,15 @@ export interface FlightSearchParams {
 }
 
 export interface ScrapedFlight {
-  uniqueId: string;
   flightNumber: string;
-  departureAirportId: string; // DB id
-  arrivalAirportId: string; // DB id
-  departureDateTime: number; // Unix ms
-  arrivalDateTime: number; // Unix ms
-}
-
-export interface ScrapedBundle {
-  uniqueId: string;
-  outboundFlightUniqueIds: string[];
-  inboundFlightUniqueIds: string[];
+  departureAirportIataCode: string; // IATA code
+  arrivalAirportIataCode: string; // IATA code
+  departureTime: string; // HH:MM format
+  duration: number; // duration in minutes
+  connectionDurationFromPreviousFlight?: number; // duration in minutes
 }
 
 export interface ScrapedBookingOption {
-  uniqueId: string;
-  targetUniqueId: string; // bundle uniqueId
   agency: string;
   price: number;
   linkToBook: string;
@@ -31,10 +23,16 @@ export interface ScrapedBookingOption {
   extractedAt: number; // Unix ms
 }
 
-export interface ScrapeResult {
-  flights: ScrapedFlight[];
-  bundles: ScrapedBundle[];
+export interface ScrapedBundle {
+  outboundDate: string; // YYYY-MM-DD format
+  inboundDate: string; // YYYY-MM-DD format
+  outboundFlights: ScrapedFlight[];
+  inboundFlights: ScrapedFlight[];
   bookingOptions: ScrapedBookingOption[];
+}
+
+export interface ScrapeResult {
+  bundles: ScrapedBundle[];
   rawHtml?: string; // Optionally include for debugging
 }
 

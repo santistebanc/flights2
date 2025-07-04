@@ -1,191 +1,329 @@
+import * as cheerio from "cheerio";
 import {
   ScrapedFlight,
   ScrapedBundle,
   ScrapedBookingOption,
 } from "../types/scraper";
 
-// Phase 1: Extract session data (token, etc.) from initial HTML
+export interface SessionData {
+  cookie: string;
+  token: string;
+}
+
+// Phase 1: Extract session data (token, cookie) from initial HTML
 export function extractSessionDataFromPhase1Html(html: string): {
+  cookie: string;
   token: string;
 } {
+  const $ = cheerio.load(html);
   let token = "";
 
-  // Use regex to find token in script tags
-  const scriptMatches = html.match(/<script[^>]*>([\s\S]*?)<\/script>/g);
-  if (scriptMatches) {
-    for (const scriptMatch of scriptMatches) {
-      const scriptContent = scriptMatch.replace(
-        /<script[^>]*>|<\/script>/g,
-        ""
-      );
-
-      // Look for token in script content - matches the CFFLive AJAX data structure
-      const tokenMatch = scriptContent.match(
-        /['"]_token['"]\s*:\s*['"`]([^'"`]+)['"`]/
-      );
-      if (tokenMatch) {
-        token = tokenMatch[1];
-        break;
-      }
+  // Find all script tags and extract token
+  $("script").each((_, script) => {
+    const scriptContent = $(script).html() || "";
+    const tokenMatch = scriptContent.match(/_token:\s*["']([^"']+)["']/);
+    if (tokenMatch) {
+      token = tokenMatch[1];
+      return false; // Break early when found
     }
-  }
+  });
 
-  return { token };
+  return { cookie: "", token };
 }
 
-// Phase 2: Extract entities from results HTML
-export function extractFlightsFromPhase2Html(html: string): ScrapedFlight[] {
-  const flights: ScrapedFlight[] = [];
-
-  // Use regex to find flight information more reliably
-  const flightMatches = html.match(/<small>([^<]+)<\/small>/g);
-  if (!flightMatches) return flights;
-
-  for (const match of flightMatches) {
-    const flightText = match.replace(/<\/?small>/g, "");
-    const flightMatch = flightText.match(/([A-Za-z\s]+)\s+([A-Z]{2})\s+(\d+)/);
-    if (!flightMatch) continue;
-
-    const airline = flightMatch[1].trim();
-    const flightNumber = `${flightMatch[2]}${flightMatch[3]}`;
-
-    // Find the corresponding _item div that follows this flight info
-    const itemStart = html.indexOf('<div class="_item">', html.indexOf(match));
-    if (itemStart === -1) continue;
-
-    // Find the correct closing tag by counting opening and closing divs
-    let itemEnd = itemStart;
-    let divCount = 0;
-    let inItem = false;
-
-    for (let i = itemStart; i < html.length; i++) {
-      if (html.substring(i, i + 4) === "<div") {
-        divCount++;
-        if (html.substring(i, i + 20).includes('class="_item"')) {
-          inItem = true;
-        }
-      } else if (html.substring(i, i + 6) === "</div>") {
-        divCount--;
-        if (inItem && divCount === 0) {
-          itemEnd = i + 6;
-          break;
-        }
-      }
-    }
-
-    if (itemEnd === itemStart) continue;
-
-    const itemHtml = html.substring(itemStart, itemEnd);
-
-    // Extract times from c3 div
-    const timeMatches = itemHtml.match(/(\d{2}:\d{2})/g);
-    if (!timeMatches || timeMatches.length < 2) continue;
-
-    const departureTime = timeMatches[0];
-    const arrivalTime = timeMatches[1];
-
-    // Extract airports from c4 div
-    const airportMatches = itemHtml.match(/([A-Z]{3})\s+([A-Za-z\s]+)/g);
-    if (!airportMatches || airportMatches.length < 2) continue;
-
-    const depMatch = airportMatches[0].match(/([A-Z]{3})/);
-    const arrMatch = airportMatches[1].match(/([A-Z]{3})/);
-    if (!depMatch || !arrMatch) continue;
-
-    const departureAirport = depMatch[1];
-    const arrivalAirport = arrMatch[1];
-
-    const flight: ScrapedFlight = {
-      uniqueId: `flight_${flightNumber}_${departureAirport}_${arrivalAirport}`,
-      flightNumber: flightNumber,
-      departureAirportId: departureAirport,
-      arrivalAirportId: arrivalAirport,
-      departureDateTime: Date.now(),
-      arrivalDateTime: Date.now(),
-    };
-
-    flights.push(flight);
-  }
-
-  return flights;
-}
-
+// Phase 2: Extract bundles from results HTML
 export function extractBundlesFromPhase2Html(html: string): ScrapedBundle[] {
   const bundles: ScrapedBundle[] = [];
 
-  // Use regex to find bundle divs with data attributes
-  const bundleMatches = html.match(
-    /<div[^>]*class="[^"]*list-item[^"]*"[^>]*>/g
-  );
-  if (bundleMatches) {
-    for (const bundleMatch of bundleMatches) {
-      // Extract data attributes using regex
-      const durationMatch = bundleMatch.match(/data-duration="([^"]*)"/);
-      const airlineMatch = bundleMatch.match(/data-airline="([^"]*)"/);
-      const priceMatch = bundleMatch.match(/data-price="([^"]*)"/);
+  const $ = cheerio.load(html);
 
-      if (durationMatch && airlineMatch && priceMatch) {
-        const bundle: ScrapedBundle = {
-          uniqueId: `bundle_${airlineMatch[1]}_${durationMatch[1]}_${priceMatch[1]}`,
-          outboundFlightUniqueIds: [], // Will be populated by linking to flights
-          inboundFlightUniqueIds: [], // Will be populated for round trips
-        };
-        bundles.push(bundle);
+  // Find all bundle divs with data attributes
+  $("div.list-item").each((i, bundleDiv) => {
+    const $bundle = $(bundleDiv);
+
+    // Find the modal corresponding to this bundle
+    const modalId = $bundle
+      .find("a.modal_responsive")
+      .attr("onclick")
+      ?.match(/\$\(['"]#myModal(\d+)['"]\)/)?.[1];
+    const $modal = modalId ? $(`#myModal${modalId}`) : null;
+
+    if ($modal) {
+      // Extract outbound/inbound dates from headings
+      const $headings = $modal.find("p._heading");
+      const outboundDate =
+        $headings
+          .eq(0)
+          .text()
+          .match(/\w{3},\s+\d{1,2}\s+\w{3}\s+\d{4}/)?.[0] || "";
+      const inboundDate =
+        $headings
+          .eq(1)
+          .text()
+          .match(/\w{3},\s+\d{1,2}\s+\w{3}\s+\d{4}/)?.[0] || "";
+      const convertDate = (dateStr: string) => {
+        const parts = dateStr.match(/(\w{3}),\s+(\d{1,2})\s+(\w{3})\s+(\d{4})/);
+        if (parts) {
+          const day = parseInt(parts[2]);
+          const month = parts[3];
+          const year = parseInt(parts[4]);
+          const monthMap: { [key: string]: number } = {
+            Jan: 0,
+            Feb: 1,
+            Mar: 2,
+            Apr: 3,
+            May: 4,
+            Jun: 5,
+            Jul: 6,
+            Aug: 7,
+            Sep: 8,
+            Oct: 9,
+            Nov: 10,
+            Dec: 11,
+          };
+          const monthIndex = monthMap[month];
+          if (monthIndex !== undefined) {
+            return new Date(Date.UTC(year, monthIndex, day))
+              .toISOString()
+              .split("T")[0];
+          }
+        }
+        return "";
+      };
+      const outboundDateStr = convertDate(outboundDate);
+      const inboundDateStr = inboundDate ? convertDate(inboundDate) : "";
+
+      // Extract flights from this modal
+      const { outboundFlights, inboundFlights } = extractFlightsFromModal(
+        $modal,
+        $,
+        outboundDateStr,
+        inboundDateStr
+      );
+      // Extract booking options for this bundle
+      const bookingOptions = extractBookingOptionsFromModal($modal, $);
+      const bundle: ScrapedBundle = {
+        outboundDate: outboundDateStr,
+        inboundDate: inboundDateStr,
+        outboundFlights,
+        inboundFlights,
+        bookingOptions,
+      };
+      bundles.push(bundle);
+    }
+  });
+
+  return bundles;
+}
+
+// Helper function to extract flights from a modal
+function extractFlightsFromModal(
+  $modal: cheerio.Cheerio<any>,
+  $: cheerio.CheerioAPI,
+  outboundDate: string,
+  inboundDate: string
+): { outboundFlights: ScrapedFlight[]; inboundFlights: ScrapedFlight[] } {
+  const outboundFlights: ScrapedFlight[] = [];
+  const inboundFlights: ScrapedFlight[] = [];
+  const outboundConnectionDurations: (number | undefined)[] = [];
+  const inboundConnectionDurations: (number | undefined)[] = [];
+
+  // Find all _panel elements (outbound first, inbound second if present)
+  const panels = $modal.find("div._panel");
+  panels.each((panelIdx, panel) => {
+    const $panel = $(panel);
+    const isOutbound = panelIdx === 0;
+    // Find all _panel_body divs in the panel
+    $panel.find("div._panel_body").each((i, panelBody) => {
+      const $panelBody = $(panelBody);
+      // Find the _head div and extract flight number
+      const $head = $panelBody.find("div._head");
+      const flightText = $head.find("small").first().text().trim();
+      const tokens = flightText.split(/\s+/);
+      let flightNumber = "";
+      if (tokens.length >= 2) {
+        flightNumber = tokens.slice(-2).join("");
+      }
+      // Find the _item div
+      const $item = $panelBody.find("div._item");
+      // Extract times from c3 div
+      const times: string[] = [];
+      $item.find("div.c3 p").each((_, el) => {
+        const t = $(el).text().trim();
+        if (/^\d{2}:\d{2}$/.test(t)) times.push(t);
+      });
+      if (times.length < 2) return;
+      const departureTime = times[0];
+      const arrivalTime = times[1];
+      // Extract airports from c4 div
+      const airports: string[] = [];
+      $item.find("div.c4 p").each((_, el) => {
+        const code = $(el).text().trim().split(" ")[0];
+        if (/^[A-Z]{3}$/.test(code)) airports.push(code);
+      });
+      if (airports.length < 2) return;
+      const departureAirport = airports[0];
+      const arrivalAirport = airports[1];
+      // Calculate duration from departure and arrival times
+      const [depHour, depMin] = departureTime.split(":").map(Number);
+      const [arrHour, arrMin] = arrivalTime.split(":").map(Number);
+      let duration = arrHour * 60 + arrMin - (depHour * 60 + depMin);
+      if (duration <= 0) duration += 24 * 60;
+      // Extract connection duration (if present) after this flight
+      let connectionDuration: number | undefined = undefined;
+      const $connect = $item.find("p.connect_airport").first();
+      if ($connect.length && $connect.hasClass("connect_airport")) {
+        const text = $connect.text();
+        const match = text.match(/(\d+)h\s*(\d+)?/);
+        if (match) {
+          const hours = parseInt(match[1]);
+          const minutes = match[2] ? parseInt(match[2]) : 0;
+          connectionDuration = hours * 60 + minutes;
+        }
+      }
+      const flight: ScrapedFlight = {
+        flightNumber: flightNumber,
+        departureAirportIataCode: departureAirport,
+        arrivalAirportIataCode: arrivalAirport,
+        departureTime: departureTime,
+        duration: duration,
+        // connectionDurationFromPreviousFlight will be set after loop
+      };
+      if (isOutbound) {
+        outboundConnectionDurations.push(connectionDuration);
+        outboundFlights.push(flight);
+      } else {
+        inboundConnectionDurations.push(connectionDuration);
+        inboundFlights.push(flight);
+      }
+    });
+  });
+  // Assign connectionDurationFromPreviousFlight to the next flight in each direction
+  function assignConnections(
+    flights: ScrapedFlight[],
+    connectionDurations: (number | undefined)[]
+  ) {
+    for (let i = 1; i < flights.length; i++) {
+      if (connectionDurations[i - 1] !== undefined) {
+        flights[i].connectionDurationFromPreviousFlight =
+          connectionDurations[i - 1];
       }
     }
   }
+  assignConnections(outboundFlights, outboundConnectionDurations);
+  assignConnections(inboundFlights, inboundConnectionDurations);
+  return { outboundFlights, inboundFlights };
+}
 
-  return bundles;
+// Helper function to extract booking options from a modal
+function extractBookingOptionsFromModal(
+  $modal: cheerio.Cheerio<any>,
+  $: cheerio.CheerioAPI
+): ScrapedBookingOption[] {
+  const bookingOptions: ScrapedBookingOption[] = [];
+
+  // Find booking options in the modal
+  $modal.find("div._similar").each((_, similarElement) => {
+    const $similar = $(similarElement);
+
+    // Extract agency name
+    const agencyText = $similar.find("p").first().text().trim();
+    const agency = agencyText || "Unknown";
+
+    // Extract price
+    const priceText = $similar.find("p").eq(1).text().trim();
+    const priceMatch = priceText.match(/€(\d+)/);
+    const price = priceMatch ? parseInt(priceMatch[1]) : 0;
+
+    // Extract booking link
+    const $link = $similar.find("a");
+    const linkToBook = $link.attr("href") || "";
+
+    const bookingOption: ScrapedBookingOption = {
+      agency,
+      price,
+      linkToBook,
+      currency: "EUR",
+      extractedAt: Date.now(),
+    };
+
+    bookingOptions.push(bookingOption);
+  });
+
+  return bookingOptions;
+}
+
+// Legacy functions for backward compatibility (deprecated)
+export function extractFlightsFromPhase2Html(html: string): ScrapedFlight[] {
+  const bundles = extractBundlesFromPhase2Html(html);
+  const flights: ScrapedFlight[] = [];
+
+  bundles.forEach((bundle) => {
+    flights.push(...bundle.outboundFlights, ...bundle.inboundFlights);
+  });
+
+  return flights;
 }
 
 export function extractBookingOptionsFromPhase2Html(
   html: string
 ): ScrapedBookingOption[] {
+  const bundles = extractBundlesFromPhase2Html(html);
   const bookingOptions: ScrapedBookingOption[] = [];
 
-  // Use regex to find booking option sections
-  const similarMatches = html.match(
-    /<div[^>]*class="_similar"[^>]*>([\s\S]*?)<\/div>/g
-  );
-  if (similarMatches) {
-    for (const similarMatch of similarMatches) {
-      let currentAgency = "";
-      let currentPrice = 0;
-      let currentLink = "";
-
-      // Extract agency name
-      // Extract agency name from the first <p> tag (more robust than hardcoding names)
-      const agencyMatch = similarMatch.match(/<p>([^<]+)<\/p>/);
-      if (agencyMatch) {
-        currentAgency = agencyMatch[1].trim();
-      }
-
-      // Extract price
-      const priceMatch = similarMatch.match(/€(\d+)/);
-      if (priceMatch) {
-        currentPrice = parseInt(priceMatch[1]);
-      }
-
-      // Extract link
-      const linkMatch = similarMatch.match(/href="([^"]*kiwi\.com[^"]*)"/);
-      if (linkMatch) {
-        currentLink = linkMatch[1];
-      }
-
-      if (currentAgency && currentPrice && currentLink) {
-        const bookingOption: ScrapedBookingOption = {
-          uniqueId: `booking_${currentAgency}_${currentPrice}`,
-          targetUniqueId: `bundle_placeholder`, // Will be linked to actual bundle
-          agency: currentAgency,
-          price: currentPrice,
-          linkToBook: currentLink,
-          currency: "EUR",
-          extractedAt: Date.now(),
-        };
-        bookingOptions.push(bookingOption);
-      }
-    }
-  }
+  bundles.forEach((bundle) => {
+    bookingOptions.push(...bundle.bookingOptions);
+  });
 
   return bookingOptions;
+}
+
+function convertDateToYYYYMMDD(dateString: string): string {
+  // Handle date formats like "Fri, 10 Oct 2025" or "Sat, 11 Oct 2025"
+  const dateMatch = dateString.match(/(\w+),\s*(\d+)\s+(\w+)\s+(\d{4})/);
+  if (dateMatch) {
+    const [, , day, month, year] = dateMatch;
+    const monthMap: { [key: string]: string } = {
+      Jan: "01",
+      Feb: "02",
+      Mar: "03",
+      Apr: "04",
+      May: "05",
+      Jun: "06",
+      Jul: "07",
+      Aug: "08",
+      Sep: "09",
+      Oct: "10",
+      Nov: "11",
+      Dec: "12",
+    };
+    const monthNum = monthMap[month] || "01";
+    const dayNum = day.padStart(2, "0");
+    return `${year}-${monthNum}-${dayNum}`;
+  }
+
+  // Fallback: try to parse as YYYY-MM-DD
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateString;
+  }
+
+  // Default fallback
+  return new Date().toISOString().split("T")[0];
+}
+
+// Test function to show actual JSON output
+export function testPhase2Extraction(html: string): {
+  flights: ScrapedFlight[];
+  bundles: ScrapedBundle[];
+  bookingOptions: ScrapedBookingOption[];
+} {
+  const flights = extractFlightsFromPhase2Html(html);
+  const bundles = extractBundlesFromPhase2Html(html);
+  const bookingOptions = extractBookingOptionsFromPhase2Html(html);
+
+  return {
+    flights,
+    bundles,
+    bookingOptions,
+  };
 }

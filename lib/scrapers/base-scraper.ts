@@ -15,9 +15,7 @@ export interface ScrapingPhase1Result {
 }
 
 export interface ScrapingPhase2Result {
-  flights: ScrapedFlight[];
   bundles: ScrapedBundle[];
-  bookingOptions: ScrapedBookingOption[];
 }
 
 export interface ScrapingError {
@@ -48,9 +46,7 @@ export abstract class BaseFlightScraper {
       const phase2Result = await this.executePhase2(params, phase1Result);
 
       return {
-        flights: phase2Result.flights,
         bundles: phase2Result.bundles,
-        bookingOptions: phase2Result.bookingOptions,
       };
     } catch (error) {
       const scrapingError: ScrapingError = {

@@ -121,19 +121,20 @@ The process consists of two phases:
 #### Entity Shapes
 
 - **ScrapedFlight**
-  - uniqueId: generated from flightNumber, departureAirportIataCode, arrivalAirportIataCode, and departureDateTime
   - flightNumber: string
-  - departureAirportId: actual DB id (query Convex using IATA code)
-  - arrivalAirportId: actual DB id (query Convex using IATA code)
-  - departureDateTime: Unix timestamp in ms, adjusted by timezone (get from airports table)
-  - arrivalDateTime: Unix timestamp in ms (calculate by adding duration to departureDateTime)
+  - departureAirportIataCode: string (IATA code)
+  - arrivalAirportIataCode: string (IATA code)
+  - departureTime: string (HH:MM format, extracted from HTML)
+  - duration: number (duration in minutes, calculated from HTML departure/arrival times)
+  - connectionDurationFromPreviousFlight?: number // duration in minutes, parsed from connection string (e.g. "9h 55") after each flight in the HTML. Only present for flights after the first in a sequence.
+  # Note: The extractor outputs these fields with real data extracted from HTML. Mapping to DB IDs and datetime calculation is performed in the data processing layer.
 - **ScrapedBundle**
-  - uniqueId: generated from all outboundFlights + inboundFlights
-  - outboundFlightUniqueIds: array of uniqueIds
-  - inboundFlightUniqueIds: array of uniqueIds
+  - outboundDate: string (YYYY-MM-DD format, extracted from HTML content like "Sat, 11 Oct 2025")
+  - inboundDate: string (YYYY-MM-DD format, extracted from HTML content like "Sat, 11 Oct 2025")
+  - outboundFlights: array of ScrapedFlight objects
+  - inboundFlights: array of ScrapedFlight objects
+  - bookingOptions: array of ScrapedBookingOption objects
 - **ScrapedBookingOption**
-  - uniqueId: generated from targetId, agency, price, and currency
-  - targetUniqueId: uniqueId of the bundle
   - agency: string
   - price: number
   - linkToBook: string
@@ -143,13 +144,14 @@ The process consists of two phases:
 #### Database Insertion Order
 
 1. Insert scrapedFlights to flights table (bulk insert)
-2. Insert scrapedBundles to bundles table (map outbound/inbound uniqueIds to DB ids from flights)
-3. Insert scrapedbookingOptions to bookingOptions table (map targetUniqueId to DB id from bundles)
+2. Insert scrapedBundles to bundles table (map outbound/inbound flights to DB ids from flights)
+3. Insert scrapedBookingOptions to bookingOptions table (map to DB id from bundles)
 
 #### Error Handling
 
 - Log success and handle errors at each step.
-- Ensure deduplication by using uniqueId fields for each entity.
+- Ensure deduplication by using flight number, airports, and dates for flights.
+- Handle 419 responses by always using the latest cookie from the previous poll response.
 
 ### Skyscanner Scraping Process
 
@@ -208,22 +210,53 @@ The process consists of two phases:
   - Wait 100ms between polls
 - Once all results are received ('Y'), exit the polling loop and log success.
 
+#### Kiwi Phase 2 HTML Structure
+
+The HTML returned in Phase 2 (7th part of the response) has the following structure for extracting flights, bundles, and booking options:
+
+**Bundle Structure:**
+
+- Each `<div class="list-item row">` represents one different bundle
+- Inside every `<div class="list-item row">` there is a `<div class="modal">` child
+- Deeper nested inside that `<div class="modal">` there is a `<div class="search_modal">`
+- Inside that `<div class="search_modal">` there are one or two `<div class="_panel">` elements:
+  - The first `<div class="_panel">` contains data on the outbound flights of that bundle
+  - The second `<div class="_panel">` contains data on the inbound flights of that bundle (won't exist if the trip is one-way)
+
+**Date Information:**
+
+- Inside the `<div class="search_modal">` there are one or two `<p class="_heading">` elements:
+  - The first `<p class="_heading">` contains the departure date of the first outbound flight
+  - The second `<p class="_heading">` contains the departure date of the first inbound flight (won't exist if the trip is one-way)
+
+**Booking Options:**
+
+- Inside the `<div class="search_modal">` there is a `<div class="_similar">` element
+- This `<div class="_similar">` contains all the booking options available for that bundle
+
+**Flight Information:**
+
+- Inside each `<div class="_panel">` there are multiple `<div class="_item">` elements
+- Each `<div class="_item">` represents one flight segment with departure/arrival times and airports
+- Flight numbers are found in `<small>` tags within the panel structure
+
 #### Entity Shapes
 
 - **ScrapedFlight**
-  - uniqueId: generated from flightNumber, departureAirportIataCode, arrivalAirportIataCode, and departureDateTime
   - flightNumber: string
-  - departureAirportId: actual DB id (query Convex using IATA code)
-  - arrivalAirportId: actual DB id (query Convex using IATA code)
-  - departureDateTime: Unix timestamp in ms, adjusted by timezone (get from airports table)
-  - arrivalDateTime: Unix timestamp in ms (calculate by adding duration to departureDateTime)
+  - departureAirportIataCode: string (IATA code)
+  - arrivalAirportIataCode: string (IATA code)
+  - departureTime: string (HH:MM format, extracted from HTML)
+  - duration: number (duration in minutes, calculated from HTML departure/arrival times)
+  - connectionDurationFromPreviousFlight?: number // duration in minutes, parsed from connection string (e.g. "9h 55") after each flight in the HTML. Only present for flights after the first in a sequence.
+  # Note: The extractor outputs these fields with real data extracted from HTML. Mapping to DB IDs and datetime calculation is performed in the data processing layer.
 - **ScrapedBundle**
-  - uniqueId: generated from all outboundFlights + inboundFlights
-  - outboundFlightUniqueIds: array of uniqueIds
-  - inboundFlightUniqueIds: array of uniqueIds
+  - outboundDate: string (YYYY-MM-DD format, extracted from HTML content like "Sat, 11 Oct 2025")
+  - inboundDate: string (YYYY-MM-DD format, extracted from HTML content like "Sat, 11 Oct 2025")
+  - outboundFlights: array of ScrapedFlight objects
+  - inboundFlights: array of ScrapedFlight objects
+  - bookingOptions: array of ScrapedBookingOption objects
 - **ScrapedBookingOption**
-  - uniqueId: generated from targetId, agency, price, and currency
-  - targetUniqueId: uniqueId of the bundle
   - agency: string
   - price: number
   - linkToBook: string
@@ -233,13 +266,13 @@ The process consists of two phases:
 #### Database Insertion Order
 
 1. Insert scrapedFlights to flights table (bulk insert)
-2. Insert scrapedBundles to bundles table (map outbound/inbound uniqueIds to DB ids from flights)
-3. Insert scrapedBookingOptions to bookingOptions table (map targetUniqueId to DB id from bundles)
+2. Insert scrapedBundles to bundles table (map outbound/inbound flights to DB ids from flights)
+3. Insert scrapedBookingOptions to bookingOptions table (map to DB id from bundles)
 
 #### Error Handling
 
 - Log success and handle errors at each step.
-- Ensure deduplication by using uniqueId fields for each entity.
+- Ensure deduplication by using flight number, airports, and dates for flights.
 - Handle 419 responses by always using the latest cookie from the previous poll response.
 
 ### Data Storage
@@ -323,6 +356,13 @@ The process consists of two phases:
 - For this project, the data transformation layer consists of robust, source-specific HTML parsing and extraction logic. Each scraper (Kiwi, Skyscanner, etc.) must implement its own logic to convert raw HTML (from the 7th part of the response) into standardized ScrapedFlight, ScrapedBundle, and ScrapedBookingOption entities.
 - **Each scraper has two phases, and the HTML returned in each phase is different. Phase 1 requires extraction of session/token data; Phase 2 requires extraction of flight/bundle/booking option entities. Separate extraction logic and tests are needed for each phase.**
 - This logic must be modular and testable, as HTML extraction is a common source of bugs. Unit tests should be written for the extraction functions using sample HTML snippets from each source and phase.
+- **The extractors now work with real data instead of mock data:**
+  - Extract actual flight dates from HTML content (e.g., "Sat, 11 Oct 2025") and convert to YYYY-MM-DD format
+  - Calculate actual flight durations from departure and arrival times in the HTML
+  - Parse date patterns in summary sections and other parts of the HTML
+  - Fall back to search parameters only if no date is found in the HTML
+  - Handle multi-leg flights where different legs may have different dates
+  - The extractors receive search parameters as fallback but prioritize actual HTML content
 
 ## Non-Goals (Out of Scope)
 
@@ -453,3 +493,9 @@ The process consists of two phases:
 **Document Version:** 1.0  
 **Last Updated:** [Current Date]  
 **Target Audience:** Junior developers implementing the flight scraping application
+
+# In the database insertion/data processing section:
+
+- To build `departureDateTime`, combine `departureDate` and `departureTime`, and adjust for the timezone offset of the departure airport (timezone is found in the airports table).
+- To build `arrivalDateTime`, add the `duration` (in minutes) to the `departureDateTime`.
+- The extractor output does NOT include `departureDateTime` or `arrivalDateTime` fields; these are computed during data processing.

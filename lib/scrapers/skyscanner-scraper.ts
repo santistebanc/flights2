@@ -172,7 +172,10 @@ export class SkyscannerScraper extends BaseFlightScraper {
 
         if (resultHtml && resultHtml.length > 0) {
           // Extract entities from this batch of results
-          const flights = extractFlightsFromPhase2Html(resultHtml);
+          const flights = extractFlightsFromPhase2Html(resultHtml, {
+            departureDate: params.departureDate,
+            returnDate: params.returnDate,
+          });
           const bundles = extractBundlesFromPhase2Html(resultHtml);
           const bookingOptions =
             extractBookingOptionsFromPhase2Html(resultHtml);

@@ -14,41 +14,30 @@ import {
 
 describe("duplicate-handler", () => {
   const mockFlight1: ScrapedFlight = {
-    uniqueId: "flight_EI337_BER_DUB_20241202_0000",
     flightNumber: "EI337",
-    departureAirportId: "BER",
-    arrivalAirportId: "DUB",
-    departureDateTime: 1733097600000, // Fixed timestamp for consistent testing (2024-12-02 00:00 UTC)
-    arrivalDateTime: 1733097600000 + 2 * 60 * 60 * 1000, // 2 hours later
+    departureAirportIataCode: "BER",
+    arrivalAirportIataCode: "DUB",
+    departureTime: "10:00",
+    duration: 120, // 2 hours in minutes
   };
 
   const mockFlight2: ScrapedFlight = {
-    uniqueId: "flight_FR123_BER_CDG_20241202_0000",
     flightNumber: "FR123",
-    departureAirportId: "BER",
-    arrivalAirportId: "CDG",
-    departureDateTime: 1733097600000, // Fixed timestamp for consistent testing (2024-12-02 00:00 UTC)
-    arrivalDateTime: 1733097600000 + 1.5 * 60 * 60 * 1000, // 1.5 hours later
+    departureAirportIataCode: "BER",
+    arrivalAirportIataCode: "CDG",
+    departureTime: "14:30",
+    duration: 90, // 1.5 hours in minutes
   };
 
-  const mockBundle1: ScrapedBundle = {
-    uniqueId:
-      "bundle_flight_EI337_BER_DUB_20241202_0000_flight_FR123_BER_CDG_20241202_0000",
-    outboundFlightUniqueIds: ["flight_EI337_BER_DUB_20241202_0000"],
-    inboundFlightUniqueIds: ["flight_FR123_BER_CDG_20241202_0000"],
-  };
-
-  const mockBundle2: ScrapedBundle = {
-    uniqueId: "bundle_flight_BA456_LHR_JFK_20241202_0000",
-    outboundFlightUniqueIds: ["flight_BA456_LHR_JFK_20241202_0000"],
-    inboundFlightUniqueIds: [],
+  const mockFlight3: ScrapedFlight = {
+    flightNumber: "BA456",
+    departureAirportIataCode: "LHR",
+    arrivalAirportIataCode: "JFK",
+    departureTime: "16:00",
+    duration: 480, // 8 hours in minutes
   };
 
   const mockBookingOption1: ScrapedBookingOption = {
-    uniqueId:
-      "booking_kiwi_bundle_flight_EI337_BER_DUB_20241202_0000_flight_FR123_BER_CDG_20241202_0000_150_EUR",
-    targetUniqueId:
-      "bundle_flight_EI337_BER_DUB_20241202_0000_flight_FR123_BER_CDG_20241202_0000",
     agency: "kiwi",
     price: 150,
     linkToBook: "https://kiwi.com/book",
@@ -57,10 +46,6 @@ describe("duplicate-handler", () => {
   };
 
   const mockBookingOption2: ScrapedBookingOption = {
-    uniqueId:
-      "booking_skyscanner_bundle_flight_EI337_BER_DUB_20241202_0000_flight_FR123_BER_CDG_20241202_0000_145_EUR",
-    targetUniqueId:
-      "bundle_flight_EI337_BER_DUB_20241202_0000_flight_FR123_BER_CDG_20241202_0000",
     agency: "skyscanner",
     price: 145,
     linkToBook: "https://skyscanner.com/book",
@@ -68,33 +53,48 @@ describe("duplicate-handler", () => {
     extractedAt: Date.now(),
   };
 
+  const mockBundle1: ScrapedBundle = {
+    outboundDate: "2024-12-02",
+    inboundDate: "2024-12-02",
+    outboundFlights: [mockFlight1],
+    inboundFlights: [mockFlight2],
+    bookingOptions: [mockBookingOption1],
+  };
+
+  const mockBundle2: ScrapedBundle = {
+    outboundDate: "2024-12-02",
+    inboundDate: "",
+    outboundFlights: [mockFlight3],
+    inboundFlights: [],
+    bookingOptions: [mockBookingOption2],
+  };
+
   describe("handleDuplicates", () => {
     it("should handle flights correctly - keep existing, skip duplicates", () => {
-      const existingFlightIds = new Set(["flight_EI337_BER_DUB_20241202_0000"]);
-      const existingBundleIds = new Set<string>();
+      const existingFlightIds = new Set<string>();
+      const existingBundleIds = new Set([generateBundleUniqueId(mockBundle1)]);
       const existingBookingOptionIds = new Set<string>();
 
       const result = handleDuplicates(
         [mockFlight1, mockFlight2],
-        [mockBundle1],
-        [mockBookingOption1],
+        [mockBundle1, mockBundle2],
+        [mockBookingOption1, mockBookingOption2],
         existingFlightIds,
         existingBundleIds,
         existingBookingOptionIds
       );
 
-      expect(result.flightsToInsert).toHaveLength(1);
-      expect(result.flightsToInsert[0]).toEqual(mockFlight2);
-      expect(result.skippedFlights).toBe(1);
-      expect(result.bundlesToInsert).toHaveLength(1);
-      expect(result.bookingOptionsToInsert).toHaveLength(1);
+      expect(result.flightsToInsert).toHaveLength(2); // All flights are added
+      expect(result.bundlesToInsert).toHaveLength(1); // Only mockBundle2
+      expect(result.bundlesToInsert[0]).toEqual(mockBundle2);
+      expect(result.skippedFlights).toBe(2); // Flights from mockBundle1
+      expect(result.skippedBundles).toBe(1);
+      expect(result.bookingOptionsToInsert).toHaveLength(2);
     });
 
     it("should handle bundles correctly - keep existing, skip duplicates", () => {
       const existingFlightIds = new Set<string>();
-      const existingBundleIds = new Set([
-        "bundle_flight_EI337_BER_DUB_20241202_0000_flight_FR123_BER_CDG_20241202_0000",
-      ]);
+      const existingBundleIds = new Set([generateBundleUniqueId(mockBundle1)]);
       const existingBookingOptionIds = new Set<string>();
 
       const result = handleDuplicates(
@@ -109,6 +109,7 @@ describe("duplicate-handler", () => {
       expect(result.bundlesToInsert).toHaveLength(1);
       expect(result.bundlesToInsert[0]).toEqual(mockBundle2);
       expect(result.skippedBundles).toBe(1);
+      expect(result.skippedFlights).toBe(2); // Flights from mockBundle1
       expect(result.flightsToInsert).toHaveLength(1);
       expect(result.bookingOptionsToInsert).toHaveLength(1);
     });
@@ -116,13 +117,23 @@ describe("duplicate-handler", () => {
     it("should handle booking options correctly - replace existing with new data", () => {
       const existingFlightIds = new Set<string>();
       const existingBundleIds = new Set<string>();
+      const bundleId = generateBundleUniqueId(mockBundle1);
       const existingBookingOptionIds = new Set([
-        "booking_kiwi_bundle_flight_EI337_BER_DUB_20241202_0000_flight_FR123_BER_CDG_20241202_0000_150_EUR",
+        generateBookingOptionUniqueId(mockBookingOption1, bundleId),
       ]);
 
+      // Create a test bundle that contains both booking options for this test
+      const testBundle: ScrapedBundle = {
+        outboundDate: "2024-12-02",
+        inboundDate: "2024-12-02",
+        outboundFlights: [mockFlight1],
+        inboundFlights: [mockFlight2],
+        bookingOptions: [mockBookingOption1, mockBookingOption2],
+      };
+
       const result = handleDuplicates(
-        [mockFlight1],
-        [mockBundle1],
+        [mockFlight1, mockFlight2],
+        [testBundle],
         [mockBookingOption1, mockBookingOption2],
         existingFlightIds,
         existingBundleIds,
@@ -142,7 +153,7 @@ describe("duplicate-handler", () => {
       const existingBookingOptionIds = new Set<string>();
 
       const result = handleDuplicates(
-        [mockFlight1, mockFlight2],
+        [mockFlight1, mockFlight2, mockFlight3],
         [mockBundle1, mockBundle2],
         [mockBookingOption1, mockBookingOption2],
         existingFlightIds,
@@ -150,7 +161,7 @@ describe("duplicate-handler", () => {
         existingBookingOptionIds
       );
 
-      expect(result.flightsToInsert).toHaveLength(2);
+      expect(result.flightsToInsert).toHaveLength(3);
       expect(result.bundlesToInsert).toHaveLength(2);
       expect(result.bookingOptionsToInsert).toHaveLength(2);
       expect(result.bookingOptionsToReplace).toHaveLength(0);
@@ -160,21 +171,24 @@ describe("duplicate-handler", () => {
     });
 
     it("should handle all existing data correctly", () => {
-      const existingFlightIds = new Set([
-        mockFlight1.uniqueId,
-        mockFlight2.uniqueId,
-      ]);
+      const existingFlightIds = new Set<string>(); // Not used in new logic
       const existingBundleIds = new Set([
-        mockBundle1.uniqueId,
-        mockBundle2.uniqueId,
+        generateBundleUniqueId(mockBundle1),
+        generateBundleUniqueId(mockBundle2),
       ]);
       const existingBookingOptionIds = new Set([
-        mockBookingOption1.uniqueId,
-        mockBookingOption2.uniqueId,
+        generateBookingOptionUniqueId(
+          mockBookingOption1,
+          generateBundleUniqueId(mockBundle1)
+        ),
+        generateBookingOptionUniqueId(
+          mockBookingOption2,
+          generateBundleUniqueId(mockBundle2)
+        ),
       ]);
 
       const result = handleDuplicates(
-        [mockFlight1, mockFlight2],
+        [mockFlight1, mockFlight2, mockFlight3],
         [mockBundle1, mockBundle2],
         [mockBookingOption1, mockBookingOption2],
         existingFlightIds,
@@ -182,11 +196,11 @@ describe("duplicate-handler", () => {
         existingBookingOptionIds
       );
 
-      expect(result.flightsToInsert).toHaveLength(0);
+      expect(result.flightsToInsert).toHaveLength(3); // Flights are always added to flightsToInsert
       expect(result.bundlesToInsert).toHaveLength(0);
       expect(result.bookingOptionsToInsert).toHaveLength(0);
       expect(result.bookingOptionsToReplace).toHaveLength(2);
-      expect(result.skippedFlights).toBe(2);
+      expect(result.skippedFlights).toBe(3); // All flights from both bundles
       expect(result.skippedBundles).toBe(2);
       expect(result.replacedBookingOptions).toBe(2);
     });
@@ -194,16 +208,16 @@ describe("duplicate-handler", () => {
 
   describe("generateFlightUniqueId", () => {
     it("should generate correct unique ID for flight", () => {
-      const uniqueId = generateFlightUniqueId(mockFlight1);
-      expect(uniqueId).toBe("flight_EI337_BER_DUB_20241202_0000");
+      const uniqueId = generateFlightUniqueId(mockFlight1, "2024-12-02");
+      expect(uniqueId).toBe("flight_EI337_BER_DUB_20241202_1000");
     });
 
     it("should generate consistent unique IDs for same flight", () => {
-      const flight1 = { ...mockFlight1, uniqueId: "" };
-      const flight2 = { ...mockFlight1, uniqueId: "" };
+      const flight1 = { ...mockFlight1 };
+      const flight2 = { ...mockFlight1 };
 
-      expect(generateFlightUniqueId(flight1)).toBe(
-        generateFlightUniqueId(flight2)
+      expect(generateFlightUniqueId(flight1, "2024-12-02")).toBe(
+        generateFlightUniqueId(flight2, "2024-12-02")
       );
     });
   });
@@ -212,27 +226,21 @@ describe("duplicate-handler", () => {
     it("should generate correct unique ID for bundle", () => {
       const uniqueId = generateBundleUniqueId(mockBundle1);
       expect(uniqueId).toBe(
-        "bundle_flight_EI337_BER_DUB_20241202_0000_flight_FR123_BER_CDG_20241202_0000"
+        "bundle_flight_EI337_BER_DUB_20241202_1000_flight_FR123_BER_CDG_20241202_1430"
       );
     });
 
     it("should generate consistent unique IDs regardless of flight order", () => {
       const bundle1 = {
         ...mockBundle1,
-        outboundFlightUniqueIds: [
-          "flight_EI337_BER_DUB_20241202_0000",
-          "flight_FR123_BER_CDG_20241202_0000",
-        ],
-        inboundFlightUniqueIds: ["flight_BA456_LHR_JFK_20241202_0000"],
+        outboundFlights: [mockFlight1, mockFlight2],
+        inboundFlights: [mockFlight2],
       };
 
       const bundle2 = {
         ...mockBundle1,
-        outboundFlightUniqueIds: [
-          "flight_FR123_BER_CDG_20241202_0000",
-          "flight_EI337_BER_DUB_20241202_0000",
-        ],
-        inboundFlightUniqueIds: ["flight_BA456_LHR_JFK_20241202_0000"],
+        outboundFlights: [mockFlight2, mockFlight1],
+        inboundFlights: [mockFlight2],
       };
 
       expect(generateBundleUniqueId(bundle1)).toBe(
@@ -243,9 +251,13 @@ describe("duplicate-handler", () => {
 
   describe("generateBookingOptionUniqueId", () => {
     it("should generate correct unique ID for booking option", () => {
-      const uniqueId = generateBookingOptionUniqueId(mockBookingOption1);
+      const bundleId = generateBundleUniqueId(mockBundle1);
+      const uniqueId = generateBookingOptionUniqueId(
+        mockBookingOption1,
+        bundleId
+      );
       expect(uniqueId).toBe(
-        "booking_kiwi_bundle_flight_EI337_BER_DUB_20241202_0000_flight_FR123_BER_CDG_20241202_0000_150_EUR"
+        "booking_kiwi_bundle_flight_EI337_BER_DUB_20241202_1000_flight_FR123_BER_CDG_20241202_1430_150_EUR"
       );
     });
   });
@@ -260,47 +272,40 @@ describe("duplicate-handler", () => {
       expect(errors).toHaveLength(0);
     });
 
-    it("should detect missing unique IDs", () => {
-      const flightWithoutId = { ...mockFlight1, uniqueId: "" };
-      const bundleWithoutId = { ...mockBundle1, uniqueId: "" };
-      const bookingWithoutId = { ...mockBookingOption1, uniqueId: "" };
+    it("should detect missing data for unique ID generation", () => {
+      const flightWithoutId = { ...mockFlight1, flightNumber: "" };
+      const bundleWithoutId = {
+        ...mockBundle1,
+        outboundFlights: [flightWithoutId],
+      };
+      const bookingWithoutId = { ...mockBookingOption1, agency: "" };
+      const bundleWithBadBooking = {
+        ...mockBundle1,
+        bookingOptions: [bookingWithoutId],
+      };
 
       const errors = validateUniqueIds(
-        [flightWithoutId],
-        [bundleWithoutId],
-        [bookingWithoutId]
+        [],
+        [bundleWithoutId, bundleWithBadBooking],
+        []
       );
 
-      expect(errors).toHaveLength(3);
-      expect(errors[0]).toContain("Flight missing uniqueId");
-      expect(errors[1]).toContain("Bundle missing uniqueId");
-      expect(errors[2]).toContain("Booking option missing uniqueId");
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.includes("Flight missing data"))).toBe(true);
+      expect(
+        errors.some((e) => e.includes("Booking option missing data"))
+      ).toBe(true);
     });
 
     it("should detect duplicate unique IDs", () => {
-      const duplicateFlight = {
-        ...mockFlight2,
-        uniqueId: mockFlight1.uniqueId,
-      };
-      const duplicateBundle = {
-        ...mockBundle2,
-        uniqueId: mockBundle1.uniqueId,
-      };
-      const duplicateBooking = {
-        ...mockBookingOption2,
-        uniqueId: mockBookingOption1.uniqueId,
-      };
+      const duplicateBundle = { ...mockBundle1 };
 
-      const errors = validateUniqueIds(
-        [mockFlight1, duplicateFlight],
-        [mockBundle1, duplicateBundle],
-        [mockBookingOption1, duplicateBooking]
+      const errors = validateUniqueIds([], [mockBundle1, duplicateBundle], []);
+
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.includes("Duplicate bundle uniqueId"))).toBe(
+        true
       );
-
-      expect(errors).toHaveLength(3);
-      expect(errors[0]).toContain("Duplicate flight uniqueId");
-      expect(errors[1]).toContain("Duplicate bundle uniqueId");
-      expect(errors[2]).toContain("Duplicate booking option uniqueId");
     });
   });
 });

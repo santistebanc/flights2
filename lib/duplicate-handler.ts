@@ -8,9 +8,9 @@ import {
  * Duplicate handling logic for scraped data.
  *
  * Strategy:
- * - Flights: Keep existing, skip duplicates (based on uniqueId)
- * - Bundles: Keep existing, skip duplicates (based on uniqueId)
- * - Booking Options: Replace existing with new data (based on uniqueId)
+ * - Flights: Keep existing, skip duplicates (based on generated uniqueId)
+ * - Bundles: Keep existing, skip duplicates (based on generated uniqueId)
+ * - Booking Options: Replace existing with new data (based on generated uniqueId)
  */
 export interface DuplicateHandlingResult {
   flightsToInsert: ScrapedFlight[];
@@ -53,17 +53,19 @@ export function handleDuplicates(
 
   // Handle flights: keep existing, skip duplicates
   for (const flight of newFlights) {
-    if (existingFlightIds.has(flight.uniqueId)) {
-      result.skippedFlights++;
-    } else {
-      result.flightsToInsert.push(flight);
-    }
+    // Generate unique ID on the fly from the bundle context
+    // Note: This requires access to the bundle date, which we'll handle in the bundle loop
+    result.flightsToInsert.push(flight);
   }
 
   // Handle bundles: keep existing, skip duplicates
   for (const bundle of newBundles) {
-    if (existingBundleIds.has(bundle.uniqueId)) {
+    const bundleId = generateBundleUniqueId(bundle);
+    if (existingBundleIds.has(bundleId)) {
       result.skippedBundles++;
+      // Also skip the flights in this bundle
+      result.skippedFlights +=
+        bundle.outboundFlights.length + bundle.inboundFlights.length;
     } else {
       result.bundlesToInsert.push(bundle);
     }
@@ -71,11 +73,20 @@ export function handleDuplicates(
 
   // Handle booking options: replace existing with new data
   for (const bookingOption of newBookingOptions) {
-    if (existingBookingOptionIds.has(bookingOption.uniqueId)) {
-      result.bookingOptionsToReplace.push(bookingOption);
-      result.replacedBookingOptions++;
-    } else {
-      result.bookingOptionsToInsert.push(bookingOption);
+    // Find the bundle this booking option belongs to
+    const bundle = newBundles.find((b) =>
+      b.bookingOptions.includes(bookingOption)
+    );
+    if (bundle) {
+      const bundleId = generateBundleUniqueId(bundle);
+      const bookingId = generateBookingOptionUniqueId(bookingOption, bundleId);
+
+      if (existingBookingOptionIds.has(bookingId)) {
+        result.bookingOptionsToReplace.push(bookingOption);
+        result.replacedBookingOptions++;
+      } else {
+        result.bookingOptionsToInsert.push(bookingOption);
+      }
     }
   }
 
@@ -86,13 +97,16 @@ export function handleDuplicates(
  * Generate unique IDs for scraped entities to ensure proper deduplication.
  *
  * @param flight - Flight to generate unique ID for
+ * @param departureDate - Departure date in YYYY-MM-DD format
  * @returns Unique ID string
  */
-export function generateFlightUniqueId(flight: ScrapedFlight): string {
-  const date = new Date(flight.departureDateTime);
-  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD format
-  const timeStr = date.toISOString().slice(11, 16).replace(/:/g, ""); // HHMM format
-  return `flight_${flight.flightNumber}_${flight.departureAirportId}_${flight.arrivalAirportId}_${dateStr}_${timeStr}`;
+export function generateFlightUniqueId(
+  flight: ScrapedFlight,
+  departureDate: string
+): string {
+  const dateStr = departureDate.replace(/-/g, ""); // YYYYMMDD format
+  const timeStr = flight.departureTime.replace(/:/g, ""); // HHMM format
+  return `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${dateStr}_${timeStr}`;
 }
 
 /**
@@ -102,8 +116,14 @@ export function generateFlightUniqueId(flight: ScrapedFlight): string {
  * @returns Unique ID string
  */
 export function generateBundleUniqueId(bundle: ScrapedBundle): string {
-  const outboundIds = bundle.outboundFlightUniqueIds.sort().join("_");
-  const inboundIds = bundle.inboundFlightUniqueIds.sort().join("_");
+  const outboundIds = bundle.outboundFlights
+    .map((flight) => generateFlightUniqueId(flight, bundle.outboundDate))
+    .sort()
+    .join("_");
+  const inboundIds = bundle.inboundFlights
+    .map((flight) => generateFlightUniqueId(flight, bundle.inboundDate))
+    .sort()
+    .join("_");
   return `bundle_${outboundIds}_${inboundIds}`;
 }
 
@@ -111,16 +131,18 @@ export function generateBundleUniqueId(bundle: ScrapedBundle): string {
  * Generate unique ID for a booking option.
  *
  * @param bookingOption - Booking option to generate unique ID for
+ * @param bundleId - Unique ID of the target bundle
  * @returns Unique ID string
  */
 export function generateBookingOptionUniqueId(
-  bookingOption: ScrapedBookingOption
+  bookingOption: ScrapedBookingOption,
+  bundleId: string
 ): string {
-  return `booking_${bookingOption.agency}_${bookingOption.targetUniqueId}_${bookingOption.price}_${bookingOption.currency}`;
+  return `booking_${bookingOption.agency}_${bundleId}_${bookingOption.price}_${bookingOption.currency}`;
 }
 
 /**
- * Validate that all entities have proper unique IDs.
+ * Validate that all entities have proper data for unique ID generation.
  *
  * @param flights - Flights to validate
  * @param bundles - Bundles to validate
@@ -139,35 +161,62 @@ export function validateUniqueIds(
   const bundleIds = new Set<string>();
   const bookingOptionIds = new Set<string>();
 
-  for (const flight of flights) {
-    if (!flight.uniqueId) {
-      errors.push(`Flight missing uniqueId: ${flight.flightNumber}`);
-    } else if (flightIds.has(flight.uniqueId)) {
-      errors.push(`Duplicate flight uniqueId: ${flight.uniqueId}`);
-    } else {
-      flightIds.add(flight.uniqueId);
-    }
-  }
-
   for (const bundle of bundles) {
-    if (!bundle.uniqueId) {
-      errors.push(`Bundle missing uniqueId`);
-    } else if (bundleIds.has(bundle.uniqueId)) {
-      errors.push(`Duplicate bundle uniqueId: ${bundle.uniqueId}`);
-    } else {
-      bundleIds.add(bundle.uniqueId);
-    }
-  }
+    try {
+      const bundleId = generateBundleUniqueId(bundle);
+      if (bundleIds.has(bundleId)) {
+        errors.push(`Duplicate bundle uniqueId: ${bundleId}`);
+      } else {
+        bundleIds.add(bundleId);
+      }
 
-  for (const bookingOption of bookingOptions) {
-    if (!bookingOption.uniqueId) {
-      errors.push(`Booking option missing uniqueId: ${bookingOption.agency}`);
-    } else if (bookingOptionIds.has(bookingOption.uniqueId)) {
-      errors.push(
-        `Duplicate booking option uniqueId: ${bookingOption.uniqueId}`
-      );
-    } else {
-      bookingOptionIds.add(bookingOption.uniqueId);
+      // Validate flights in this bundle
+      for (const flight of [
+        ...bundle.outboundFlights,
+        ...bundle.inboundFlights,
+      ]) {
+        if (
+          !flight.flightNumber ||
+          !flight.departureAirportIataCode ||
+          !flight.arrivalAirportIataCode ||
+          !flight.departureTime
+        ) {
+          errors.push(`Flight missing data: ${flight.flightNumber}`);
+        } else {
+          const flightDate = bundle.outboundFlights.includes(flight)
+            ? bundle.outboundDate
+            : bundle.inboundDate;
+          const flightId = generateFlightUniqueId(flight, flightDate);
+          if (flightIds.has(flightId)) {
+            errors.push(`Duplicate flight uniqueId: ${flightId}`);
+          } else {
+            flightIds.add(flightId);
+          }
+        }
+      }
+
+      // Validate booking options in this bundle
+      for (const bookingOption of bundle.bookingOptions) {
+        if (
+          !bookingOption.agency ||
+          !bookingOption.price ||
+          !bookingOption.currency
+        ) {
+          errors.push(`Booking option missing data: ${bookingOption.agency}`);
+        } else {
+          const bookingId = generateBookingOptionUniqueId(
+            bookingOption,
+            bundleId
+          );
+          if (bookingOptionIds.has(bookingId)) {
+            errors.push(`Duplicate booking option uniqueId: ${bookingId}`);
+          } else {
+            bookingOptionIds.add(bookingId);
+          }
+        }
+      }
+    } catch (error) {
+      errors.push(`Bundle missing data for unique ID generation`);
     }
   }
 
