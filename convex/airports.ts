@@ -2,8 +2,15 @@ import { query } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
- * Search airports with priority-based matching
- * Priority order: IATA code > Airport name > City name > Country name
+ * Search airports with priority-based matching as specified in PRD
+ * Priority order:
+ * 1. IATA code exact match (highest priority)
+ * 2. Recently used airports (from localStorage history, second priority) - handled in frontend
+ * 3. Popular airports (based on popularity score, third priority)
+ * 4. IATA code search (starts with)
+ * 5. Airport name
+ * 6. City name
+ * 7. Country name (lowest priority)
  */
 export const searchAirports = query({
   args: {
@@ -17,6 +24,7 @@ export const searchAirports = query({
       name: v.string(),
       city: v.string(),
       country: v.optional(v.string()),
+      popularityScore: v.optional(v.number()),
       matchType: v.union(
         v.literal("iata"),
         v.literal("name"),
@@ -39,6 +47,7 @@ export const searchAirports = query({
       name: string;
       city: string;
       country?: string;
+      popularityScore?: number;
       matchType: "iata" | "name" | "city" | "country";
     }> = [];
 
@@ -58,12 +67,42 @@ export const searchAirports = query({
           name: airport.name,
           city: airport.city,
           country: airport.country,
+          popularityScore: airport.popularityScore,
           matchType: "iata" as const,
         }))
       );
     }
 
-    // Priority 2: IATA code starts with search term
+    // Priority 2: Recently used airports - handled in frontend (AirportAutocomplete component)
+    // This is implemented in the frontend using localStorage history
+
+    // Priority 3: Popular airports (based on popularity score)
+    if (results.length < limit) {
+      const popularAirports = await ctx.db
+        .query("airports")
+        .withIndex(
+          "by_popularityScore",
+          (q) => q.gte("popularityScore", 700) // Major and large international airports
+        )
+        .order("desc")
+        .take(limit - results.length);
+
+      for (const airport of popularAirports) {
+        if (!results.some((r) => r._id === airport._id)) {
+          results.push({
+            _id: airport._id,
+            iataCode: airport.iataCode,
+            name: airport.name,
+            city: airport.city,
+            country: airport.country,
+            popularityScore: airport.popularityScore,
+            matchType: "iata" as const, // Popular airports are typically found by IATA
+          });
+        }
+      }
+    }
+
+    // Priority 4: IATA code starts with search term
     if (results.length < limit) {
       const iataStartsWith = await ctx.db
         .query("airports")
@@ -80,13 +119,14 @@ export const searchAirports = query({
             name: airport.name,
             city: airport.city,
             country: airport.country,
+            popularityScore: airport.popularityScore,
             matchType: "iata" as const,
           });
         }
       }
     }
 
-    // Priority 3: Airport name matches
+    // Priority 5: Airport name matches
     if (results.length < limit) {
       const nameMatches = await ctx.db
         .query("airports")
@@ -101,13 +141,14 @@ export const searchAirports = query({
             name: airport.name,
             city: airport.city,
             country: airport.country,
+            popularityScore: airport.popularityScore,
             matchType: "name" as const,
           });
         }
       }
     }
 
-    // Priority 4: City name matches
+    // Priority 6: City name matches
     if (results.length < limit) {
       const cityMatches = await ctx.db
         .query("airports")
@@ -122,13 +163,14 @@ export const searchAirports = query({
             name: airport.name,
             city: airport.city,
             country: airport.country,
+            popularityScore: airport.popularityScore,
             matchType: "city" as const,
           });
         }
       }
     }
 
-    // Priority 5: Country name matches
+    // Priority 7: Country name matches (lowest priority)
     if (results.length < limit && searchTerm.length > 2) {
       const countryMatches = await ctx.db
         .query("airports")
@@ -145,13 +187,29 @@ export const searchAirports = query({
             name: airport.name,
             city: airport.city,
             country: airport.country,
+            popularityScore: airport.popularityScore,
             matchType: "country" as const,
           });
         }
       }
     }
 
-    return results.slice(0, limit);
+    // Sort results by popularity score within each match type category as specified in PRD
+    return results.slice(0, limit).sort((a, b) => {
+      // First sort by match type priority
+      const typePriority = { iata: 1, name: 2, city: 3, country: 4 };
+      const aPriority = typePriority[a.matchType];
+      const bPriority = typePriority[b.matchType];
+
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+
+      // Then sort by popularity score (descending) within each match type
+      const aScore = a.popularityScore || 0;
+      const bScore = b.popularityScore || 0;
+      return bScore - aScore;
+    });
   },
 });
 
@@ -169,6 +227,7 @@ export const getAirportByIata = query({
       name: v.string(),
       city: v.string(),
       country: v.optional(v.string()),
+      popularityScore: v.optional(v.number()),
     }),
     v.null()
   ),
@@ -190,6 +249,7 @@ export const getAirportByIata = query({
       name: airport.name,
       city: airport.city,
       country: airport.country,
+      popularityScore: airport.popularityScore,
     };
   },
 });

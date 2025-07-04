@@ -50,8 +50,10 @@ const airports = defineTable({
   city: v.string(),
   country: v.optional(v.string()),
   timezone: v.optional(v.string()),
+  popularityScore: v.optional(v.number()), // Integer 0-1000 for ranking airports by popularity
 })
   .index("by_iataCode", ["iataCode"])
+  .index("by_popularityScore", ["popularityScore"]) // Index for popularity-based sorting
   .searchIndex("search_iataCode", { searchField: "iataCode" })
   .searchIndex("search_name", { searchField: "name" })
   .searchIndex("search_city", { searchField: "city" })
