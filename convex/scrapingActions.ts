@@ -19,7 +19,15 @@ export const scrapeKiwi = action({
     recordsProcessed: v.number(),
     scrapedData: v.any(), // For debugging - will be removed later
   }),
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    message: string;
+    recordsProcessed: number;
+    scrapedData: any;
+  }> => {
     const params: FlightSearchParams = {
       departureAirport: args.departureAirport,
       arrivalAirport: args.arrivalAirport,
@@ -42,12 +50,17 @@ export const scrapeKiwi = action({
       const result = await scraper.scrape(params);
 
       // Process and insert scraped data into database
-      const insertionResult = await ctx.runMutation(
+      const insertionResult: {
+        success: boolean;
+        message: string;
+        flightsInserted: number;
+        bundlesInserted: number;
+        bookingOptionsInserted: number;
+        bookingOptionsReplaced: number;
+      } = await ctx.runMutation(
         internal.data_processing.processAndInsertScrapedData,
         {
-          flights: result.flights || [],
-          bundles: result.bundles || [],
-          bookingOptions: result.bookingOptions || [],
+          scrapeResult: result,
         }
       );
 
@@ -106,7 +119,15 @@ export const scrapeSkyscanner = action({
     recordsProcessed: v.number(),
     scrapedData: v.any(), // For debugging - will be removed later
   }),
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    message: string;
+    recordsProcessed: number;
+    scrapedData: any;
+  }> => {
     const params: FlightSearchParams = {
       departureAirport: args.departureAirport,
       arrivalAirport: args.arrivalAirport,
@@ -129,12 +150,17 @@ export const scrapeSkyscanner = action({
       const result = await scraper.scrape(params);
 
       // Process and insert scraped data into database
-      const insertionResult = await ctx.runMutation(
+      const insertionResult: {
+        success: boolean;
+        message: string;
+        flightsInserted: number;
+        bundlesInserted: number;
+        bookingOptionsInserted: number;
+        bookingOptionsReplaced: number;
+      } = await ctx.runMutation(
         internal.data_processing.processAndInsertScrapedData,
         {
-          flights: result.flights || [],
-          bundles: result.bundles || [],
-          bookingOptions: result.bookingOptions || [],
+          scrapeResult: result,
         }
       );
 
