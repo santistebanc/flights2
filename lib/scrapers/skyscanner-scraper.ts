@@ -131,6 +131,10 @@ export class SkyscannerScraper extends BaseFlightScraper {
         const postData = this.buildPhase2PostData(params, phase1Result);
         const url = `${this.baseUrl}/portal/sky/poll`;
 
+        // Log the POST data being sent
+        this.logProgress("phase2", `POSTing to ${url} (attempt ${pollCount})`);
+        this.logProgress("phase2", `POST data: ${postData}`);
+
         // Make the POST request
         const headers: Record<string, string> = {
           "User-Agent":
@@ -153,6 +157,16 @@ export class SkyscannerScraper extends BaseFlightScraper {
           headers,
           body: postData,
         });
+
+        // Log response status and headers
+        this.logProgress(
+          "phase2",
+          `Response status: ${response.status} ${response.statusText}`
+        );
+        this.logProgress(
+          "phase2",
+          `Response headers: set-cookie=${response.headers.get("set-cookie") || "NOT_FOUND"}`
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
