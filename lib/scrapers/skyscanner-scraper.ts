@@ -23,7 +23,7 @@ export class SkyscannerScraper extends BaseFlightScraper {
   /**
    * Phase 1: Fetch initial HTML and extract token, session, suuid, and deeplink
    */
-  protected async executePhase1(
+  public async executePhase1(
     params: FlightSearchParams
   ): Promise<ScrapingPhase1Result> {
     this.logProgress("phase1", "Starting Skyscanner Phase 1 scraping");
@@ -289,7 +289,7 @@ export class SkyscannerScraper extends BaseFlightScraper {
   /**
    * Build POST data for Phase 2 polling
    */
-  private buildPhase2PostData(
+  public buildPhase2PostData(
     params: FlightSearchParams,
     phase1Result: ScrapingPhase1Result
   ): string {

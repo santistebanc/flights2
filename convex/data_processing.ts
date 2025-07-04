@@ -339,3 +339,306 @@ export const getAirportIdMapping = internalQuery({
     return mapping;
   },
 });
+
+/**
+ * Save scraped data after each poll to prevent memory issues and provide progress tracking.
+ * This function processes and saves a single batch of bundles from a poll.
+ */
+export const savePollData = internalMutation({
+  args: {
+    scrapeResult: v.object({
+      bundles: v.array(
+        v.object({
+          outboundDate: v.string(),
+          inboundDate: v.string(),
+          outboundFlights: v.array(
+            v.object({
+              flightNumber: v.string(),
+              departureAirportIataCode: v.string(),
+              arrivalAirportIataCode: v.string(),
+              departureTime: v.string(),
+              duration: v.number(),
+              connectionDurationFromPreviousFlight: v.optional(v.number()),
+            })
+          ),
+          inboundFlights: v.array(
+            v.object({
+              flightNumber: v.string(),
+              departureAirportIataCode: v.string(),
+              arrivalAirportIataCode: v.string(),
+              departureTime: v.string(),
+              duration: v.number(),
+              connectionDurationFromPreviousFlight: v.optional(v.number()),
+            })
+          ),
+          bookingOptions: v.array(
+            v.object({
+              agency: v.string(),
+              price: v.number(),
+              linkToBook: v.string(),
+              currency: v.string(),
+              extractedAt: v.number(),
+            })
+          ),
+        })
+      ),
+    }),
+    pollNumber: v.number(),
+    scraperName: v.string(),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+    flightsInserted: v.number(),
+    bundlesInserted: v.number(),
+    bookingOptionsInserted: v.number(),
+    bookingOptionsReplaced: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      console.log(
+        `[${args.scraperName}] Saving poll ${args.pollNumber} data: ${args.scrapeResult.bundles.length} bundles`
+      );
+
+      // Extract all flights from bundles with proper date calculation
+      const allFlights: FlightWithDate[] = [];
+      const allBookingOptions: ScrapedBookingOption[] = [];
+
+      args.scrapeResult.bundles.forEach((bundle) => {
+        // Calculate departure dates for outbound flights
+        bundle.outboundFlights.forEach((flight, flightIndex) => {
+          const departureDate = calculateFlightDepartureDate(
+            bundle.outboundDate,
+            flightIndex,
+            bundle.outboundFlights
+          );
+
+          allFlights.push({
+            ...flight,
+            departureDate,
+          });
+        });
+
+        // Calculate departure dates for inbound flights
+        bundle.inboundFlights.forEach((flight, flightIndex) => {
+          const departureDate = calculateFlightDepartureDate(
+            bundle.inboundDate,
+            flightIndex,
+            bundle.inboundFlights
+          );
+
+          allFlights.push({
+            ...flight,
+            departureDate,
+          });
+        });
+
+        // Add booking options
+        allBookingOptions.push(...bundle.bookingOptions);
+      });
+
+      // Step 1: Look up airport IDs for all flights
+      const airportIdMapping: Record<
+        string,
+        Id<"airports">
+      > = await ctx.runQuery(internal.data_processing.getAirportIdMapping, {
+        iataCodes: [
+          ...new Set([
+            ...allFlights.map((f) => f.departureAirportIataCode),
+            ...allFlights.map((f) => f.arrivalAirportIataCode),
+          ]),
+        ],
+      });
+
+      // Step 2: Convert flights to database format with proper datetime calculation
+      const flightsForDb = await Promise.all(
+        allFlights
+          .filter(
+            (flight) =>
+              airportIdMapping[flight.departureAirportIataCode] &&
+              airportIdMapping[flight.arrivalAirportIataCode]
+          )
+          .map(async (flight) => {
+            // Get departure airport timezone
+            const departureAirport: Doc<"airports"> | null = await ctx.db.get(
+              airportIdMapping[flight.departureAirportIataCode]
+            );
+
+            // Convert timezone string to offset (e.g., "UTC+2" -> 120 minutes)
+            let timezoneOffset = 0; // Default to UTC
+            if (departureAirport?.timezone) {
+              const timezoneMatch =
+                departureAirport.timezone.match(/UTC([+-]\d+)/);
+              if (timezoneMatch) {
+                timezoneOffset = parseInt(timezoneMatch[1]) * 60; // Convert hours to minutes
+              }
+            }
+
+            // Build departure datetime: combine date, time, and apply timezone offset
+            const departureDateTimeStr = `${flight.departureDate}T${flight.departureTime}:00`;
+            const departureDateTime =
+              new Date(departureDateTimeStr).getTime() -
+              timezoneOffset * 60 * 1000;
+
+            // Calculate arrival datetime by adding duration
+            const arrivalDateTime =
+              departureDateTime + flight.duration * 60 * 1000;
+
+            return {
+              uniqueId: `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${flight.departureDate}`,
+              flightNumber: flight.flightNumber,
+              departureAirportId:
+                airportIdMapping[flight.departureAirportIataCode],
+              arrivalAirportId: airportIdMapping[flight.arrivalAirportIataCode],
+              departureDateTime,
+              arrivalDateTime,
+            };
+          })
+      );
+
+      // Step 3: Insert flights (keep original if duplicate uniqueId exists)
+      const flightIds: Id<"flights">[] = [];
+      for (const flight of flightsForDb) {
+        // Check if flight already exists
+        const existingFlight = await ctx.db
+          .query("flights")
+          .withIndex("by_uniqueId", (q) => q.eq("uniqueId", flight.uniqueId))
+          .unique();
+
+        if (!existingFlight) {
+          const flightId = await ctx.db.insert("flights", flight);
+          flightIds.push(flightId);
+        } else {
+          flightIds.push(existingFlight._id);
+        }
+      }
+
+      // Step 4: Create bundles
+      const bundleIds: Id<"bundles">[] = [];
+      let bundleIndex = 0;
+
+      for (const bundle of args.scrapeResult.bundles) {
+        // Get flight IDs for this bundle
+        const outboundFlightUniqueIds: string[] = [];
+        const inboundFlightUniqueIds: string[] = [];
+
+        // Map outbound flights
+        bundle.outboundFlights.forEach((flight, flightIndex) => {
+          const departureDate = calculateFlightDepartureDate(
+            bundle.outboundDate,
+            flightIndex,
+            bundle.outboundFlights
+          );
+          const uniqueId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${departureDate}`;
+          outboundFlightUniqueIds.push(uniqueId);
+        });
+
+        // Map inbound flights
+        bundle.inboundFlights.forEach((flight, flightIndex) => {
+          const departureDate = calculateFlightDepartureDate(
+            bundle.inboundDate,
+            flightIndex,
+            bundle.inboundFlights
+          );
+          const uniqueId = `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${departureDate}`;
+          inboundFlightUniqueIds.push(uniqueId);
+        });
+
+        // Create bundle
+        const bundleData = {
+          uniqueId: `bundle_${outboundFlightUniqueIds.join("_")}_${inboundFlightUniqueIds.join("_")}`,
+          outboundFlightIds: outboundFlightUniqueIds.map((uniqueId) => {
+            const flight = flightsForDb.find((f) => f.uniqueId === uniqueId);
+            return flight ? flight.uniqueId : uniqueId;
+          }) as Id<"flights">[],
+          inboundFlightIds: inboundFlightUniqueIds.map((uniqueId) => {
+            const flight = flightsForDb.find((f) => f.uniqueId === uniqueId);
+            return flight ? flight.uniqueId : uniqueId;
+          }) as Id<"flights">[],
+        };
+
+        // Check if bundle already exists
+        const existingBundle = await ctx.db
+          .query("bundles")
+          .withIndex("by_uniqueId", (q) =>
+            q.eq("uniqueId", bundleData.uniqueId)
+          )
+          .unique();
+
+        if (!existingBundle) {
+          const bundleId = await ctx.db.insert("bundles", bundleData);
+          bundleIds.push(bundleId);
+        } else {
+          bundleIds.push(existingBundle._id);
+        }
+
+        bundleIndex++;
+      }
+
+      // Step 5: Insert booking options (replace if duplicate uniqueId exists)
+      let bookingOptionsInserted = 0;
+      let bookingOptionsReplaced = 0;
+
+      for (const bundle of args.scrapeResult.bundles) {
+        const bundleIndex = args.scrapeResult.bundles.indexOf(bundle);
+        const bundleId = bundleIds[bundleIndex];
+
+        for (const option of bundle.bookingOptions) {
+          const bookingOptionData = {
+            uniqueId: `booking_${option.agency}_${option.price}_${option.linkToBook}_${option.currency}_${option.extractedAt}`,
+            targetId: bundleId,
+            agency: option.agency,
+            price: option.price,
+            linkToBook: option.linkToBook,
+            currency: option.currency,
+            extractedAt: option.extractedAt,
+          };
+
+          // Check if booking option already exists
+          const existingBookingOption = await ctx.db
+            .query("bookingOptions")
+            .withIndex("by_uniqueId", (q) =>
+              q.eq("uniqueId", bookingOptionData.uniqueId)
+            )
+            .unique();
+
+          if (existingBookingOption) {
+            // Replace existing booking option
+            await ctx.db.replace(existingBookingOption._id, bookingOptionData);
+            bookingOptionsReplaced++;
+          } else {
+            // Insert new booking option
+            await ctx.db.insert("bookingOptions", bookingOptionData);
+            bookingOptionsInserted++;
+          }
+        }
+      }
+
+      console.log(
+        `[${args.scraperName}] Poll ${args.pollNumber} saved successfully: ${flightsForDb.length} flights, ${bundleIds.length} bundles, ${bookingOptionsInserted} booking options inserted, ${bookingOptionsReplaced} replaced`
+      );
+
+      return {
+        success: true,
+        message: `Poll ${args.pollNumber} data saved successfully`,
+        flightsInserted: flightsForDb.length,
+        bundlesInserted: bundleIds.length,
+        bookingOptionsInserted,
+        bookingOptionsReplaced,
+      };
+    } catch (error) {
+      console.error(
+        `[${args.scraperName}] Error saving poll ${args.pollNumber} data:`,
+        error
+      );
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+        flightsInserted: 0,
+        bundlesInserted: 0,
+        bookingOptionsInserted: 0,
+        bookingOptionsReplaced: 0,
+      };
+    }
+  },
+});

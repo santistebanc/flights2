@@ -18,15 +18,63 @@ export function extractSessionDataFromPhase1Html(html: string): {
   const $ = cheerio.load(html);
   let token = "";
 
-  // Find all script tags and extract token
+  // Try multiple extraction strategies in order of preference
+
+  // Strategy 1: Look for _token in script tags (most common)
   $("script").each((_, script) => {
     const scriptContent = $(script).html() || "";
-    const tokenMatch = scriptContent.match(/_token:\s*["']([^"']+)["']/);
-    if (tokenMatch) {
-      token = tokenMatch[1];
-      return false; // Break early when found
+    const patterns = [
+      /_token:\s*["']([^"']+)["']/,
+      /['"]_token['"]\s*:\s*['"]([^'"]+)['"]/,
+      /token:\s*["']([^"']+)["']/,
+      /['"]token['"]\s*:\s*['"]([^'"]+)['"]/,
+    ];
+
+    for (const pattern of patterns) {
+      const tokenMatch = scriptContent.match(pattern);
+      if (tokenMatch) {
+        token = tokenMatch[1];
+        return false; // Break early when found
+      }
     }
   });
+
+  // Strategy 2: Look for CSRF token in meta tags
+  if (!token) {
+    const metaToken = $('meta[name="csrf-token"]').attr("content");
+    if (metaToken) {
+      token = metaToken;
+    }
+  }
+
+  // Strategy 3: Look for _token in input fields
+  if (!token) {
+    const inputToken = $('input[name="_token"]').attr("value");
+    if (inputToken) {
+      token = inputToken;
+    }
+  }
+
+  // Strategy 4: Search entire HTML for token patterns
+  if (!token) {
+    const patterns = [
+      /_token:\s*["']([^"']+)["']/,
+      /['"]_token['"]\s*:\s*['"]([^'"]+)['"]/,
+      /token:\s*["']([^"']+)["']/,
+      /['"]token['"]\s*:\s*['"]([^'"]+)['"]/,
+      /csrf-token['"]\s*:\s*['"]([^'"]+)['"]/,
+      /<meta[^>]*name=["']csrf-token["'][^>]*content=["']([^'"]+)["']/,
+      /<input[^>]*name=["']_token["'][^>]*value=["']([^'"]+)["']/,
+    ];
+
+    for (const pattern of patterns) {
+      const tokenMatch = html.match(pattern);
+      if (tokenMatch) {
+        token = tokenMatch[1];
+        break;
+      }
+    }
+  }
 
   return { cookie: "", token };
 }

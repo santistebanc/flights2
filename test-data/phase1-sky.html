@@ -1,0 +1,80 @@
+<html>
+  <head>
+    <title>Find Prices...</title>
+    <script>
+      // Other scripts...
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="text/javascript">
+      var CFFLive = {
+        polling: true,
+        intervalRef: null,
+        objAllResults: Object,
+        objFilteredResults: Object,
+        current_page: 1,
+        results_added: false,
+        blink_started: false,
+        pollSession: function () {
+          //$('#msgoverlay', parent.document).fadeOut(200);
+          $.ajax({
+            type: "POST",
+            url: "/portal/sky/poll",
+            complete: function (transport) {
+              var resp = transport.responseText;
+              var resp_array = resp.split("|");
+
+              if (resp_array[6].length > 0) {
+                CFFLive.setTableData(resp_array);
+              }
+
+              if (resp_array[0] == "Y") {
+                CFFLive.endPolling();
+                //$('.main .heading').addClass('loaded');
+                //$('.spinner').fadeOut();
+                $("#hidden-on-load").fadeIn(200);
+
+                if (parseInt(resp_array[1]) == 0) {
+                  $("#found_zone").html("<span>No Results Found</span>");
+                  $(".jplist-pagination").hide();
+                  $("#results").html(
+                    "<p>No results found. Please change destination or dates.</p>"
+                  );
+                }
+              } else {
+                if (parseInt(resp_array[1]) != 0) {
+                  //$('.loading-iframe p', parent.document).html('Loading results, please wait (found ' + resp_array[1] + ')...');
+                  $("#found_zone").html(
+                    "<span>Searching (found " + resp_array[1] + ")...</span>"
+                  );
+                }
+                setTimeout(CFFLive.pollSession, 100);
+              }
+            },
+            data: {
+              _token: "t7qxA3qgQkweRUj6ReoQMLO3XERelWXwIi7RmJtx",
+              session:
+                "CrABS0xVdl9TQ04zUU1BMHNnZEhzRHJfVl9fcV9VX2ZTQk5TaUhiZlZ1T1RGSktLUk1uMVlHZ1l0SDNDa3dUSUxIZHY5OWhmY2V4U1dmWEhMSkxfbXhqbXgzYlE5TkVLUVZnZEdaZFdFWEk2S1dMMFI5OXpyRGVaNThXTW5YM0RQczZmZEFsUjBEY3RyU2plbU9Wbk9lTG5xRzBrS2Vja3R0dHQyaGxNaXlEVXdEQ013UUEiRgoCVVMSBWVuLUdCGgNFVVIiFwoFCgNCRVISBQoDTUFEGgcI6Q8QChgKIhcKBQoDTUFEEgUKA0JFUhoHCOkPEAoYFCgBMAEqJDZjNTAyYzgyLTY3NjctNGM2NC1iZTM3LThmYTVkYWUyOWMyZA==-cells1",
+              suuid: "eb7d2457-0c44-4325-9a92-d4881d748d76",
+              noc: $.now(),
+              deeplink:
+                "https://www.tkqlhce.com/click-3476948-11839040-1440520708000?sid=cff&amp;url=https://www.skyscanner.net/transport/flights/BER/MAD/251010/251020/?adults=1&amp;adultsv2=1&amp;children=0&amp;infants=0&amp;cabinclass=Economy&amp;rtn=1&amp;currency=EUR",
+              s: "www",
+              adults: "1",
+              children: "0",
+              infants: "0",
+              currency: "EUR",
+            },
+          });
+        },
+      };
+
+      $(document).ready(function () {
+        //$('.loading-iframe p', parent.document).html('Loading...');
+        CFFLive.checkResults();
+        CFFLive.pollSession();
+      });
+    </script>
+  </body>
+</html>
