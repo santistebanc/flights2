@@ -10,7 +10,8 @@ export function extractFlightsFromModal(
   $modal: cheerio.Cheerio<any>,
   $: cheerio.CheerioAPI,
   outboundDate: string,
-  inboundDate: string
+  inboundDate: string,
+  flightNumberExtractor: (flightText: string) => string
 ): { outboundFlights: ScrapedFlight[]; inboundFlights: ScrapedFlight[] } {
   const outboundFlights: ScrapedFlight[] = [];
   const inboundFlights: ScrapedFlight[] = [];
@@ -28,11 +29,7 @@ export function extractFlightsFromModal(
       // Find the _head div and extract flight number
       const $head = $panelBody.find("div._head");
       const flightText = $head.find("small").first().text().trim();
-      const tokens = flightText.split(/\s+/);
-      let flightNumber = "";
-      if (tokens.length >= 2) {
-        flightNumber = tokens.slice(-2).join("");
-      }
+      const flightNumber = flightNumberExtractor(flightText);
       // Find the _item div
       const $item = $panelBody.find("div._item");
       // Extract times from c3 div

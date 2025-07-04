@@ -171,7 +171,22 @@ function extractFlightsFromModal(
   outboundDate: string,
   inboundDate: string
 ): { outboundFlights: ScrapedFlight[]; inboundFlights: ScrapedFlight[] } {
-  return sharedExtractFlightsFromModal($modal, $, outboundDate, inboundDate);
+  // Kiwi flight number extraction: take last 2 tokens and join them
+  const kiwiFlightNumberExtractor = (flightText: string): string => {
+    const tokens = flightText.split(/\s+/);
+    if (tokens.length >= 2) {
+      return tokens.slice(-2).join("");
+    }
+    return "";
+  };
+
+  return sharedExtractFlightsFromModal(
+    $modal,
+    $,
+    outboundDate,
+    inboundDate,
+    kiwiFlightNumberExtractor
+  );
 }
 
 // Helper function to extract booking options from a modal

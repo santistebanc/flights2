@@ -141,7 +141,22 @@ function extractFlightsFromModal(
   outboundDate: string,
   inboundDate: string
 ): { outboundFlights: ScrapedFlight[]; inboundFlights: ScrapedFlight[] } {
-  return sharedExtractFlightsFromModal($modal, $, outboundDate, inboundDate);
+  // Skyscanner flight number extraction: take last token only
+  const skyscannerFlightNumberExtractor = (flightText: string): string => {
+    const tokens = flightText.split(/\s+/);
+    if (tokens.length >= 1) {
+      return tokens[tokens.length - 1];
+    }
+    return "";
+  };
+
+  return sharedExtractFlightsFromModal(
+    $modal,
+    $,
+    outboundDate,
+    inboundDate,
+    skyscannerFlightNumberExtractor
+  );
 }
 
 // Helper function to extract booking options from a modal
