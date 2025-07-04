@@ -73,7 +73,7 @@ export class ConvexScrapingLogger implements ScrapingLogger {
     searchParams: FlightSearchParams
   ): Promise<string> {
     const searchParamsJson = JSON.stringify(searchParams);
-    const logId = await this.convex.mutation("scraping-logs:logScrapingStart", {
+    const logId = await this.convex.mutation("scraping_logs:logScrapingStart", {
       source,
       searchParams: searchParamsJson,
     });
@@ -85,7 +85,7 @@ export class ConvexScrapingLogger implements ScrapingLogger {
     recordsProcessed: number,
     message?: string
   ): Promise<void> {
-    await this.convex.mutation("scraping-logs:logScrapingSuccess", {
+    await this.convex.mutation("scraping_logs:logScrapingSuccess", {
       logId,
       recordsProcessed,
       message,
@@ -98,7 +98,7 @@ export class ConvexScrapingLogger implements ScrapingLogger {
     errorDetails?: string,
     phase?: string
   ): Promise<void> {
-    await this.convex.mutation("scraping-logs:logScrapingError", {
+    await this.convex.mutation("scraping_logs:logScrapingError", {
       logId,
       errorMessage,
       errorDetails,
@@ -111,7 +111,7 @@ export class ConvexScrapingLogger implements ScrapingLogger {
     errorMessage: string,
     errorDetails?: string
   ): Promise<void> {
-    await this.convex.mutation("scraping-logs:logScrapingFailure", {
+    await this.convex.mutation("scraping_logs:logScrapingFailure", {
       logId,
       errorMessage,
       errorDetails,
@@ -119,7 +119,7 @@ export class ConvexScrapingLogger implements ScrapingLogger {
   }
 
   async getRecentLogs(limit?: number): Promise<ScrapingLogEntry[]> {
-    return await this.convex.query("scraping-logs:getRecentScrapingLogs", {
+    return await this.convex.query("scraping_logs:getRecentScrapingLogs", {
       limit,
     });
   }
@@ -128,22 +128,22 @@ export class ConvexScrapingLogger implements ScrapingLogger {
     source: string,
     limit?: number
   ): Promise<ScrapingLogEntry[]> {
-    return await this.convex.query("scraping-logs:getScrapingLogsBySource", {
+    return await this.convex.query("scraping_logs:getScrapingLogsBySource", {
       source,
       limit,
     });
   }
 
   async getErrorLogs(limit?: number): Promise<ScrapingLogEntry[]> {
-    return await this.convex.query("scraping-logs:getErrorLogs", { limit });
+    return await this.convex.query("scraping_logs:getErrorLogs", { limit });
   }
 
   async getStats(hours?: number): Promise<ScrapingStats> {
-    return await this.convex.query("scraping-logs:getScrapingStats", { hours });
+    return await this.convex.query("scraping_logs:getScrapingStats", { hours });
   }
 
   async cleanupOldLogs(daysToKeep?: number): Promise<number> {
-    return await this.convex.mutation("scraping-logs:cleanupOldLogs", {
+    return await this.convex.mutation("scraping_logs:cleanupOldLogs", {
       daysToKeep,
     });
   }

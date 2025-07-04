@@ -15,8 +15,8 @@ import type {
 } from "convex/server";
 import type * as airports from "../airports.js";
 import type * as duplicate_handling from "../duplicate_handling.js";
-import type * as scraping_logs from "../scraping-logs.js";
 import type * as scrapingActions from "../scrapingActions.js";
+import type * as scraping_logs from "../scraping_logs.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -29,8 +29,8 @@ import type * as scrapingActions from "../scrapingActions.js";
 declare const fullApi: ApiFromModules<{
   airports: typeof airports;
   duplicate_handling: typeof duplicate_handling;
-  "scraping-logs": typeof scraping_logs;
   scrapingActions: typeof scrapingActions;
+  scraping_logs: typeof scraping_logs;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

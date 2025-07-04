@@ -30,7 +30,7 @@ export const scrapeKiwi = action({
 
     // Log scraping start
     const logId = await ctx.runMutation(
-      internal["scraping-logs"].logScrapingStart,
+      internal["scraping_logs"].logScrapingStart,
       {
         source: "kiwi",
         searchParams: JSON.stringify(params),
@@ -48,7 +48,7 @@ export const scrapeKiwi = action({
         (result.bookingOptions?.length || 0);
 
       // Log success
-      await ctx.runMutation(internal["scraping-logs"].logScrapingSuccess, {
+      await ctx.runMutation(internal["scraping_logs"].logScrapingSuccess, {
         logId,
         recordsProcessed,
         message: `Successfully scraped ${recordsProcessed} records from Kiwi`,
@@ -65,7 +65,7 @@ export const scrapeKiwi = action({
         error instanceof Error ? error.message : "Unknown error";
 
       // Log error
-      await ctx.runMutation(internal["scraping-logs"].logScrapingError, {
+      await ctx.runMutation(internal["scraping_logs"].logScrapingError, {
         logId,
         errorMessage,
         errorDetails: error instanceof Error ? error.stack : undefined,
@@ -107,7 +107,7 @@ export const scrapeSkyscanner = action({
 
     // Log scraping start
     const logId = await ctx.runMutation(
-      internal["scraping-logs"].logScrapingStart,
+      internal["scraping_logs"].logScrapingStart,
       {
         source: "skyscanner",
         searchParams: JSON.stringify(params),
@@ -125,7 +125,7 @@ export const scrapeSkyscanner = action({
         (result.bookingOptions?.length || 0);
 
       // Log success
-      await ctx.runMutation(internal["scraping-logs"].logScrapingSuccess, {
+      await ctx.runMutation(internal["scraping_logs"].logScrapingSuccess, {
         logId,
         recordsProcessed,
         message: `Successfully scraped ${recordsProcessed} records from Skyscanner`,
@@ -142,7 +142,7 @@ export const scrapeSkyscanner = action({
         error instanceof Error ? error.message : "Unknown error";
 
       // Log error
-      await ctx.runMutation(internal["scraping-logs"].logScrapingError, {
+      await ctx.runMutation(internal["scraping_logs"].logScrapingError, {
         logId,
         errorMessage,
         errorDetails: error instanceof Error ? error.stack : undefined,
