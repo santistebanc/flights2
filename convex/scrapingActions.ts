@@ -41,22 +41,32 @@ export const scrapeKiwi = action({
       const scraper = new KiwiScraper();
       const result = await scraper.scrape(params);
 
-      // For now, just count the scraped records without inserting into DB
+      // Process and insert scraped data into database
+      const insertionResult = await ctx.runMutation(
+        internal.data_processing.processAndInsertScrapedData,
+        {
+          flights: result.flights || [],
+          bundles: result.bundles || [],
+          bookingOptions: result.bookingOptions || [],
+        }
+      );
+
       const recordsProcessed =
-        (result.flights?.length || 0) +
-        (result.bundles?.length || 0) +
-        (result.bookingOptions?.length || 0);
+        insertionResult.flightsInserted +
+        insertionResult.bundlesInserted +
+        insertionResult.bookingOptionsInserted +
+        insertionResult.bookingOptionsReplaced;
 
       // Log success
       await ctx.runMutation(internal["scraping_logs"].logScrapingSuccess, {
         logId,
         recordsProcessed,
-        message: `Successfully scraped ${recordsProcessed} records from Kiwi`,
+        message: `Successfully scraped and inserted ${recordsProcessed} records from Kiwi`,
       });
 
       return {
-        success: true,
-        message: `Successfully scraped ${recordsProcessed} records from Kiwi`,
+        success: insertionResult.success,
+        message: insertionResult.message,
         recordsProcessed,
         scrapedData: result, // For debugging
       };
@@ -118,22 +128,32 @@ export const scrapeSkyscanner = action({
       const scraper = new SkyscannerScraper();
       const result = await scraper.scrape(params);
 
-      // For now, just count the scraped records without inserting into DB
+      // Process and insert scraped data into database
+      const insertionResult = await ctx.runMutation(
+        internal.data_processing.processAndInsertScrapedData,
+        {
+          flights: result.flights || [],
+          bundles: result.bundles || [],
+          bookingOptions: result.bookingOptions || [],
+        }
+      );
+
       const recordsProcessed =
-        (result.flights?.length || 0) +
-        (result.bundles?.length || 0) +
-        (result.bookingOptions?.length || 0);
+        insertionResult.flightsInserted +
+        insertionResult.bundlesInserted +
+        insertionResult.bookingOptionsInserted +
+        insertionResult.bookingOptionsReplaced;
 
       // Log success
       await ctx.runMutation(internal["scraping_logs"].logScrapingSuccess, {
         logId,
         recordsProcessed,
-        message: `Successfully scraped ${recordsProcessed} records from Skyscanner`,
+        message: `Successfully scraped and inserted ${recordsProcessed} records from Skyscanner`,
       });
 
       return {
-        success: true,
-        message: `Successfully scraped ${recordsProcessed} records from Skyscanner`,
+        success: insertionResult.success,
+        message: insertionResult.message,
         recordsProcessed,
         scrapedData: result, // For debugging
       };

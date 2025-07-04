@@ -109,6 +109,9 @@ Based on PRD: `prd-flight-scraping-app.md`
     - [x] 3.10.7 For each flight, lookup airport DB ids by IATA code (Convex query)
     - [x] 3.10.8 Generate uniqueIds for deduplication (flights, bundles, booking options)
     - [x] 3.10.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
+    - ✅ IMPLEMENTED: Created flights.ts, bundles.ts, bookingOptions.ts with bulk insertion functions
+    - ✅ IMPLEMENTED: Created data_processing.ts to orchestrate database insertion process
+    - ✅ IMPLEMENTED: Updated scraping actions to actually insert data into database
     - [x] 3.10.10 Log success and handle errors at each step
     - [x] 3.10.11 Ensure each step (fetching, parsing, extraction, DB insertion) is modular and testable
   - [x] 3.11 Implement Skyscanner Scraping Process
@@ -121,6 +124,9 @@ Based on PRD: `prd-flight-scraping-app.md`
     - [x] 3.11.7 For each flight, lookup airport DB ids by IATA code (Convex query)
     - [x] 3.11.8 Generate uniqueIds for deduplication (flights, bundles, booking options)
     - [x] 3.11.9 Bulk insert flights, then bundles (mapping uniqueIds to DB ids), then booking options (mapping targetUniqueId to bundle DB id)
+    - ✅ IMPLEMENTED: Created flights.ts, bundles.ts, bookingOptions.ts with bulk insertion functions
+    - ✅ IMPLEMENTED: Created data_processing.ts to orchestrate database insertion process
+    - ✅ IMPLEMENTED: Updated scraping actions to actually insert data into database
     - [x] 3.11.10 Log success and handle errors at each step
     - [x] 3.11.11 Implement polling loop: repeat until first part of response is 'Y', always use latest cookie
     - [x] 3.11.12 Ensure each step (fetching, parsing, extraction, DB insertion) is modular and testable
