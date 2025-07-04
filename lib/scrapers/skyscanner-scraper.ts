@@ -63,6 +63,28 @@ export class SkyscannerScraper extends BaseFlightScraper {
       // Extract token, session, suuid, and deeplink from HTML
       const phase1Data = extractSessionDataFromPhase1Html(html);
 
+      // Log extracted session data
+      this.logProgress(
+        "phase1",
+        `Extracted token: ${phase1Data.token || "NOT_FOUND"}`
+      );
+      this.logProgress(
+        "phase1",
+        `Extracted session: ${phase1Data.session || "NOT_FOUND"}`
+      );
+      this.logProgress(
+        "phase1",
+        `Extracted suuid: ${phase1Data.suuid || "NOT_FOUND"}`
+      );
+      this.logProgress(
+        "phase1",
+        `Extracted deeplink: ${phase1Data.deeplink || "NOT_FOUND"}`
+      );
+      this.logProgress(
+        "phase1",
+        `Extracted cookie: ${cookie ? cookie.substring(0, 50) + "..." : "NOT_FOUND"}`
+      );
+
       this.logProgress("phase1", "Phase 1 completed successfully");
 
       return {
@@ -138,10 +160,25 @@ export class SkyscannerScraper extends BaseFlightScraper {
 
         const responseText = await response.text();
 
-        // Update cookie from response
+        // Update cookie from response and log changes
         const newCookie = response.headers.get("set-cookie");
         if (newCookie) {
+          const oldCookie = currentCookie;
           currentCookie = newCookie;
+          this.logProgress("phase2", `Updated cookie from response headers`);
+          this.logProgress(
+            "phase2",
+            `Old cookie: ${oldCookie ? oldCookie.substring(0, 50) + "..." : "NOT_FOUND"}`
+          );
+          this.logProgress(
+            "phase2",
+            `New cookie: ${newCookie.substring(0, 50) + "..."}`
+          );
+        } else {
+          this.logProgress(
+            "phase2",
+            `No new cookie in response headers, keeping existing`
+          );
         }
 
         // Parse the response (split by '|' and extract parts)
