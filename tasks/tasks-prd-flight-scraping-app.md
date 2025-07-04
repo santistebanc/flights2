@@ -154,7 +154,7 @@ Based on PRD: `prd-flight-scraping-app.md`
     - Connect FlightSearchForm onSubmit to useFlightSearch hook
     - Validate form data before triggering search
     - Prevent multiple simultaneous searches
-  - [ ] 5.3 Implement real-time scraping progress display
+  - [x] 5.3 Implement real-time scraping progress display
     - Show progress for both Kiwi and Skyscanner simultaneously
     - Display current phase (Phase 1/Phase 2) for each source
     - Show estimated completion time

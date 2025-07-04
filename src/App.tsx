@@ -6,6 +6,7 @@ import { SearchContext, ScrapingSource } from "./SearchContext";
 import { useLocalStorage } from "./useLocalStorage";
 import { useFlightSearch } from "./hooks/useFlightSearch";
 import { ResultsList } from "./components/flight-results/ResultsList";
+import { ScrapingProgress } from "./components/progress/ScrapingProgress";
 
 // Default sources configuration
 const defaultSources: ScrapingSource[] = [
@@ -86,46 +87,7 @@ export default function App() {
       case "loading":
         return (
           <div className="mt-8">
-            <div className="text-center text-gray-400 mb-4">
-              <p>Searching for flights...</p>
-            </div>
-            {/* TODO: Add ScrapingProgress component here */}
-            <div className="space-y-4">
-              <div className="bg-gray-800 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-300">
-                    Kiwi
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {progress.kiwi.status}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-400">{progress.kiwi.message}</p>
-                {progress.kiwi.recordsProcessed !== undefined && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {progress.kiwi.recordsProcessed} records processed
-                  </p>
-                )}
-              </div>
-              <div className="bg-gray-800 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-300">
-                    Skyscanner
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {progress.skyscanner.status}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-400">
-                  {progress.skyscanner.message}
-                </p>
-                {progress.skyscanner.recordsProcessed !== undefined && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {progress.skyscanner.recordsProcessed} records processed
-                  </p>
-                )}
-              </div>
-            </div>
+            <ScrapingProgress progress={progress} />
           </div>
         );
 
