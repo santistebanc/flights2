@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils";
+import { BookingOptions, BookingOption } from "./BookingOptions";
 
 // Types for the bundle display
 export interface FlightInfo {
@@ -28,14 +29,6 @@ export interface FlightInfo {
   };
   departureDateTime: number; // Unix ms
   arrivalDateTime: number; // Unix ms
-}
-
-export interface BookingOption {
-  _id: string;
-  agency: string;
-  price: number;
-  currency: string;
-  linkToBook: string;
 }
 
 export interface BundleCardProps {
@@ -165,39 +158,11 @@ export const BundleCard: React.FC<BundleCardProps> = ({
         )}
 
         {/* Booking Options */}
-        <div>
-          <h4 className="font-medium text-sm mb-2 text-muted-foreground">
-            Booking Options
-          </h4>
-          <div className="space-y-2">
-            {bookingOptions.slice(0, 3).map((option) => (
-              <div
-                key={option._id}
-                className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
-              >
-                <span className="text-sm font-medium">{option.agency}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold">
-                    {option.currency} {option.price.toFixed(2)}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => window.open(option.linkToBook, "_blank")}
-                    className="text-xs"
-                  >
-                    Book
-                  </Button>
-                </div>
-              </div>
-            ))}
-            {bookingOptions.length > 3 && (
-              <div className="text-xs text-muted-foreground text-center py-1">
-                +{bookingOptions.length - 3} more options
-              </div>
-            )}
-          </div>
-        </div>
+        <BookingOptions
+          bookingOptions={bookingOptions}
+          maxVisible={3}
+          className="mt-4"
+        />
       </CardContent>
 
       <CardFooter className="pt-4">
