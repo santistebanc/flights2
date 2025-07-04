@@ -32,10 +32,6 @@ class TestScraper extends BaseFlightScraper {
   }
 
   // Expose protected methods for testing
-  public testGenerateUniqueId(prefix: string, data: string): string {
-    return this.generateUniqueId(prefix, data);
-  }
-
   public testValidateParams(params: FlightSearchParams): void {
     return this.validateParams(params);
   }
@@ -125,50 +121,6 @@ describe("BaseFlightScraper", () => {
       expect(() => scraper.testValidateParams(invalidParams)).toThrow(
         "Return date is required for round trips"
       );
-    });
-  });
-
-  describe("unique ID generation", () => {
-    it("generates consistent unique IDs for same input", () => {
-      const id1 = scraper.testGenerateUniqueId(
-        "flight",
-        "NYC-LAX-2024-01-15-AA123"
-      );
-      const id2 = scraper.testGenerateUniqueId(
-        "flight",
-        "NYC-LAX-2024-01-15-AA123"
-      );
-
-      expect(id1).toBe(id2);
-      expect(id1).toMatch(/^flight_[a-z0-9]+$/);
-    });
-
-    it("generates different IDs for different inputs", () => {
-      const id1 = scraper.testGenerateUniqueId(
-        "flight",
-        "NYC-LAX-2024-01-15-AA123"
-      );
-      const id2 = scraper.testGenerateUniqueId(
-        "flight",
-        "NYC-LAX-2024-01-15-AA124"
-      );
-
-      expect(id1).not.toBe(id2);
-    });
-
-    it("generates different IDs for different prefixes", () => {
-      const id1 = scraper.testGenerateUniqueId(
-        "flight",
-        "NYC-LAX-2024-01-15-AA123"
-      );
-      const id2 = scraper.testGenerateUniqueId(
-        "bundle",
-        "NYC-LAX-2024-01-15-AA123"
-      );
-
-      expect(id1).not.toBe(id2);
-      expect(id1).toMatch(/^flight_/);
-      expect(id2).toMatch(/^bundle_/);
     });
   });
 

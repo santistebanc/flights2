@@ -82,27 +82,6 @@ export abstract class BaseFlightScraper {
   ): Promise<ScrapingPhase2Result>;
 
   /**
-   * Generate a unique ID for deduplication
-   */
-  protected generateUniqueId(prefix: string, data: string): string {
-    const hash = this.simpleHash(data);
-    return `${prefix}_${hash}`;
-  }
-
-  /**
-   * Simple hash function for generating unique IDs
-   */
-  private simpleHash(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString(36);
-  }
-
-  /**
    * Log scraping errors for monitoring and debugging
    */
   protected logError(error: ScrapingError): void {
