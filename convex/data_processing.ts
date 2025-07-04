@@ -195,7 +195,7 @@ export const processAndInsertScrapedData = internalMutation({
               departureDateTime + flight.duration * 60 * 1000;
 
             return {
-              uniqueId: `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}`,
+              uniqueId: `flight_${flight.flightNumber}_${flight.departureAirportIataCode}_${flight.arrivalAirportIataCode}_${flight.departureDate}`,
               flightNumber: flight.flightNumber,
               departureAirportId:
                 airportIdMapping[flight.departureAirportIataCode],
@@ -237,7 +237,7 @@ export const processAndInsertScrapedData = internalMutation({
           });
 
           return {
-            uniqueId: `bundle_${bundleIndex}`,
+            uniqueId: `bundle_${outboundFlightUniqueIds.join("_")}_${inboundFlightUniqueIds.join("_")}`,
             outboundFlightUniqueIds,
             inboundFlightUniqueIds,
           };
@@ -270,7 +270,7 @@ export const processAndInsertScrapedData = internalMutation({
             bundleIndex >= 0 ? `bundle_${bundleIndex}` : `bundle_0`;
 
           return {
-            uniqueId: `booking_${optionIndex}`,
+            uniqueId: `booking_${option.agency}_${option.price}_${option.linkToBook}_${option.currency}_${option.extractedAt}`,
             targetUniqueId: bundleId,
             agency: option.agency,
             price: option.price,
