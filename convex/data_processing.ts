@@ -65,6 +65,32 @@ function shortHash(str: string): string {
 }
 
 /**
+ * Generate optimized bundle uniqueId using only first and last flight uniqueIds.
+ * Since flights are guaranteed to be in chronological order, this maintains uniqueness
+ * while creating shorter, more efficient identifiers.
+ */
+function generateOptimizedBundleUniqueId(
+  outboundFlightUniqueIds: string[],
+  inboundFlightUniqueIds: string[]
+): string {
+  // For outbound flights: use first and last (or just first if only one)
+  const outboundPart =
+    outboundFlightUniqueIds.length === 1
+      ? outboundFlightUniqueIds[0]
+      : `${outboundFlightUniqueIds[0]}_${outboundFlightUniqueIds[outboundFlightUniqueIds.length - 1]}`;
+
+  // For inbound flights: use first and last (or just first if only one)
+  const inboundPart =
+    inboundFlightUniqueIds.length === 0
+      ? ""
+      : inboundFlightUniqueIds.length === 1
+        ? inboundFlightUniqueIds[0]
+        : `${inboundFlightUniqueIds[0]}_${inboundFlightUniqueIds[inboundFlightUniqueIds.length - 1]}`;
+
+  return `bundle_${outboundPart}_${inboundPart}`;
+}
+
+/**
  * Process scraped data and insert into database.
  * This is the main function that orchestrates the database insertion process.
  */
@@ -255,7 +281,10 @@ export const processAndInsertScrapedData = internalMutation({
           });
 
           return {
-            uniqueId: `bundle_${outboundFlightUniqueIds.join("_")}_${inboundFlightUniqueIds.join("_")}`,
+            uniqueId: generateOptimizedBundleUniqueId(
+              outboundFlightUniqueIds,
+              inboundFlightUniqueIds
+            ),
             outboundFlightUniqueIds,
             inboundFlightUniqueIds,
           };
@@ -319,7 +348,10 @@ export const processAndInsertScrapedData = internalMutation({
                 }
               });
 
-              targetBundleUniqueId = `bundle_${outboundFlightUniqueIds.join("_")}_${inboundFlightUniqueIds.join("_")}`;
+              targetBundleUniqueId = generateOptimizedBundleUniqueId(
+                outboundFlightUniqueIds,
+                inboundFlightUniqueIds
+              );
               break;
             }
           }
@@ -601,7 +633,10 @@ export const savePollData = internalMutation({
 
         // Create bundle
         const bundleData = {
-          uniqueId: `bundle_${outboundFlightUniqueIds.join("_")}_${inboundFlightUniqueIds.join("_")}`,
+          uniqueId: generateOptimizedBundleUniqueId(
+            outboundFlightUniqueIds,
+            inboundFlightUniqueIds
+          ),
           outboundFlightIds: outboundFlightUniqueIds
             .map((uniqueId) => flightUniqueIdToDbId[uniqueId])
             .filter(Boolean) as Id<"flights">[],
@@ -657,7 +692,10 @@ export const savePollData = internalMutation({
           inboundFlightUniqueIds.push(uniqueId);
         });
 
-        const bundleUniqueId = `bundle_${outboundFlightUniqueIds.join("_")}_${inboundFlightUniqueIds.join("_")}`;
+        const bundleUniqueId = generateOptimizedBundleUniqueId(
+          outboundFlightUniqueIds,
+          inboundFlightUniqueIds
+        );
 
         // Find the bundle ID by looking up the bundle we just created
         const bundleIndex = bundleIds.findIndex((_, index) => {
@@ -687,7 +725,10 @@ export const savePollData = internalMutation({
             bundleInboundFlightUniqueIds.push(uniqueId);
           });
 
-          const currentBundleUniqueId = `bundle_${bundleOutboundFlightUniqueIds.join("_")}_${bundleInboundFlightUniqueIds.join("_")}`;
+          const currentBundleUniqueId = generateOptimizedBundleUniqueId(
+            bundleOutboundFlightUniqueIds,
+            bundleInboundFlightUniqueIds
+          );
           return currentBundleUniqueId === bundleUniqueId;
         });
 
