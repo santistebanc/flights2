@@ -12,6 +12,7 @@ A browser-like tabbed workspace component that allows users to add and close tab
 - ✅ Automatic tab switching when active tab is closed
 - ✅ Fully customizable styling
 - ✅ TypeScript support
+- ✅ Dark theme with gray colors and yellow accents
 
 ## Usage
 
@@ -94,12 +95,14 @@ interface TabbedWorkspaceProps {
 
 ## Styling
 
-The component uses Tailwind CSS classes and follows the design system:
+The component uses a dark theme with Tailwind CSS classes:
 
-- **Active tab**: White background with border
-- **Inactive tabs**: Muted background with hover effects
-- **Close button**: Appears on hover with destructive hover state
-- **Add button**: Ghost variant with accent hover state
+- **Container**: `bg-gray-800 border-gray-700` with rounded corners
+- **Active tab**: `bg-gray-800 text-white` with border styling
+- **Inactive tabs**: `bg-gray-700/50 text-gray-300` with hover effects
+- **Close button**: Appears on hover with `hover:bg-red-600` destructive state
+- **Add button**: Ghost variant with `hover:bg-gray-700` accent state
+- **Content area**: `bg-gray-800` background
 
 ## Examples
 
@@ -125,7 +128,7 @@ const tabs: Tab[] = [
   onTabChange={handleTabChange}
   onTabAdd={handleTabAdd}
   onTabClose={handleTabClose}
-  className="h-full border rounded-lg"
+  className="h-full border-2 border-yellow-400"
   tabClassName="px-6 py-3"
   contentClassName="p-4"
 />
