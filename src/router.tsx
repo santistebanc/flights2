@@ -10,14 +10,13 @@ import {
 import { ResultsList } from "./components/flight-results/ResultsList";
 import { ScrapingProgress } from "./components/progress/ScrapingProgress";
 import { useFlightSearch } from "./hooks/useFlightSearch";
-import { SearchContext, ScrapingSource } from "./SearchContext";
 import { ThemeToggle } from "./components/ui/theme-toggle";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useUrlBasedSearch } from "./hooks/useUrlBasedSearch";
 import { useState, useEffect } from "react";
 
 // Default sources configuration
-const defaultSources: ScrapingSource[] = [
+const defaultSources = [
   {
     id: "kiwi",
     enabled: true,
@@ -40,7 +39,7 @@ interface SearchParams {
 
 // Preferences interface
 interface Preferences {
-  sources: ScrapingSource[];
+  sources: typeof defaultSources;
 }
 
 // Root route component
@@ -249,56 +248,29 @@ function RootComponent() {
   };
 
   return (
-    <SearchContext.Provider
-      value={{
-        searchParams: {
-          departureAirport: search.from || "BER",
-          arrivalAirport: search.to || "MAD",
-          departureDate: search.depart || "2025-07-03",
-          returnDate: search.return || "",
-          isRoundTrip: !!search.return,
-          sources: preferences.sources,
-        },
-        setSearchParams: (newParams) => {
-          // Update preferences in localStorage
-          if (typeof newParams === "function") {
-            setPreferences((prev) => ({
-              ...prev,
-              sources: newParams({} as any).sources,
-            }));
-          } else {
-            setPreferences((prev) => ({
-              ...prev,
-              sources: newParams.sources,
-            }));
-          }
-        },
-      }}
-    >
-      <div className="h-screen flex flex-col bg-background overflow-hidden">
-        {/* Sticky Search Form with Icon */}
-        <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm flex-shrink-0">
-          <div className="flex items-center justify-between px-4 py-2">
-            <h1 className="text-xl font-semibold text-foreground">
-              Flight Search
-            </h1>
-            <ThemeToggle />
-          </div>
-          <FlightSearchForm onSearch={handleSearch} isLoading={isSearching} />
-
-          {/* Progress Indicators - shown only when searching */}
-          {isSearching && (
-            <div className="w-full px-4 pb-3">
-              <ScrapingProgress progress={progress} />
-            </div>
-          )}
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Sticky Search Form with Icon */}
+      <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-2">
+          <h1 className="text-xl font-semibold text-foreground">
+            Flight Search
+          </h1>
+          <ThemeToggle />
         </div>
+        <FlightSearchForm onSearch={handleSearch} isLoading={isSearching} />
 
-        <main className="flex-1 overflow-auto p-4">
-          <div className="max-w-4xl mx-auto">{renderMainContent()}</div>
-        </main>
+        {/* Progress Indicators - shown only when searching */}
+        {isSearching && (
+          <div className="w-full px-4 pb-3">
+            <ScrapingProgress progress={progress} />
+          </div>
+        )}
       </div>
-    </SearchContext.Provider>
+
+      <main className="flex-1 overflow-auto p-4">
+        <div className="max-w-4xl mx-auto">{renderMainContent()}</div>
+      </main>
+    </div>
   );
 }
 
