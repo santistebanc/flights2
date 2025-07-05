@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TabbedWorkspace, Tab } from "./ui/tabs";
+import { TabbedWorkspace, TabMenu, TabContent, Tab } from "./ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Search, Settings, BarChart3, FileText } from "lucide-react";
@@ -156,7 +156,10 @@ const TabbedWorkspaceDemo: React.FC = () => {
           onTabAdd={handleTabAdd}
           onTabClose={handleTabClose}
           className="h-full"
-        />
+        >
+          <TabMenu />
+          <TabContent />
+        </TabbedWorkspace>
       </CardContent>
     </Card>
   );
