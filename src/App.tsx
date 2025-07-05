@@ -82,13 +82,6 @@ export default function App() {
           </div>
         );
 
-      case "loading":
-        return (
-          <div className="mt-8">
-            <ScrapingProgress progress={progress} />
-          </div>
-        );
-
       case "success":
         return (
           <div className="mt-8">
@@ -162,6 +155,13 @@ export default function App() {
         {/* Sticky Search Form with Icon */}
         <div className="sticky top-0 z-10 bg-gray-800/95 backdrop-blur-sm border-b border-gray-700 shadow-sm flex-shrink-0">
           <FlightSearchForm onSearch={handleSearch} isLoading={isSearching} />
+
+          {/* Progress Indicators - shown only when searching */}
+          {isSearching && (
+            <div className="w-full px-4 pb-3">
+              <ScrapingProgress progress={progress} />
+            </div>
+          )}
         </div>
 
         <main className="flex-1 overflow-auto p-4">
