@@ -24,6 +24,15 @@ interface DateRange {
   to: Date | undefined;
 }
 
+// Helper function to parse date strings with proper timezone handling
+const parseDateString = (dateString: string): Date => {
+  // Split the date string to get year, month, and day parts
+  const parts = dateString.split("-").map((part) => parseInt(part, 10));
+  // Create a new Date object using the local timezone
+  // Note: Month is 0-indexed, so subtract 1 from the month part
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+};
+
 export function FlightSearchForm({ className }: FlightSearchFormProps) {
   const search = useSearch({ from: "/" });
   const navigate = useNavigate();
@@ -32,8 +41,8 @@ export function FlightSearchForm({ className }: FlightSearchFormProps) {
   const [departureAirport, setDepartureAirport] = useState(search.from || "");
   const [arrivalAirport, setArrivalAirport] = useState(search.to || "");
   const [dateRange, setDateRange] = useState<DateRange>({
-    from: search.depart ? new Date(search.depart) : new Date(),
-    to: search.return ? new Date(search.return) : undefined,
+    from: search.depart ? parseDateString(search.depart) : new Date(),
+    to: search.return ? parseDateString(search.return) : undefined,
   });
   const [isRoundTrip, setIsRoundTrip] = useState(!!search.return);
 
@@ -130,8 +139,8 @@ export function FlightSearchForm({ className }: FlightSearchFormProps) {
         {/* Date Range Picker */}
         <div className="flex-shrink-0">
           <DateRangePicker
-            dateFrom={search.depart || dateRange.from}
-            dateTo={search.return || dateRange.to}
+            dateFrom={dateRange.from}
+            dateTo={dateRange.to}
             isRoundTrip={isRoundTrip}
             onUpdate={handleDateRangeUpdate}
           />
