@@ -140,10 +140,7 @@ export function FlightSearchForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className={cn(
-        "p-3 bg-gray-800/95 backdrop-blur-sm border-b border-gray-700",
-        className
-      )}
+      className={cn("p-3 bg-gray-800/95 backdrop-blur-sm", className)}
     >
       <div className="flex flex-col md:flex-row gap-3 items-center max-w-6xl mx-auto">
         {/* FlightFinder Icon */}
