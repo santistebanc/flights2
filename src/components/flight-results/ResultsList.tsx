@@ -393,60 +393,6 @@ export const ResultsList: React.FC<ResultsListProps> = ({
           </Button>
         </div>
       )}
-
-      {/* Results Summary */}
-      {sortedBundles.length > 0 && (
-        <Card className="mt-6">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(
-                    Math.min(...bundlesWithPrices.map((b) => b.minPrice)),
-                    currency
-                  )}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Lowest Price
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(
-                    Math.max(...bundlesWithPrices.map((b) => b.minPrice)),
-                    currency
-                  )}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Highest Price
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(
-                    bundlesWithPrices.reduce((sum, b) => sum + b.minPrice, 0) /
-                      bundlesWithPrices.length,
-                    currency
-                  )}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Average Price
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">
-                  {
-                    bundlesWithPrices.filter(
-                      (b) => b.inboundFlights && b.inboundFlights.length > 0
-                    ).length
-                  }
-                </div>
-                <div className="text-xs text-muted-foreground">Round Trips</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
