@@ -126,10 +126,6 @@ export function extractBookingOptionsFromModal(
     const $link = $priceAndLinkP.find("a");
     const linkToBook = $link.attr("href") || "";
 
-    console.log(
-      `[${source.charAt(0).toUpperCase() + source.slice(1)}] Raw price text: "${priceAndLinkText}" for agency: ${agency}`
-    );
-
     // Use format-money-js to robustly parse the price
     let price = 0;
     try {
@@ -145,10 +141,6 @@ export function extractBookingOptionsFromModal(
     if (price === 0) {
       console.warn(
         `[${source.charAt(0).toUpperCase() + source.slice(1)}] Failed to extract price from: "${priceAndLinkText}" for agency: ${agency}`
-      );
-    } else {
-      console.log(
-        `[${source.charAt(0).toUpperCase() + source.slice(1)}] Extracted price: ${price} using format-money-js`
       );
     }
 

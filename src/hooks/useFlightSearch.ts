@@ -183,25 +183,6 @@ export function useFlightSearch(): UseFlightSearchReturn {
             isRoundTrip: params.isRoundTrip,
           });
 
-          console.log("Search results from database:", results);
-          console.log("Number of bundles found:", results.length);
-
-          // Debug booking options
-          results.forEach((bundle, index) => {
-            console.log(`Bundle ${index + 1}:`, {
-              bundleId: bundle._id,
-              uniqueId: bundle.uniqueId,
-              outboundFlights: bundle.outboundFlights.length,
-              inboundFlights: bundle.inboundFlights?.length || 0,
-              bookingOptions: bundle.bookingOptions.length,
-              bookingOptionPrices: bundle.bookingOptions.map((bo) => ({
-                agency: bo.agency,
-                price: bo.price,
-                currency: bo.currency,
-              })),
-            });
-          });
-
           if (results && results.length > 0) {
             setResults(results);
             setSearchState("success");

@@ -101,10 +101,7 @@ export abstract class BaseFlightScraper {
     message: string,
     details?: any
   ): void {
-    console.log(
-      `[${this.name}] ${phase.toUpperCase()}: ${message}`,
-      details || ""
-    );
+    // Progress logging disabled for production
   }
 
   /**

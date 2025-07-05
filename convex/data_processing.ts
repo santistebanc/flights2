@@ -456,10 +456,6 @@ export const savePollData = internalMutation({
   }),
   handler: async (ctx, args) => {
     try {
-      console.log(
-        `[${args.scraperName}] Saving poll ${args.pollNumber} data: ${args.scrapeResult.bundles.length} bundles`
-      );
-
       // Extract all flights from bundles with proper date calculation
       const allFlights: FlightWithDate[] = [];
       const allBookingOptions: ScrapedBookingOption[] = [];
@@ -728,10 +724,6 @@ export const savePollData = internalMutation({
           }
         }
       }
-
-      console.log(
-        `[${args.scraperName}] Poll ${args.pollNumber} saved successfully: ${flightsForDb.length} flights, ${bundleIds.length} bundles, ${bookingOptionsInserted} booking options inserted, ${bookingOptionsReplaced} replaced`
-      );
 
       return {
         success: true,

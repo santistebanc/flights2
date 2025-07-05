@@ -101,9 +101,6 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
   const handleBookNow = (linkToBook: string, agency: string) => {
     // Open booking link in new tab
     window.open(linkToBook, "_blank", "noopener,noreferrer");
-
-    // Optional: Track booking clicks
-    console.log(`Booking clicked for ${agency}: ${linkToBook}`);
   };
 
   if (bookingOptions.length === 0) {

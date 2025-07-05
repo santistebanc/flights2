@@ -17,7 +17,6 @@ export const scrapeKiwi = action({
     success: v.boolean(),
     message: v.string(),
     recordsProcessed: v.number(),
-    scrapedData: v.any(), // For debugging - will be removed later
   }),
   handler: async (
     ctx,
@@ -26,7 +25,6 @@ export const scrapeKiwi = action({
     success: boolean;
     message: string;
     recordsProcessed: number;
-    scrapedData: any;
   }> => {
     const params: FlightSearchParams = {
       departureAirport: args.departureAirport,
@@ -81,7 +79,6 @@ export const scrapeKiwi = action({
         success: insertionResult.success,
         message: insertionResult.message,
         recordsProcessed,
-        scrapedData: result, // For debugging
       };
     } catch (error) {
       const errorMessage =
@@ -99,7 +96,6 @@ export const scrapeKiwi = action({
         success: false,
         message: `Failed to scrape Kiwi: ${errorMessage}`,
         recordsProcessed: 0,
-        scrapedData: null,
       };
     }
   },
@@ -117,7 +113,6 @@ export const scrapeSkyscanner = action({
     success: v.boolean(),
     message: v.string(),
     recordsProcessed: v.number(),
-    scrapedData: v.any(), // For debugging - will be removed later
   }),
   handler: async (
     ctx,
@@ -126,7 +121,6 @@ export const scrapeSkyscanner = action({
     success: boolean;
     message: string;
     recordsProcessed: number;
-    scrapedData: any;
   }> => {
     const params: FlightSearchParams = {
       departureAirport: args.departureAirport,
@@ -254,7 +248,6 @@ export const scrapeSkyscanner = action({
         success: true,
         message: `Successfully scraped ${totalRecordsProcessed} records from Skyscanner`,
         recordsProcessed: totalRecordsProcessed,
-        scrapedData: null, // No need to return data since it's already saved
       };
     } catch (error) {
       const errorMessage =
@@ -272,7 +265,6 @@ export const scrapeSkyscanner = action({
         success: false,
         message: `Failed to scrape Skyscanner: ${errorMessage}`,
         recordsProcessed: 0,
-        scrapedData: null,
       };
     }
   },
