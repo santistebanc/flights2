@@ -1,5 +1,8 @@
 import * as cheerio from "cheerio";
 import { ScrapedFlight, ScrapedBookingOption } from "../types/scraper";
+import { FormatMoney } from "format-money-js";
+
+const fm = new FormatMoney();
 
 /**
  * Shared HTML extraction utilities for both Kiwi and Skyscanner
@@ -127,24 +130,25 @@ export function extractBookingOptionsFromModal(
       `[${source.charAt(0).toUpperCase() + source.slice(1)}] Raw price text: "${priceAndLinkText}" for agency: ${agency}`
     );
 
-    // Use single consistent pattern for price extraction (same for both scrapers)
+    // Use format-money-js to robustly parse the price
     let price = 0;
-    const priceMatch = priceAndLinkText.match(/€([\d,]+(?:\.\d{2})?)/);
-    if (priceMatch) {
-      // Remove commas from the price string before parsing
-      const priceString = priceMatch[1].replace(/,/g, "");
-      const extractedPrice = parseFloat(priceString);
-      if (!isNaN(extractedPrice) && extractedPrice > 0) {
-        price = extractedPrice;
-        console.log(
-          `[${source.charAt(0).toUpperCase() + source.slice(1)}] Extracted price: ${price} from consistent pattern: €${priceMatch[1]}`
-        );
-      }
+    try {
+      const parsed = fm.un(priceAndLinkText, { decimalPoint: "." });
+      price =
+        typeof parsed === "number" && !isNaN(parsed) && parsed > 0 ? parsed : 0;
+    } catch (e) {
+      console.warn(
+        `[${source.charAt(0).toUpperCase() + source.slice(1)}] format-money-js failed to parse price from: "${priceAndLinkText}" for agency: ${agency}`
+      );
     }
 
     if (price === 0) {
       console.warn(
         `[${source.charAt(0).toUpperCase() + source.slice(1)}] Failed to extract price from: "${priceAndLinkText}" for agency: ${agency}`
+      );
+    } else {
+      console.log(
+        `[${source.charAt(0).toUpperCase() + source.slice(1)}] Extracted price: ${price} using format-money-js`
       );
     }
 
