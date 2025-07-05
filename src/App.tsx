@@ -158,7 +158,7 @@ export default function App() {
 
           {/* Progress Indicators - shown only when searching */}
           {isSearching && (
-            <div className="w-full px-4 pb-3 border-t border-gray-700">
+            <div className="w-full px-4 pb-3">
               <ScrapingProgress progress={progress} />
             </div>
           )}
