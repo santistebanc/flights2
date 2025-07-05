@@ -41,8 +41,8 @@ describe("kiwi-html-extractor", () => {
     expect(bundle.outboundFlights).toHaveLength(2);
     expect(bundle.inboundFlights).toHaveLength(1);
     expect(bundle.bookingOptions).toHaveLength(1);
-    expect(bundle.outboundDate).toBe("2025-10-10");
-    expect(bundle.inboundDate).toBe("2025-10-20");
+    expect(bundle.departureDate).toBe("2025-10-10");
+    expect(bundle.returnDate).toBe("2025-10-20");
 
     // Check outbound flights
     expect(bundle.outboundFlights[0]).toEqual({

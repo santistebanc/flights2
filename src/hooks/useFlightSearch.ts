@@ -176,8 +176,8 @@ export function useFlightSearch(): UseFlightSearchReturn {
           const results = await convex.query(api.bundles.getBundlesForSearch, {
             departureIata: params.departureAirport.toUpperCase(),
             arrivalIata: params.arrivalAirport.toUpperCase(),
-            outboundDate: params.departureDate.toISOString().split("T")[0],
-            inboundDate: params.returnDate
+            departureDate: params.departureDate.toISOString().split("T")[0],
+            returnDate: params.returnDate
               ? params.returnDate.toISOString().split("T")[0]
               : undefined,
             isRoundTrip: params.isRoundTrip,

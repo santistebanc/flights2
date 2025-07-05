@@ -10,19 +10,19 @@ export interface ScrapingSource {
 // Search context for sharing filter state between header and main content
 const SearchContext = createContext<{
   searchParams: {
-    from: string;
-    to: string;
-    outboundDate: string;
-    inboundDate: string;
+    departureAirport: string;
+    arrivalAirport: string;
+    departureDate: string;
+    returnDate: string;
     isRoundTrip: boolean;
     sources: ScrapingSource[];
   };
   setSearchParams: React.Dispatch<
     React.SetStateAction<{
-      from: string;
-      to: string;
-      outboundDate: string;
-      inboundDate: string;
+      departureAirport: string;
+      arrivalAirport: string;
+      departureDate: string;
+      returnDate: string;
       isRoundTrip: boolean;
       sources: ScrapingSource[];
     }>

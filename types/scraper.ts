@@ -24,8 +24,8 @@ export interface ScrapedBookingOption {
 }
 
 export interface ScrapedBundle {
-  outboundDate: string; // YYYY-MM-DD format
-  inboundDate: string; // YYYY-MM-DD format
+  departureDate: string; // YYYY-MM-DD format
+  returnDate: string; // YYYY-MM-DD format
   outboundFlights: ScrapedFlight[];
   inboundFlights: ScrapedFlight[];
   bookingOptions: ScrapedBookingOption[];

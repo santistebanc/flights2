@@ -56,6 +56,14 @@ export function calculateFlightDepartureDate(
   return `${year}-${month}-${day}`;
 }
 
+function shortHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff;
+  }
+  return Math.abs(hash).toString(36);
+}
+
 /**
  * Process scraped data and insert into database.
  * This is the main function that orchestrates the database insertion process.
@@ -65,8 +73,8 @@ export const processAndInsertScrapedData = internalMutation({
     scrapeResult: v.object({
       bundles: v.array(
         v.object({
-          outboundDate: v.string(),
-          inboundDate: v.string(),
+          departureDate: v.string(),
+          returnDate: v.string(),
           outboundFlights: v.array(
             v.object({
               flightNumber: v.string(),
@@ -118,7 +126,7 @@ export const processAndInsertScrapedData = internalMutation({
         // Calculate departure dates for outbound flights
         bundle.outboundFlights.forEach((flight, flightIndex) => {
           const departureDate = calculateFlightDepartureDate(
-            bundle.outboundDate,
+            bundle.departureDate,
             flightIndex,
             bundle.outboundFlights
           );
@@ -132,7 +140,7 @@ export const processAndInsertScrapedData = internalMutation({
         // Calculate departure dates for inbound flights
         bundle.inboundFlights.forEach((flight, flightIndex) => {
           const departureDate = calculateFlightDepartureDate(
-            bundle.inboundDate,
+            bundle.returnDate,
             flightIndex,
             bundle.inboundFlights
           );
@@ -223,7 +231,7 @@ export const processAndInsertScrapedData = internalMutation({
           // Map outbound flights - use the same uniqueId format as generated for flights
           bundle.outboundFlights.forEach((flight, flightIndex) => {
             const departureDate = calculateFlightDepartureDate(
-              bundle.outboundDate,
+              bundle.departureDate,
               flightIndex,
               bundle.outboundFlights
             );
@@ -236,7 +244,7 @@ export const processAndInsertScrapedData = internalMutation({
           // Map inbound flights - use the same uniqueId format as generated for flights
           bundle.inboundFlights.forEach((flight, flightIndex) => {
             const departureDate = calculateFlightDepartureDate(
-              bundle.inboundDate,
+              bundle.returnDate,
               flightIndex,
               bundle.inboundFlights
             );
@@ -288,7 +296,7 @@ export const processAndInsertScrapedData = internalMutation({
               // Map outbound flights
               bundle.outboundFlights.forEach((flight, flightIndex) => {
                 const departureDate = calculateFlightDepartureDate(
-                  bundle.outboundDate,
+                  bundle.departureDate,
                   flightIndex,
                   bundle.outboundFlights
                 );
@@ -301,7 +309,7 @@ export const processAndInsertScrapedData = internalMutation({
               // Map inbound flights
               bundle.inboundFlights.forEach((flight, flightIndex) => {
                 const departureDate = calculateFlightDepartureDate(
-                  bundle.inboundDate,
+                  bundle.returnDate,
                   flightIndex,
                   bundle.inboundFlights
                 );
@@ -322,7 +330,7 @@ export const processAndInsertScrapedData = internalMutation({
           }
 
           return {
-            uniqueId: `booking_${option.agency}_${option.price}_${option.linkToBook}_${option.currency}_${option.extractedAt}`,
+            uniqueId: `booking_${option.agency}_${option.price}_${option.currency}_${option.extractedAt}_${shortHash(option.linkToBook)}`,
             targetUniqueId: targetBundleUniqueId,
             agency: option.agency,
             price: option.price,
@@ -401,8 +409,8 @@ export const savePollData = internalMutation({
     scrapeResult: v.object({
       bundles: v.array(
         v.object({
-          outboundDate: v.string(),
-          inboundDate: v.string(),
+          departureDate: v.string(),
+          returnDate: v.string(),
           outboundFlights: v.array(
             v.object({
               flightNumber: v.string(),
@@ -460,7 +468,7 @@ export const savePollData = internalMutation({
         // Calculate departure dates for outbound flights
         bundle.outboundFlights.forEach((flight, flightIndex) => {
           const departureDate = calculateFlightDepartureDate(
-            bundle.outboundDate,
+            bundle.departureDate,
             flightIndex,
             bundle.outboundFlights
           );
@@ -474,7 +482,7 @@ export const savePollData = internalMutation({
         // Calculate departure dates for inbound flights
         bundle.inboundFlights.forEach((flight, flightIndex) => {
           const departureDate = calculateFlightDepartureDate(
-            bundle.inboundDate,
+            bundle.returnDate,
             flightIndex,
             bundle.inboundFlights
           );
@@ -576,7 +584,7 @@ export const savePollData = internalMutation({
         // Map outbound flights
         bundle.outboundFlights.forEach((flight, flightIndex) => {
           const departureDate = calculateFlightDepartureDate(
-            bundle.outboundDate,
+            bundle.departureDate,
             flightIndex,
             bundle.outboundFlights
           );
@@ -587,7 +595,7 @@ export const savePollData = internalMutation({
         // Map inbound flights
         bundle.inboundFlights.forEach((flight, flightIndex) => {
           const departureDate = calculateFlightDepartureDate(
-            bundle.inboundDate,
+            bundle.returnDate,
             flightIndex,
             bundle.inboundFlights
           );
@@ -634,7 +642,7 @@ export const savePollData = internalMutation({
         // Map outbound flights
         bundle.outboundFlights.forEach((flight, flightIndex) => {
           const departureDate = calculateFlightDepartureDate(
-            bundle.outboundDate,
+            bundle.departureDate,
             flightIndex,
             bundle.outboundFlights
           );
@@ -645,7 +653,7 @@ export const savePollData = internalMutation({
         // Map inbound flights
         bundle.inboundFlights.forEach((flight, flightIndex) => {
           const departureDate = calculateFlightDepartureDate(
-            bundle.inboundDate,
+            bundle.returnDate,
             flightIndex,
             bundle.inboundFlights
           );
@@ -664,7 +672,7 @@ export const savePollData = internalMutation({
           // Map outbound flights
           bundleData.outboundFlights.forEach((flight, flightIndex) => {
             const departureDate = calculateFlightDepartureDate(
-              bundleData.outboundDate,
+              bundleData.departureDate,
               flightIndex,
               bundleData.outboundFlights
             );
@@ -675,7 +683,7 @@ export const savePollData = internalMutation({
           // Map inbound flights
           bundleData.inboundFlights.forEach((flight, flightIndex) => {
             const departureDate = calculateFlightDepartureDate(
-              bundleData.inboundDate,
+              bundleData.returnDate,
               flightIndex,
               bundleData.inboundFlights
             );
@@ -692,7 +700,7 @@ export const savePollData = internalMutation({
 
         for (const option of bundle.bookingOptions) {
           const bookingOptionData = {
-            uniqueId: `booking_${option.agency}_${option.price}_${option.linkToBook}_${option.currency}_${option.extractedAt}`,
+            uniqueId: `booking_${option.agency}_${option.price}_${option.currency}_${option.extractedAt}_${shortHash(option.linkToBook)}`,
             targetId: bundleId,
             agency: option.agency,
             price: option.price,

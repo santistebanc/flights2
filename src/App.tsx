@@ -26,10 +26,10 @@ export default function App() {
   const [searchParams, setSearchParams] = useLocalStorage(
     "flight-search-filters",
     {
-      from: "BER",
-      to: "MAD",
-      outboundDate: "2025-07-03",
-      inboundDate: "",
+      departureAirport: "BER",
+      arrivalAirport: "MAD",
+      departureDate: "2025-07-03",
+      returnDate: "",
       isRoundTrip: false,
       sources: defaultSources,
     }
@@ -56,19 +56,17 @@ export default function App() {
   };
 
   const handleSearch = async (searchParams: FlightSearchParams) => {
-    // Convert FlightSearchParams to the format expected by SearchContext
-    const convertedParams = {
-      from: searchParams.departureAirport,
-      to: searchParams.arrivalAirport,
-      outboundDate: searchParams.departureDate.toISOString().split("T")[0],
-      inboundDate: searchParams.returnDate
+    // Update search params in context (no conversion needed since formats match)
+    setSearchParams({
+      departureAirport: searchParams.departureAirport,
+      arrivalAirport: searchParams.arrivalAirport,
+      departureDate: searchParams.departureDate.toISOString().split("T")[0],
+      returnDate: searchParams.returnDate
         ? searchParams.returnDate.toISOString().split("T")[0]
         : "",
       isRoundTrip: searchParams.isRoundTrip,
       sources: safeSearchParams.sources,
-    };
-
-    setSearchParams(convertedParams);
+    });
 
     // Trigger actual flight search using the hook
     await performSearch(searchParams);

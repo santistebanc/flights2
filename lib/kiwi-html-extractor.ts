@@ -99,12 +99,12 @@ export function extractBundlesFromPhase2Html(html: string): ScrapedBundle[] {
     if ($modal) {
       // Extract outbound/inbound dates from headings
       const $headings = $modal.find("p._heading");
-      const outboundDate =
+      const departureDate =
         $headings
           .eq(0)
           .text()
           .match(/\w{3},\s+\d{1,2}\s+\w{3}\s+\d{4}/)?.[0] || "";
-      const inboundDate =
+      const returnDate =
         $headings
           .eq(1)
           .text()
@@ -138,21 +138,21 @@ export function extractBundlesFromPhase2Html(html: string): ScrapedBundle[] {
         }
         return "";
       };
-      const outboundDateStr = convertDate(outboundDate);
-      const inboundDateStr = inboundDate ? convertDate(inboundDate) : "";
+      const departureDateStr = convertDate(departureDate);
+      const returnDateStr = returnDate ? convertDate(returnDate) : "";
 
       // Extract flights from this modal
       const { outboundFlights, inboundFlights } = extractFlightsFromModal(
         $modal,
         $,
-        outboundDateStr,
-        inboundDateStr
+        departureDateStr,
+        returnDateStr
       );
       // Extract booking options for this bundle
       const bookingOptions = extractBookingOptionsFromModal($modal, $);
       const bundle: ScrapedBundle = {
-        outboundDate: outboundDateStr,
-        inboundDate: inboundDateStr,
+        departureDate: departureDateStr,
+        returnDate: returnDateStr,
         outboundFlights,
         inboundFlights,
         bookingOptions,
@@ -168,8 +168,8 @@ export function extractBundlesFromPhase2Html(html: string): ScrapedBundle[] {
 function extractFlightsFromModal(
   $modal: cheerio.Cheerio<any>,
   $: cheerio.CheerioAPI,
-  outboundDate: string,
-  inboundDate: string
+  departureDate: string,
+  returnDate: string
 ): { outboundFlights: ScrapedFlight[]; inboundFlights: ScrapedFlight[] } {
   // Kiwi flight number extraction: take last 2 tokens and join them
   const kiwiFlightNumberExtractor = (flightText: string): string => {
@@ -183,8 +183,8 @@ function extractFlightsFromModal(
   return sharedExtractFlightsFromModal(
     $modal,
     $,
-    outboundDate,
-    inboundDate,
+    departureDate,
+    returnDate,
     kiwiFlightNumberExtractor
   );
 }

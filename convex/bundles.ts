@@ -177,8 +177,8 @@ export const getBundlesForSearch = query({
   args: {
     departureIata: v.string(),
     arrivalIata: v.string(),
-    outboundDate: v.string(), // YYYY-MM-DD
-    inboundDate: v.optional(v.string()), // YYYY-MM-DD or undefined
+    departureDate: v.string(), // YYYY-MM-DD
+    returnDate: v.optional(v.string()), // YYYY-MM-DD or undefined
     isRoundTrip: v.boolean(),
   },
   returns: v.array(
@@ -259,20 +259,20 @@ export const getBundlesForSearch = query({
       .withIndex("by_departureAirportId_and_departureDateTime", (q) =>
         q
           .eq("departureAirportId", depAirport._id)
-          .gte("departureDateTime", startOfDay(args.outboundDate))
-          .lte("departureDateTime", endOfDay(args.outboundDate))
+          .gte("departureDateTime", startOfDay(args.departureDate))
+          .lte("departureDateTime", endOfDay(args.departureDate))
       )
       .filter((q) => q.eq(q.field("arrivalAirportId"), arrAirport._id))
       .collect();
     let inboundFlights: any[] = [];
-    if (args.isRoundTrip && args.inboundDate) {
+    if (args.isRoundTrip && args.returnDate) {
       inboundFlights = await ctx.db
         .query("flights")
         .withIndex("by_departureAirportId_and_departureDateTime", (q) =>
           q
             .eq("departureAirportId", arrAirport._id)
-            .gte("departureDateTime", startOfDay(args.inboundDate || ""))
-            .lte("departureDateTime", endOfDay(args.inboundDate || ""))
+            .gte("departureDateTime", startOfDay(args.returnDate || ""))
+            .lte("departureDateTime", endOfDay(args.returnDate || ""))
         )
         .filter((q) => q.eq(q.field("arrivalAirportId"), depAirport._id))
         .collect();
@@ -284,7 +284,7 @@ export const getBundlesForSearch = query({
         outboundFlights.some((f) => String(f._id) === String(fid))
       );
       let inboundMatch = true;
-      if (args.isRoundTrip && args.inboundDate) {
+      if (args.isRoundTrip && args.returnDate) {
         inboundMatch = bundle.inboundFlightIds.some((fid) =>
           inboundFlights.some((f) => String(f._id) === String(fid))
         );

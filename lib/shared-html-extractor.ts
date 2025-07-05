@@ -9,8 +9,8 @@ import { ScrapedFlight, ScrapedBookingOption } from "../types/scraper";
 export function extractFlightsFromModal(
   $modal: cheerio.Cheerio<any>,
   $: cheerio.CheerioAPI,
-  outboundDate: string,
-  inboundDate: string,
+  departureDate: string,
+  returnDate: string,
   flightNumberExtractor: (flightText: string) => string
 ): { outboundFlights: ScrapedFlight[]; inboundFlights: ScrapedFlight[] } {
   const outboundFlights: ScrapedFlight[] = [];
@@ -117,45 +117,60 @@ export function extractBookingOptionsFromModal(
     const agencyText = $similar.find("p").first().text().trim();
     const agency = agencyText || "Unknown";
 
-    // Extract price with improved parsing
-    const priceText = $similar.find("p").eq(1).text().trim();
+    // Extract price and link from the second p tag (contains both price and booking link)
+    const $priceAndLinkP = $similar.find("p").eq(1);
+    const priceAndLinkText = $priceAndLinkP.text().trim();
+    const $link = $priceAndLinkP.find("a");
+    const linkToBook = $link.attr("href") || "";
+
     console.log(
-      `[${source.charAt(0).toUpperCase() + source.slice(1)}] Raw price text: "${priceText}" for agency: ${agency}`
+      `[${source.charAt(0).toUpperCase() + source.slice(1)}] Raw price text: "${priceAndLinkText}" for agency: ${agency}`
     );
 
-    // Try multiple price extraction patterns
+    // Use single consistent pattern for price extraction
     let price = 0;
-    const pricePatterns = [
-      /€(\d+(?:\.\d{2})?)/, // €291 or €291.50
-      /EUR\s*(\d+(?:\.\d{2})?)/, // EUR 291 or EUR 291.50
-      /(\d+(?:\.\d{2})?)\s*€/, // 291€ or 291.50€
-      /(\d+(?:\.\d{2})?)\s*EUR/, // 291 EUR or 291.50 EUR
-      /(\d+(?:\.\d{2})?)/, // Just numbers (fallback)
-    ];
-
-    for (const pattern of pricePatterns) {
-      const priceMatch = priceText.match(pattern);
+    if (source === "skyscanner") {
+      // Skyscanner: Extract price from pattern like "€827 <a href=...>Select</a>"
+      const priceMatch = priceAndLinkText.match(/€(\d+(?:\.\d{2})?)/);
       if (priceMatch) {
         const extractedPrice = parseFloat(priceMatch[1]);
         if (!isNaN(extractedPrice) && extractedPrice > 0) {
           price = extractedPrice;
           console.log(
-            `[${source.charAt(0).toUpperCase() + source.slice(1)}] Extracted price: ${price} using pattern: ${pattern}`
+            `[Skyscanner] Extracted price: ${price} from pattern: €${priceMatch[1]}`
           );
-          break;
+        }
+      }
+    } else {
+      // Kiwi: Use existing multiple patterns
+      const pricePatterns = [
+        /€(\d+(?:\.\d{2})?)/, // €291 or €291.50
+        /EUR\s*(\d+(?:\.\d{2})?)/, // EUR 291 or EUR 291.50
+        /(\d+(?:\.\d{2})?)\s*€/, // 291€ or 291.50€
+        /(\d+(?:\.\d{2})?)\s*EUR/, // 291 EUR or 291.50 EUR
+        /(\d+(?:\.\d{2})?)/, // Just numbers (fallback)
+      ];
+
+      for (const pattern of pricePatterns) {
+        const priceMatch = priceAndLinkText.match(pattern);
+        if (priceMatch) {
+          const extractedPrice = parseFloat(priceMatch[1]);
+          if (!isNaN(extractedPrice) && extractedPrice > 0) {
+            price = extractedPrice;
+            console.log(
+              `[Kiwi] Extracted price: ${price} using pattern: ${pattern}`
+            );
+            break;
+          }
         }
       }
     }
 
     if (price === 0) {
       console.warn(
-        `[${source.charAt(0).toUpperCase() + source.slice(1)}] Failed to extract price from: "${priceText}" for agency: ${agency}`
+        `[${source.charAt(0).toUpperCase() + source.slice(1)}] Failed to extract price from: "${priceAndLinkText}" for agency: ${agency}`
       );
     }
-
-    // Extract booking link
-    const $link = $similar.find("a");
-    const linkToBook = $link.attr("href") || "";
 
     const bookingOption: ScrapedBookingOption = {
       agency,
