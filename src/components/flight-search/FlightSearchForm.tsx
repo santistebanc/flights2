@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { DateRangePicker } from "../ui/date-range-picker";
 import { SearchButton } from "./SearchButton";
 import { cn } from "../../utils";
 import { PlaneTakeoff } from "lucide-react";
 import { AirportAutocomplete } from "./AirportAutocomplete";
-import { useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 
 interface FlightSearchFormProps {
-  onSearch: (searchParams: FlightSearchParams) => void;
-  isLoading?: boolean;
   className?: string;
 }
 
@@ -25,63 +23,36 @@ interface DateRange {
   to: Date | undefined;
 }
 
-export function FlightSearchForm({
-  onSearch,
-  isLoading = false,
-  className,
-}: FlightSearchFormProps) {
+export function FlightSearchForm({ className }: FlightSearchFormProps) {
   const search = useSearch({ from: "/" });
+  const navigate = useNavigate();
 
-  // Form state
-  const [departureAirport, setDepartureAirport] = useState("");
-  const [arrivalAirport, setArrivalAirport] = useState("");
+  // Form state with URL parameters as default values
+  const [departureAirport, setDepartureAirport] = useState(search.from || "");
+  const [arrivalAirport, setArrivalAirport] = useState(search.to || "");
   const [dateRange, setDateRange] = useState<DateRange>({
-    from: new Date(),
-    to: undefined,
+    from: search.depart ? new Date(search.depart) : new Date(),
+    to: search.return ? new Date(search.return) : undefined,
   });
-  const [isRoundTrip, setIsRoundTrip] = useState(false);
-
-  // Track if airports exist in database
-  const [departureAirportExists, setDepartureAirportExists] = useState<
-    boolean | null
-  >(null);
-  const [arrivalAirportExists, setArrivalAirportExists] = useState<
-    boolean | null
-  >(null);
-
-  // Load values from URL parameters when component mounts or URL changes
-  useEffect(() => {
-    if (search.from || search.to || search.depart || search.return) {
-      setDepartureAirport(search.from || "");
-      setArrivalAirport(search.to || "");
-
-      const departureDate = search.depart
-        ? new Date(search.depart)
-        : new Date();
-      const returnDate = search.return ? new Date(search.return) : undefined;
-      const roundTrip = !!search.return;
-
-      setDateRange({
-        from: departureDate,
-        to: returnDate,
-      });
-      setIsRoundTrip(roundTrip);
-    }
-  }, [search.from, search.to, search.depart, search.return]);
+  const [isRoundTrip, setIsRoundTrip] = useState(!!search.return);
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const searchParams: FlightSearchParams = {
-      departureAirport,
-      arrivalAirport,
-      departureDate: dateRange.from,
-      returnDate: isRoundTrip ? dateRange.to : undefined,
-      isRoundTrip,
+    const urlParams = {
+      from: departureAirport,
+      to: arrivalAirport,
+      depart: dateRange.from.toISOString().split("T")[0],
+      return: isRoundTrip
+        ? dateRange.to?.toISOString().split("T")[0]
+        : undefined,
     };
 
-    onSearch(searchParams);
+    navigate({
+      to: "/",
+      search: urlParams,
+    });
   };
 
   // Handle date range updates
@@ -98,25 +69,12 @@ export function FlightSearchForm({
     // Convert to uppercase for consistency
     const upperValue = value.toUpperCase();
     setDepartureAirport(upperValue);
-    // Reset existence check when value changes
-    setDepartureAirportExists(null);
   };
 
   const handleArrivalAirportChange = (value: string) => {
     // Convert to uppercase for consistency
     const upperValue = value.toUpperCase();
     setArrivalAirport(upperValue);
-    // Reset existence check when value changes
-    setArrivalAirportExists(null);
-  };
-
-  // Handle airport existence updates
-  const handleDepartureAirportExists = (exists: boolean | null) => {
-    setDepartureAirportExists(exists);
-  };
-
-  const handleArrivalAirportExists = (exists: boolean | null) => {
-    setArrivalAirportExists(exists);
   };
 
   // Check if form is valid for enabling search button
@@ -146,10 +104,8 @@ export function FlightSearchForm({
               value={departureAirport}
               onChange={handleDepartureAirportChange}
               placeholder="From"
-              required
               otherAirportValue={arrivalAirport}
               className="w-full"
-              onAirportExists={handleDepartureAirportExists}
             />
           </div>
 
@@ -158,10 +114,8 @@ export function FlightSearchForm({
               value={arrivalAirport}
               onChange={handleArrivalAirportChange}
               placeholder="To"
-              required
               otherAirportValue={departureAirport}
               className="w-full"
-              onAirportExists={handleArrivalAirportExists}
             />
           </div>
         </div>
@@ -179,7 +133,6 @@ export function FlightSearchForm({
         {/* Search Button */}
         <div className="flex-shrink-0">
           <SearchButton
-            isLoading={isLoading}
             disabled={!isFormValid}
             loadingText="Searching..."
             size="default"

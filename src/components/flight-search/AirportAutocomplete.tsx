@@ -21,10 +21,7 @@ interface AirportAutocompleteProps {
   onAirportSelect?: (airport: Airport) => void;
   onAirportExists?: (exists: boolean | null) => void;
   placeholder?: string;
-  label?: string;
   className?: string;
-  required?: boolean;
-  error?: string;
   disabled?: boolean;
   otherAirportValue?: string; // For checking duplicate airports
 }
@@ -35,10 +32,7 @@ export function AirportAutocomplete({
   onAirportSelect,
   onAirportExists,
   placeholder = "Search airports...",
-  label,
   className,
-  required = false,
-  error,
   disabled = false,
   otherAirportValue,
 }: AirportAutocompleteProps) {
@@ -249,87 +243,76 @@ export function AirportAutocomplete({
   const combinedResults = getCombinedResults();
 
   return (
-    <div className={cn("space-y-2", className)}>
-      {label && (
-        <label className="text-sm font-medium text-gray-200">
-          {label}
-          {required && <span className="text-red-400 ml-1">*</span>}
-        </label>
-      )}
-      <div className="relative">
-        <Input
-          ref={inputRef}
-          type="text"
-          value={searchValue}
-          onChange={handleInputChange}
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
-          onKeyDown={handleInputKeyDown}
-          placeholder={placeholder}
-          className={cn(
-            "h-9",
-            (error || (!isInputValid && value.length > 0)) &&
-              "border-red-400 focus:border-red-400",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-          disabled={disabled}
-          autoComplete="off"
-          spellCheck={false}
-        />
-        {open && (
-          <div
-            ref={listRef}
-            className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto"
-          >
-            {combinedResults.length > 0 ? (
-              combinedResults.map((airport, idx) => (
-                <div
-                  key={airport._id}
-                  className={cn(
-                    "px-3 py-2 cursor-pointer hover:bg-gray-700 transition-colors flex flex-col items-start",
-                    idx === highlightedIndex && "bg-gray-700",
-                    airport.isHistory && "border-l-2 border-l-blue-400"
-                  )}
-                  onMouseDown={() => handleAirportSelect(airport)}
-                  onMouseEnter={() => setHighlightedIndex(idx)}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === airport.iataCode ? "opacity-100" : "opacity-0"
+    <div className={cn("relative space-y-2", className)}>
+      <Input
+        ref={inputRef}
+        type="text"
+        value={searchValue}
+        onChange={handleInputChange}
+        onFocus={handleInputFocus}
+        onBlur={handleInputBlur}
+        onKeyDown={handleInputKeyDown}
+        placeholder={placeholder}
+        className={cn(
+          "h-9",
+          !isInputValid &&
+            value.length > 0 &&
+            "border-red-400 focus:border-red-400",
+          disabled && "opacity-50 cursor-not-allowed"
+        )}
+        disabled={disabled}
+        autoComplete="off"
+        spellCheck={false}
+      />
+      {open && (
+        <div
+          ref={listRef}
+          className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto"
+        >
+          {combinedResults.length > 0 ? (
+            combinedResults.map((airport, idx) => (
+              <div
+                key={airport._id}
+                className={cn(
+                  "px-3 py-2 cursor-pointer hover:bg-gray-700 transition-colors flex flex-col items-start",
+                  idx === highlightedIndex && "bg-gray-700",
+                  airport.isHistory && "border-l-2 border-l-blue-400"
+                )}
+                onMouseDown={() => handleAirportSelect(airport)}
+                onMouseEnter={() => setHighlightedIndex(idx)}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === airport.iataCode ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold">{airport.iataCode}</span>
+                      {airport.isHistory && (
+                        <span className="text-xs text-blue-400 bg-blue-900 px-1 rounded">
+                          Recent
+                        </span>
                       )}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold">{airport.iataCode}</span>
-                        {airport.isHistory && (
-                          <span className="text-xs text-blue-400 bg-blue-900 px-1 rounded">
-                            Recent
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-300">
-                        {airport.name}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {airport.city}
-                        {airport.country && `, ${airport.country}`}
-                      </div>
+                    </div>
+                    <div className="text-sm text-gray-300">{airport.name}</div>
+                    <div className="text-xs text-gray-400">
+                      {airport.city}
+                      {airport.country && `, ${airport.country}`}
                     </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="px-3 py-2 text-sm text-gray-400">
-                No airports found.
               </div>
-            )}
-          </div>
-        )}
-        {/* Error message */}
-        {error && <div className="text-xs text-red-400 mt-1">{error}</div>}
-      </div>
+            ))
+          ) : (
+            <div className="px-3 py-2 text-sm text-gray-400">
+              No airports found.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,10 +9,10 @@ import {
 } from "./components/flight-search/FlightSearchForm";
 import { ResultsList } from "./components/flight-results/ResultsList";
 import { ScrapingProgress } from "./components/progress/ScrapingProgress";
-import { useFlightSearch } from "./hooks/useFlightSearch";
 import { ThemeToggle } from "./components/ui/theme-toggle";
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useUrlBasedSearch } from "./hooks/useUrlBasedSearch";
+import { useFlightSearch } from "./hooks/useFlightSearch";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 
 // Default sources configuration
@@ -257,7 +257,7 @@ function RootComponent() {
           </h1>
           <ThemeToggle />
         </div>
-        <FlightSearchForm onSearch={handleSearch} isLoading={isSearching} />
+        <FlightSearchForm />
 
         {/* Progress Indicators - shown only when searching */}
         {isSearching && (
