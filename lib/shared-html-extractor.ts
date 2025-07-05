@@ -129,9 +129,11 @@ export function extractBookingOptionsFromModal(
 
     // Use single consistent pattern for price extraction (same for both scrapers)
     let price = 0;
-    const priceMatch = priceAndLinkText.match(/€(\d+(?:\.\d{2})?)/);
+    const priceMatch = priceAndLinkText.match(/€([\d,]+(?:\.\d{2})?)/);
     if (priceMatch) {
-      const extractedPrice = parseFloat(priceMatch[1]);
+      // Remove commas from the price string before parsing
+      const priceString = priceMatch[1].replace(/,/g, "");
+      const extractedPrice = parseFloat(priceString);
       if (!isNaN(extractedPrice) && extractedPrice > 0) {
         price = extractedPrice;
         console.log(
