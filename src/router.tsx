@@ -14,6 +14,7 @@ import { SearchContext, ScrapingSource } from "./SearchContext";
 import { ThemeToggle } from "./components/ui/theme-toggle";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useUrlBasedSearch } from "./hooks/useUrlBasedSearch";
+import { useState, useEffect } from "react";
 
 // Default sources configuration
 const defaultSources: ScrapingSource[] = [
@@ -29,13 +30,17 @@ const defaultSources: ScrapingSource[] = [
   },
 ];
 
-// Search parameters type for URL
+// Search parameters type for URL (only search-related params)
 interface SearchParams {
   from?: string;
   to?: string;
   depart?: string;
   return?: string;
-  sources?: string;
+}
+
+// Preferences interface
+interface Preferences {
+  sources: ScrapingSource[];
 }
 
 // Root route component
@@ -59,8 +64,36 @@ function RootComponent() {
   const { bundles, isLoading, hasSearchParams, searchParams } =
     useUrlBasedSearch();
 
+  // Load preferences from localStorage
+  const [preferences, setPreferences] = useState<Preferences>(() => {
+    try {
+      const stored = localStorage.getItem("flight-search-preferences");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.sources && Array.isArray(parsed.sources)) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to load preferences from localStorage:", error);
+    }
+    return { sources: defaultSources };
+  });
+
+  // Save preferences to localStorage when they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "flight-search-preferences",
+        JSON.stringify(preferences)
+      );
+    } catch (error) {
+      console.warn("Failed to save preferences to localStorage:", error);
+    }
+  }, [preferences]);
+
   const handleSearch = async (searchParams: FlightSearchParams) => {
-    // Update URL with search parameters
+    // Update URL with search parameters only
     const urlParams: SearchParams = {
       from: searchParams.departureAirport,
       to: searchParams.arrivalAirport,
@@ -68,7 +101,6 @@ function RootComponent() {
       return: searchParams.returnDate
         ? searchParams.returnDate.toISOString().split("T")[0]
         : undefined,
-      sources: defaultSources.map((s) => s.id).join(","),
     };
 
     // Navigate to same route with parameters
@@ -225,9 +257,22 @@ function RootComponent() {
           departureDate: search.depart || "2025-07-03",
           returnDate: search.return || "",
           isRoundTrip: !!search.return,
-          sources: defaultSources,
+          sources: preferences.sources,
         },
-        setSearchParams: () => {}, // No-op since we're not using localStorage
+        setSearchParams: (newParams) => {
+          // Update preferences in localStorage
+          if (typeof newParams === "function") {
+            setPreferences((prev) => ({
+              ...prev,
+              sources: newParams({} as any).sources,
+            }));
+          } else {
+            setPreferences((prev) => ({
+              ...prev,
+              sources: newParams.sources,
+            }));
+          }
+        },
       }}
     >
       <div className="h-screen flex flex-col bg-background overflow-hidden">
@@ -271,7 +316,6 @@ const indexRoute = createRoute({
     to: search.to as string | undefined,
     depart: search.depart as string | undefined,
     return: search.return as string | undefined,
-    sources: search.sources as string | undefined,
   }),
 });
 
