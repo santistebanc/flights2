@@ -14,6 +14,7 @@ import { useUrlBasedSearch } from "./hooks/useUrlBasedSearch";
 import { useFlightSearch } from "./hooks/useFlightSearch";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { SearchResults } from "./components/search-results/SearchResults";
 
 // Default sources configuration
 const defaultSources = [
@@ -44,206 +45,25 @@ interface Preferences {
 
 // Root route component
 function RootComponent() {
-  const navigate = useNavigate();
-  const search = useSearch({ from: "/" });
-
-  // Flight search hook for managing search lifecycle
-  const {
-    searchState,
-    isSearching,
-    progress,
-    error,
-    results,
-    performSearch,
-    resetSearch,
-    retrySearch,
-  } = useFlightSearch();
-
   // URL-based search hook
   const { bundles, isLoading, hasSearchParams, searchParams } =
     useUrlBasedSearch();
 
-  // Load preferences from localStorage
-  const [preferences, setPreferences] = useState<Preferences>(() => {
-    try {
-      const stored = localStorage.getItem("flight-search-preferences");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && parsed.sources && Array.isArray(parsed.sources)) {
-          return parsed;
-        }
-      }
-    } catch (error) {
-      console.warn("Failed to load preferences from localStorage:", error);
-    }
-    return { sources: defaultSources };
-  });
-
-  // Save preferences to localStorage when they change
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "flight-search-preferences",
-        JSON.stringify(preferences)
-      );
-    } catch (error) {
-      console.warn("Failed to save preferences to localStorage:", error);
-    }
-  }, [preferences]);
-
-  const handleSearch = async (searchParams: FlightSearchParams) => {
-    // Update URL with search parameters only
-    const urlParams: SearchParams = {
-      from: searchParams.departureAirport,
-      to: searchParams.arrivalAirport,
-      depart: searchParams.departureDate.toISOString().split("T")[0],
-      return: searchParams.returnDate
-        ? searchParams.returnDate.toISOString().split("T")[0]
-        : undefined,
-    };
-
-    // Navigate to same route with parameters
-    navigate({
-      to: "/",
-      search: urlParams,
-    });
-
-    // Trigger actual flight search using the hook
-    await performSearch(searchParams);
-  };
+  // Flight search hook for managing search lifecycle
+  const { isSearching, progress } = useFlightSearch();
 
   // Render content based on search state and URL parameters
   const renderMainContent = () => {
     // If we have URL parameters, show database results
     if (hasSearchParams) {
-      if (isLoading) {
-        return (
-          <div className="mt-8 text-center">
-            <div className="bg-card border border-border rounded-lg p-8">
-              <h3 className="text-lg font-medium text-card-foreground mb-2">
-                Loading search results...
-              </h3>
-              <p className="text-muted-foreground">
-                Searching for flights from {searchParams.from} to{" "}
-                {searchParams.to} on {searchParams.depart}
-                {searchParams.return && ` returning on ${searchParams.return}`}
-              </p>
-            </div>
-          </div>
-        );
-      }
-
-      if (bundles.length === 0) {
-        return (
-          <div className="mt-8 text-center">
-            <div className="bg-card border border-border rounded-lg p-8">
-              <h3 className="text-lg font-medium text-card-foreground mb-2">
-                No flights found
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                No flights match your search criteria: {searchParams.from} to{" "}
-                {searchParams.to} on {searchParams.depart}
-                {searchParams.return && ` returning on ${searchParams.return}`}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Try adjusting your dates or airports.
-              </p>
-            </div>
-          </div>
-        );
-      }
-
       return (
-        <div className="mt-8">
-          <div className="mb-4 p-4 bg-card border border-border rounded-lg">
-            <h2 className="text-lg font-semibold text-card-foreground mb-2">
-              Search Results
-            </h2>
-            <p className="text-muted-foreground">
-              Found {bundles.length} flight options from {searchParams.from} to{" "}
-              {searchParams.to} on {searchParams.depart}
-              {searchParams.return && ` returning on ${searchParams.return}`}
-            </p>
-          </div>
-          <ResultsList bundles={bundles} isLoading={false} />
-        </div>
+        <SearchResults
+          hasSearchParams={hasSearchParams}
+          isLoading={isLoading}
+          bundles={bundles}
+          searchParams={searchParams}
+        />
       );
-    }
-
-    // If no URL parameters, show search state results
-    switch (searchState) {
-      case "idle":
-        return (
-          <div className="mt-8 text-center text-muted-foreground">
-            <h2 className="text-2xl font-bold text-foreground mb-4">
-              Welcome to Flight Search
-            </h2>
-            <p>Enter your search criteria above to find flights</p>
-          </div>
-        );
-
-      case "success":
-        return (
-          <div className="mt-8">
-            <ResultsList bundles={results || []} isLoading={false} />
-          </div>
-        );
-
-      case "no-results":
-        return (
-          <div className="mt-8 text-center">
-            <div className="bg-card border border-border rounded-lg p-8">
-              <h3 className="text-lg font-medium text-card-foreground mb-2">
-                No flights found
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                No flights match your search criteria. Try adjusting your dates
-                or airports.
-              </p>
-              <button
-                onClick={retrySearch}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        );
-
-      case "error":
-        return (
-          <div className="mt-8 text-center">
-            <div className="bg-destructive/20 border border-destructive rounded-lg p-8">
-              <h3 className="text-lg font-medium text-destructive-foreground mb-2">
-                Search failed
-              </h3>
-              <p className="text-destructive-foreground mb-4">
-                {error?.message ||
-                  "An error occurred while searching for flights."}
-              </p>
-              {error?.details && (
-                <p className="text-sm text-destructive mb-4">{error.details}</p>
-              )}
-              <div className="space-x-4">
-                <button
-                  onClick={retrySearch}
-                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
-                >
-                  Retry Search
-                </button>
-                <button
-                  onClick={resetSearch}
-                  className="px-4 py-2 bg-muted text-muted-foreground rounded-md hover:bg-muted/80 transition-colors"
-                >
-                  Start Over
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
     }
   };
 
