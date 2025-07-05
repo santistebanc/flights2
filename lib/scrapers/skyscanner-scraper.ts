@@ -34,7 +34,8 @@ export class SkyscannerScraper extends BaseFlightScraper {
       const queryParams = this.buildPhase1QueryParams(params);
       const url = `${this.baseUrl}/portal/sky?${queryParams}`;
 
-      this.logProgress("phase1", `Fetching HTML from ${url}`);
+      // Only log the URL being fetched
+      // this.logProgress("phase1", `Fetching HTML from ${url}`);
 
       // Fetch the initial HTML
       const response = await fetch(url, {
@@ -58,32 +59,17 @@ export class SkyscannerScraper extends BaseFlightScraper {
       const html = await response.text();
       const cookie = response.headers.get("set-cookie") || "";
 
-      this.logProgress("phase1", "Extracting session data from HTML");
+      // this.logProgress("phase1", "Extracting session data from HTML");
 
       // Extract token, session, suuid, and deeplink from HTML
       const phase1Data = extractSessionDataFromPhase1Html(html);
 
-      // Log extracted session data
-      this.logProgress(
-        "phase1",
-        `Extracted token: ${phase1Data.token || "NOT_FOUND"}`
-      );
-      this.logProgress(
-        "phase1",
-        `Extracted session: ${phase1Data.session || "NOT_FOUND"}`
-      );
-      this.logProgress(
-        "phase1",
-        `Extracted suuid: ${phase1Data.suuid || "NOT_FOUND"}`
-      );
-      this.logProgress(
-        "phase1",
-        `Extracted deeplink: ${phase1Data.deeplink || "NOT_FOUND"}`
-      );
-      this.logProgress(
-        "phase1",
-        `Extracted cookie: ${cookie ? cookie.substring(0, 50) + "..." : "NOT_FOUND"}`
-      );
+      // Only log summary of extracted data
+      // this.logProgress("phase1", `Extracted token: ${phase1Data.token || "NOT_FOUND"}`);
+      // this.logProgress("phase1", `Extracted session: ${phase1Data.session || "NOT_FOUND"}`);
+      // this.logProgress("phase1", `Extracted suuid: ${phase1Data.suuid || "NOT_FOUND"}`);
+      // this.logProgress("phase1", `Extracted deeplink: ${phase1Data.deeplink || "NOT_FOUND"}`);
+      // this.logProgress("phase1", `Extracted cookie: ${cookie ? cookie.substring(0, 50) + "..." : "NOT_FOUND"}`);
 
       this.logProgress("phase1", "Phase 1 completed successfully");
 
@@ -125,15 +111,18 @@ export class SkyscannerScraper extends BaseFlightScraper {
 
       while (!isComplete && pollCount < maxPolls) {
         pollCount++;
-        this.logProgress("phase2", `Polling attempt ${pollCount}`);
+        // Only log the first and last poll
+        if (pollCount === 1 || pollCount === maxPolls) {
+          this.logProgress("phase2", `Polling attempt ${pollCount}`);
+        }
 
         // Build POST data for polling
         const postData = this.buildPhase2PostData(params, phase1Result);
         const url = `${this.baseUrl}/portal/sky/poll`;
 
-        // Log the POST data being sent
-        this.logProgress("phase2", `POSTing to ${url} (attempt ${pollCount})`);
-        this.logProgress("phase2", `POST data: ${postData}`);
+        // Remove verbose POST data and header logs
+        // this.logProgress("phase2", `POSTing to ${url} (attempt ${pollCount})`);
+        // this.logProgress("phase2", `POST data: ${postData}`);
 
         // Make the POST request
         const headers: Record<string, string> = {
@@ -158,15 +147,18 @@ export class SkyscannerScraper extends BaseFlightScraper {
           body: postData,
         });
 
-        // Log response status and headers
-        this.logProgress(
-          "phase2",
-          `Response status: ${response.status} ${response.statusText}`
-        );
-        this.logProgress(
-          "phase2",
-          `Response headers: set-cookie=${response.headers.get("set-cookie") || "NOT_FOUND"}`
-        );
+        // Only log the first and last poll's response status
+        if (pollCount === 1 || pollCount === maxPolls) {
+          this.logProgress(
+            "phase2",
+            `Response status: ${response.status} ${response.statusText}`
+          );
+        }
+        // Remove verbose header logs
+        // this.logProgress(
+        //   "phase2",
+        //   `Response headers: set-cookie=${response.headers.get("set-cookie") || "NOT_FOUND"}`
+        // );
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -174,25 +166,14 @@ export class SkyscannerScraper extends BaseFlightScraper {
 
         const responseText = await response.text();
 
-        // Update cookie from response and log changes
+        // Update cookie from response and log changes only on first/last poll
         const newCookie = response.headers.get("set-cookie");
         if (newCookie) {
-          const oldCookie = currentCookie;
           currentCookie = newCookie;
-          this.logProgress("phase2", `Updated cookie from response headers`);
-          this.logProgress(
-            "phase2",
-            `Old cookie: ${oldCookie ? oldCookie.substring(0, 50) + "..." : "NOT_FOUND"}`
-          );
-          this.logProgress(
-            "phase2",
-            `New cookie: ${newCookie.substring(0, 50) + "..."}`
-          );
-        } else {
-          this.logProgress(
-            "phase2",
-            `No new cookie in response headers, keeping existing`
-          );
+          // Only log on first/last poll
+          if (pollCount === 1 || pollCount === maxPolls) {
+            this.logProgress("phase2", `Updated cookie from response headers`);
+          }
         }
 
         // Parse the response (split by '|' and extract parts)
@@ -207,10 +188,13 @@ export class SkyscannerScraper extends BaseFlightScraper {
         const numResults = parseInt(parts[1] || "0", 10);
         const resultHtml = parts[6]; // 7th part (0-indexed)
 
-        this.logProgress(
-          "phase2",
-          `Poll ${pollCount}: status=${status}, results=${numResults}`
-        );
+        // Only log poll summary on first/last poll
+        if (pollCount === 1 || pollCount === maxPolls) {
+          this.logProgress(
+            "phase2",
+            `Poll ${pollCount}: status=${status}, results=${numResults}`
+          );
+        }
 
         if (status === "Y") {
           // Polling complete
@@ -224,10 +208,13 @@ export class SkyscannerScraper extends BaseFlightScraper {
           // Add to cumulative results
           allBundles.push(...bundles);
 
-          this.logProgress(
-            "phase2",
-            `Extracted ${bundles.length} bundles from poll ${pollCount}`
-          );
+          // Only log bundle extraction on first/last poll
+          if (pollCount === 1 || pollCount === maxPolls) {
+            this.logProgress(
+              "phase2",
+              `Extracted ${bundles.length} bundles from poll ${pollCount}`
+            );
+          }
         }
 
         // If not complete, wait before next poll

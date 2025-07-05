@@ -34,7 +34,8 @@ export class KiwiScraper extends BaseFlightScraper {
       const queryParams = this.buildPhase1QueryParams(params);
       const url = `${this.baseUrl}/portal/kiwi?${queryParams}`;
 
-      this.logProgress("phase1", `Fetching HTML from ${url}`);
+      // Only log the URL being fetched
+      // this.logProgress("phase1", `Fetching HTML from ${url}`);
 
       // Fetch the initial HTML
       const response = await fetch(url, {
@@ -58,20 +59,14 @@ export class KiwiScraper extends BaseFlightScraper {
       const html = await response.text();
       const cookie = response.headers.get("set-cookie") || "";
 
-      this.logProgress("phase1", "Extracting token and session data from HTML");
+      // this.logProgress("phase1", "Extracting token and session data from HTML");
 
       // Extract token and other session data from HTML
       const phase1Data = extractSessionDataFromPhase1Html(html);
 
-      // Log the extracted token and cookie
-      this.logProgress(
-        "phase1",
-        `Extracted token: ${phase1Data.token ? phase1Data.token.substring(0, 20) + "..." : "NOT_FOUND"}`
-      );
-      this.logProgress(
-        "phase1",
-        `Extracted cookie: ${cookie ? cookie.substring(0, 50) + "..." : "NOT_FOUND"}`
-      );
+      // Only log summary of extracted data
+      // this.logProgress("phase1", `Extracted token: ${phase1Data.token ? phase1Data.token.substring(0, 20) + "..." : "NOT_FOUND"}`);
+      // this.logProgress("phase1", `Extracted cookie: ${cookie ? cookie.substring(0, 50) + "..." : "NOT_FOUND"}`);
 
       this.logProgress("phase1", "Phase 1 completed successfully");
 
@@ -112,10 +107,13 @@ export class KiwiScraper extends BaseFlightScraper {
         const postData = this.buildPhase2PostData(params, currentToken);
         const url = `${this.baseUrl}/portal/kiwi/search`;
 
-        this.logProgress(
-          "phase2",
-          `POSTing to ${url} (attempt ${retryCount + 1})`
-        );
+        // Only log the first and last retry
+        if (retryCount === 0 || retryCount === maxRetries) {
+          this.logProgress(
+            "phase2",
+            `POSTing to ${url} (attempt ${retryCount + 1})`
+          );
+        }
 
         // Make the POST request
         const response = await fetch(url, {
@@ -138,30 +136,22 @@ export class KiwiScraper extends BaseFlightScraper {
         // Always update cookie from response headers (even on success)
         const newCookie = response.headers.get("set-cookie");
         if (newCookie) {
-          const oldCookie = currentCookie;
           currentCookie = newCookie;
-          this.logProgress("phase2", `Updated cookie from response headers`);
-          this.logProgress(
-            "phase2",
-            `Old cookie: ${oldCookie ? oldCookie.substring(0, 50) + "..." : "NOT_FOUND"}`
-          );
-          this.logProgress(
-            "phase2",
-            `New cookie: ${newCookie.substring(0, 50) + "..."}`
-          );
-        } else {
-          this.logProgress(
-            "phase2",
-            `No new cookie in response headers, using existing: ${currentCookie ? currentCookie.substring(0, 50) + "..." : "NOT_FOUND"}`
-          );
+          // Only log on first/last retry
+          if (retryCount === 0 || retryCount === maxRetries) {
+            this.logProgress("phase2", `Updated cookie from response headers`);
+          }
         }
 
         // Handle 419 error specifically
         if (response.status === 419) {
-          this.logProgress(
-            "phase2",
-            `HTTP 419 error on attempt ${retryCount + 1}`
-          );
+          // Only log on first/last retry
+          if (retryCount === 0 || retryCount === maxRetries) {
+            this.logProgress(
+              "phase2",
+              `HTTP 419 error on attempt ${retryCount + 1}`
+            );
+          }
 
           // Check if response includes a new token in the body
           const responseText = await response.text();
@@ -170,49 +160,31 @@ export class KiwiScraper extends BaseFlightScraper {
           if (newToken) {
             const oldToken = currentToken;
             currentToken = newToken;
-            this.logProgress("phase2", "Updated token from 419 response");
-            this.logProgress(
-              "phase2",
-              `Old token: ${oldToken ? oldToken.substring(0, 20) + "..." : "NOT_FOUND"}`
-            );
-            this.logProgress(
-              "phase2",
-              `New token: ${newToken.substring(0, 20) + "..."}`
-            );
+            // Only log on first/last retry
+            if (retryCount === 0 || retryCount === maxRetries) {
+              this.logProgress("phase2", "Updated token from 419 response");
+            }
             retryCount++;
             continue; // Retry with new token
           } else {
             // No new token in response, need to refresh session
-            this.logProgress(
-              "phase2",
-              "No new token found, refreshing session via Phase 1"
-            );
+            // Only log on first/last retry
+            if (retryCount === 0 || retryCount === maxRetries) {
+              this.logProgress(
+                "phase2",
+                "No new token found, refreshing session via Phase 1"
+              );
+            }
 
             // Repeat Phase 1 to get fresh session
             const newPhase1Result = await this.executePhase1(params);
-            const oldCookie = currentCookie;
-            const oldToken = currentToken;
             currentCookie = newPhase1Result.cookie;
             currentToken = newPhase1Result.token;
 
-            this.logProgress("phase2", "Session refreshed via Phase 1");
-            this.logProgress(
-              "phase2",
-              `Old cookie: ${oldCookie ? oldCookie.substring(0, 50) + "..." : "NOT_FOUND"}`
-            );
-            this.logProgress(
-              "phase2",
-              `New cookie: ${currentCookie ? currentCookie.substring(0, 50) + "..." : "NOT_FOUND"}`
-            );
-            this.logProgress(
-              "phase2",
-              `Old token: ${oldToken ? oldToken.substring(0, 20) + "..." : "NOT_FOUND"}`
-            );
-            this.logProgress(
-              "phase2",
-              `New token: ${currentToken ? currentToken.substring(0, 20) + "..." : "NOT_FOUND"}`
-            );
-
+            // Only log on first/last retry
+            if (retryCount === 0 || retryCount === maxRetries) {
+              this.logProgress("phase2", "Session refreshed via Phase 1");
+            }
             retryCount++;
             continue; // Retry with fresh session
           }
@@ -225,10 +197,13 @@ export class KiwiScraper extends BaseFlightScraper {
 
         const responseText = await response.text();
 
-        this.logProgress(
-          "phase2",
-          "Parsing response and extracting flight data"
-        );
+        // Only log on first/last retry
+        if (retryCount === 0 || retryCount === maxRetries) {
+          this.logProgress(
+            "phase2",
+            "Parsing response and extracting flight data"
+          );
+        }
 
         // Parse the response (split by '|' and extract 7th part)
         const parts = responseText.split("|");
@@ -241,15 +216,21 @@ export class KiwiScraper extends BaseFlightScraper {
         const resultHtml = parts[6]; // 7th part (0-indexed)
         const numResults = parseInt(parts[1] || "0", 10);
 
-        this.logProgress(
-          "phase2",
-          `Found ${numResults} results, extracting bundles`
-        );
+        // Only log on first/last retry
+        if (retryCount === 0 || retryCount === maxRetries) {
+          this.logProgress(
+            "phase2",
+            `Found ${numResults} results, extracting bundles`
+          );
+        }
 
         // Extract bundles from HTML (includes flights and booking options)
         const bundles = extractBundlesFromPhase2Html(resultHtml);
 
-        this.logProgress("phase2", `Extracted ${bundles.length} bundles`);
+        // Only log on first/last retry
+        if (retryCount === 0 || retryCount === maxRetries) {
+          this.logProgress("phase2", `Extracted ${bundles.length} bundles`);
+        }
 
         return { bundles };
       } catch (error) {
@@ -273,10 +254,13 @@ export class KiwiScraper extends BaseFlightScraper {
 
         // For 419 errors, continue to retry
         retryCount++;
-        this.logProgress(
-          "phase2",
-          `Retrying after error (attempt ${retryCount + 1}/${maxRetries + 1})`
-        );
+        // Only log on first/last retry
+        if (retryCount === 0 || retryCount === maxRetries) {
+          this.logProgress(
+            "phase2",
+            `Retrying after error (attempt ${retryCount + 1}/${maxRetries + 1})`
+          );
+        }
       }
     }
 
