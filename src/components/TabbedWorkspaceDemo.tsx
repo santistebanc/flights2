@@ -11,15 +11,15 @@ const TabbedWorkspaceDemo: React.FC = () => {
       title: "Flight Search",
       content: (
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-white">
+          <h2 className="text-xl font-semibold mb-4 text-card-foreground">
             Flight Search
           </h2>
-          <p className="text-gray-400 mb-4">
+          <p className="text-muted-foreground mb-4">
             Search for flights between airports. Enter your departure and
             arrival locations, select dates, and find the best deals.
           </p>
           <div className="mt-4">
-            <Button className="bg-yellow-400 text-gray-900 hover:bg-yellow-500">
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Search className="mr-2 h-4 w-4" />
               Start Search
             </Button>
@@ -32,17 +32,17 @@ const TabbedWorkspaceDemo: React.FC = () => {
       title: "Analytics",
       content: (
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-white">
+          <h2 className="text-xl font-semibold mb-4 text-card-foreground">
             Analytics Dashboard
           </h2>
-          <p className="text-gray-400 mb-4">
+          <p className="text-muted-foreground mb-4">
             View detailed analytics about flight searches, popular routes, and
             pricing trends.
           </p>
           <div className="mt-4">
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+              className="border-border text-muted-foreground hover:bg-muted hover:text-card-foreground"
             >
               <BarChart3 className="mr-2 h-4 w-4" />
               View Reports
@@ -56,15 +56,17 @@ const TabbedWorkspaceDemo: React.FC = () => {
       title: "Settings",
       content: (
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-white">Settings</h2>
-          <p className="text-gray-400 mb-4">
+          <h2 className="text-xl font-semibold mb-4 text-card-foreground">
+            Settings
+          </h2>
+          <p className="text-muted-foreground mb-4">
             Configure your preferences, notification settings, and account
             information.
           </p>
           <div className="mt-4">
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+              className="border-border text-muted-foreground hover:bg-muted hover:text-card-foreground"
             >
               <Settings className="mr-2 h-4 w-4" />
               Configure
@@ -89,17 +91,17 @@ const TabbedWorkspaceDemo: React.FC = () => {
       title: `New Tab ${tabCounter}`,
       content: (
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-white">
+          <h2 className="text-xl font-semibold mb-4 text-card-foreground">
             New Tab {tabCounter}
           </h2>
-          <p className="text-gray-400 mb-4">
+          <p className="text-muted-foreground mb-4">
             This is a new tab that was created dynamically. You can add any
             content here.
           </p>
           <div className="mt-4">
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+              className="border-border text-muted-foreground hover:bg-muted hover:text-card-foreground"
             >
               <FileText className="mr-2 h-4 w-4" />
               Sample Action
@@ -124,8 +126,10 @@ const TabbedWorkspaceDemo: React.FC = () => {
         title: "Welcome",
         content: (
           <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4 text-white">Welcome</h2>
-            <p className="text-gray-400">
+            <h2 className="text-xl font-semibold mb-4 text-card-foreground">
+              Welcome
+            </h2>
+            <p className="text-muted-foreground">
               Click the + button to add a new tab and start working.
             </p>
           </div>
@@ -144,11 +148,13 @@ const TabbedWorkspaceDemo: React.FC = () => {
   };
 
   return (
-    <Card className="w-full h-[600px] bg-gray-800 border-gray-700">
-      <CardHeader className="bg-gray-800 border-gray-700">
-        <CardTitle className="text-white">Tabbed Workspace Demo</CardTitle>
+    <Card className="w-full h-[600px] bg-card border-border">
+      <CardHeader className="bg-card border-border">
+        <CardTitle className="text-card-foreground">
+          Tabbed Workspace Demo
+        </CardTitle>
       </CardHeader>
-      <CardContent className="p-0 h-full bg-gray-800">
+      <CardContent className="p-0 h-full bg-card">
         <TabbedWorkspace
           tabs={tabs}
           activeTabId={activeTabId}

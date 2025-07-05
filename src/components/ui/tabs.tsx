@@ -45,7 +45,7 @@ export const TabMenu = React.forwardRef<HTMLDivElement, TabMenuProps>(
       <div
         ref={ref}
         className={cn(
-          "flex items-center border-b border-gray-700 bg-gray-800 rounded-t-lg",
+          "flex items-center border-b border-border bg-card rounded-t-lg",
           className
         )}
       >
@@ -55,10 +55,11 @@ export const TabMenu = React.forwardRef<HTMLDivElement, TabMenuProps>(
             <div
               key={tab.id}
               className={cn(
-                "group flex items-center gap-2 px-4 py-3 border-r border-gray-700 bg-gray-700/50 hover:bg-gray-700 transition-colors cursor-pointer text-sm font-medium",
+                "group flex items-center gap-2 px-4 py-3 border-r border-border bg-muted/50 hover:bg-muted transition-colors cursor-pointer text-sm font-medium",
                 activeTabId === tab.id &&
-                  "bg-gray-800 border-b-gray-800 text-white",
-                activeTabId !== tab.id && "text-gray-300 hover:text-white",
+                  "bg-card border-b-card text-card-foreground",
+                activeTabId !== tab.id &&
+                  "text-muted-foreground hover:text-card-foreground",
                 tabClassName
               )}
               onClick={() => onTabChange(tab.id)}
@@ -68,7 +69,7 @@ export const TabMenu = React.forwardRef<HTMLDivElement, TabMenuProps>(
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 hover:text-white"
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                     onTabClose(tab.id);
@@ -85,7 +86,7 @@ export const TabMenu = React.forwardRef<HTMLDivElement, TabMenuProps>(
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 mx-2 hover:bg-gray-700 text-gray-400 hover:text-white"
+          className="h-8 w-8 p-0 mx-2 hover:bg-accent text-muted-foreground hover:text-accent-foreground"
           onClick={onTabAdd}
         >
           <Plus className="h-4 w-4" />
@@ -107,14 +108,11 @@ export const TabContent = React.forwardRef<HTMLDivElement, TabContentProps>(
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
 
     return (
-      <div
-        ref={ref}
-        className={cn("flex-1 overflow-auto bg-gray-800", className)}
-      >
+      <div ref={ref} className={cn("flex-1 overflow-auto bg-card", className)}>
         {activeTab ? (
           <div className="h-full">{activeTab.content}</div>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full text-muted-foreground">
             No tabs available
           </div>
         )}
@@ -161,7 +159,7 @@ const TabbedWorkspace = React.forwardRef<HTMLDivElement, TabbedWorkspaceProps>(
         <div
           ref={ref}
           className={cn(
-            "flex flex-col h-full bg-gray-800 border border-gray-700 rounded-lg",
+            "flex flex-col h-full bg-card border border-border rounded-lg",
             className
           )}
         >

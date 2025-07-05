@@ -1,6 +1,6 @@
 # TabbedWorkspace Component
 
-A browser-like tabbed workspace component that allows users to add and close tabs dynamically. The component is built with a context-based architecture that separates the tab menu from the content area, enabling independent scrolling.
+A browser-like tabbed workspace component that allows users to add and close tabs dynamically. The component is built with a context-based architecture that separates the tab menu from the content area, enabling independent scrolling. It uses a theme-aware design system that follows shadcn/ui patterns.
 
 ## Features
 
@@ -12,7 +12,7 @@ A browser-like tabbed workspace component that allows users to add and close tab
 - ✅ Automatic tab switching when active tab is closed
 - ✅ Fully customizable styling
 - ✅ TypeScript support
-- ✅ Dark theme with gray colors and yellow accents
+- ✅ **Theme-aware design** - uses CSS variables for consistent styling
 - ✅ **Independent scrolling** - content area scrolls separately from tab menu
 - ✅ **Context-based architecture** - flexible component composition
 - ✅ **Separated components** - TabMenu and TabContent can be used independently
@@ -24,6 +24,20 @@ The component uses a context-based architecture with three main parts:
 1. **TabbedWorkspace** - The main container that provides context
 2. **TabMenu** - The tab navigation bar (fixed, doesn't scroll)
 3. **TabContent** - The content area (scrollable independently)
+
+## Theme System
+
+The component uses CSS variables for theming, following shadcn/ui patterns:
+
+- `--background` - Main background color
+- `--foreground` - Main text color
+- `--card` - Card background color
+- `--card-foreground` - Card text color
+- `--muted` - Muted background color
+- `--muted-foreground` - Muted text color
+- `--border` - Border color
+- `--accent` - Accent color (yellow in this theme)
+- `--destructive` - Destructive action color
 
 ## Usage
 
@@ -96,8 +110,8 @@ const CustomLayout = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Custom header */}
-      <div className="bg-gray-800 p-4 border-b border-gray-700">
-        <h1 className="text-white">My Application</h1>
+      <div className="bg-card p-4 border-b border-border">
+        <h1 className="text-card-foreground">My Application</h1>
       </div>
 
       {/* Tab menu */}
@@ -105,8 +119,8 @@ const CustomLayout = () => {
 
       {/* Custom sidebar + content */}
       <div className="flex flex-1">
-        <div className="w-64 bg-gray-700 p-4">
-          <p className="text-gray-300">Sidebar content</p>
+        <div className="w-64 bg-muted p-4">
+          <p className="text-muted-foreground">Sidebar content</p>
         </div>
         <div className="flex-1">
           <TabContent />
@@ -210,14 +224,14 @@ const {
 
 ## Styling
 
-The component uses a dark theme with Tailwind CSS classes:
+The component uses theme variables for consistent styling:
 
-- **Container**: `bg-gray-800 border-gray-700` with rounded corners
-- **Active tab**: `bg-gray-800 text-white` with border styling
-- **Inactive tabs**: `bg-gray-700/50 text-gray-300` with hover effects
-- **Close button**: Appears on hover with `hover:bg-red-600` destructive state
-- **Add button**: Ghost variant with `hover:bg-gray-700` accent state
-- **Content area**: `bg-gray-800` background with independent scrolling
+- **Container**: `bg-card border-border` with rounded corners
+- **Active tab**: `bg-card text-card-foreground` with border styling
+- **Inactive tabs**: `bg-muted/50 text-muted-foreground` with hover effects
+- **Close button**: Appears on hover with `hover:bg-destructive` destructive state
+- **Add button**: Ghost variant with `hover:bg-accent` accent state
+- **Content area**: `bg-card` background with independent scrolling
 
 ## Examples
 
@@ -243,7 +257,7 @@ const tabs: Tab[] = [
   onTabChange={handleTabChange}
   onTabAdd={handleTabAdd}
   onTabClose={handleTabClose}
-  className="h-full border-2 border-yellow-400"
+  className="h-full border-2 border-accent"
 >
   <TabMenu tabClassName="px-6 py-3" />
   <TabContent className="p-4" />
@@ -263,8 +277,8 @@ const tabs: Tab[] = [
   <div className="flex flex-col h-full">
     <TabMenu />
     <div className="flex flex-1">
-      <div className="w-64 bg-gray-700 p-4">
-        <p className="text-gray-300">Sidebar</p>
+      <div className="w-64 bg-muted p-4">
+        <p className="text-muted-foreground">Sidebar</p>
       </div>
       <div className="flex-1">
         <TabContent />

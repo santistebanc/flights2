@@ -30,19 +30,21 @@ const TabbedWorkspaceExample: React.FC = () => {
       title: "Code Editor",
       content: (
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-white">Code Editor</h2>
-          <p className="text-gray-400 mb-4">
+          <h2 className="text-xl font-semibold mb-4 text-card-foreground">
+            Code Editor
+          </h2>
+          <p className="text-muted-foreground mb-4">
             This tab demonstrates independent scrolling. The content area can
             scroll independently from the tab menu above.
           </p>
 
           {/* Generate lots of content to demonstrate scrolling */}
           {Array.from({ length: 20 }, (_, i) => (
-            <div key={i} className="mb-4 p-4 bg-gray-700 rounded-lg">
-              <h3 className="text-lg font-medium text-white mb-2">
+            <div key={i} className="mb-4 p-4 bg-muted rounded-lg">
+              <h3 className="text-lg font-medium text-card-foreground mb-2">
                 Section {i + 1}
               </h3>
-              <p className="text-gray-300 mb-2">
+              <p className="text-muted-foreground mb-2">
                 This is section {i + 1} with some sample content to demonstrate
                 scrolling. The tab menu stays fixed at the top while this
                 content scrolls independently.
@@ -51,14 +53,14 @@ const TabbedWorkspaceExample: React.FC = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-gray-600 text-gray-300 hover:bg-gray-600"
+                  className="border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 >
                   Action {i + 1}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-gray-600 text-gray-300 hover:bg-gray-600"
+                  className="border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 >
                   Action {i + 2}
                 </Button>
@@ -73,8 +75,10 @@ const TabbedWorkspaceExample: React.FC = () => {
       title: "Data View",
       content: (
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-white">Data View</h2>
-          <p className="text-gray-400 mb-4">
+          <h2 className="text-xl font-semibold mb-4 text-card-foreground">
+            Data View
+          </h2>
+          <p className="text-muted-foreground mb-4">
             Another example with scrollable content. Notice how the tab menu
             remains fixed while you can scroll through this content.
           </p>
@@ -83,31 +87,31 @@ const TabbedWorkspaceExample: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gray-700">
-                  <th className="p-3 text-left text-white border border-gray-600">
+                <tr className="bg-muted">
+                  <th className="p-3 text-left text-card-foreground border border-border">
                     ID
                   </th>
-                  <th className="p-3 text-left text-white border border-gray-600">
+                  <th className="p-3 text-left text-card-foreground border border-border">
                     Name
                   </th>
-                  <th className="p-3 text-left text-white border border-gray-600">
+                  <th className="p-3 text-left text-card-foreground border border-border">
                     Status
                   </th>
-                  <th className="p-3 text-left text-white border border-gray-600">
+                  <th className="p-3 text-left text-card-foreground border border-border">
                     Value
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {Array.from({ length: 50 }, (_, i) => (
-                  <tr key={i} className="hover:bg-gray-700">
-                    <td className="p-3 text-gray-300 border border-gray-600">
+                  <tr key={i} className="hover:bg-muted">
+                    <td className="p-3 text-muted-foreground border border-border">
                       {i + 1}
                     </td>
-                    <td className="p-3 text-gray-300 border border-gray-600">
+                    <td className="p-3 text-muted-foreground border border-border">
                       Item {i + 1}
                     </td>
-                    <td className="p-3 text-gray-300 border border-gray-600">
+                    <td className="p-3 text-muted-foreground border border-border">
                       <span
                         className={`px-2 py-1 rounded text-xs ${
                           i % 3 === 0
@@ -124,7 +128,7 @@ const TabbedWorkspaceExample: React.FC = () => {
                             : "Inactive"}
                       </span>
                     </td>
-                    <td className="p-3 text-gray-300 border border-gray-600">
+                    <td className="p-3 text-muted-foreground border border-border">
                       ${(Math.random() * 1000).toFixed(2)}
                     </td>
                   </tr>
@@ -140,33 +144,35 @@ const TabbedWorkspaceExample: React.FC = () => {
       title: "Settings",
       content: (
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-white">Settings</h2>
-          <p className="text-gray-400 mb-4">
+          <h2 className="text-xl font-semibold mb-4 text-card-foreground">
+            Settings
+          </h2>
+          <p className="text-muted-foreground mb-4">
             Settings panel with various configuration options.
           </p>
 
           <div className="space-y-6">
-            <div className="p-4 bg-gray-700 rounded-lg">
-              <h3 className="text-lg font-medium text-white mb-3">
+            <div className="p-4 bg-muted rounded-lg">
+              <h3 className="text-lg font-medium text-card-foreground mb-3">
                 General Settings
               </h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-300">Auto-save</span>
+                  <span className="text-muted-foreground">Auto-save</span>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-gray-600 text-gray-300"
+                    className="border-border text-muted-foreground"
                   >
                     Enabled
                   </Button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-300">Notifications</span>
+                  <span className="text-muted-foreground">Notifications</span>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-gray-600 text-gray-300"
+                    className="border-border text-muted-foreground"
                   >
                     Enabled
                   </Button>
@@ -174,27 +180,27 @@ const TabbedWorkspaceExample: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-4 bg-gray-700 rounded-lg">
-              <h3 className="text-lg font-medium text-white mb-3">
+            <div className="p-4 bg-muted rounded-lg">
+              <h3 className="text-lg font-medium text-card-foreground mb-3">
                 Appearance
               </h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-300">Theme</span>
+                  <span className="text-muted-foreground">Theme</span>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-gray-600 text-gray-300"
+                    className="border-border text-muted-foreground"
                   >
                     Dark
                   </Button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-300">Font Size</span>
+                  <span className="text-muted-foreground">Font Size</span>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-gray-600 text-gray-300"
+                    className="border-border text-muted-foreground"
                   >
                     Medium
                   </Button>
@@ -221,17 +227,17 @@ const TabbedWorkspaceExample: React.FC = () => {
       title: `New Tab ${tabCounter}`,
       content: (
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-white">
+          <h2 className="text-xl font-semibold mb-4 text-card-foreground">
             New Tab {tabCounter}
           </h2>
-          <p className="text-gray-400 mb-4">
+          <p className="text-muted-foreground mb-4">
             This is a new tab that was created dynamically. You can add any
             content here.
           </p>
           <div className="mt-4">
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+              className="border-border text-muted-foreground hover:bg-muted hover:text-card-foreground"
             >
               <FileText className="mr-2 h-4 w-4" />
               Sample Action
@@ -255,8 +261,10 @@ const TabbedWorkspaceExample: React.FC = () => {
         title: "Welcome",
         content: (
           <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4 text-white">Welcome</h2>
-            <p className="text-gray-400">
+            <h2 className="text-xl font-semibold mb-4 text-card-foreground">
+              Welcome
+            </h2>
+            <p className="text-muted-foreground">
               Click the + button to add a new tab and start working.
             </p>
           </div>
@@ -274,12 +282,12 @@ const TabbedWorkspaceExample: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 bg-gray-900 min-h-screen">
+    <div className="container mx-auto p-6 bg-background min-h-screen">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-white">
+        <h1 className="text-3xl font-bold mb-6 text-foreground">
           Tabbed Workspace Component
         </h1>
-        <p className="text-gray-400 mb-8">
+        <p className="text-muted-foreground mb-8">
           This is a browser-like tabbed workspace component that allows you to
           add and close tabs. Each tab can contain any content and supports
           dynamic creation and removal. The content area scrolls independently
@@ -289,7 +297,7 @@ const TabbedWorkspaceExample: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Basic Demo */}
           <div>
-            <h2 className="text-xl font-semibold mb-4 text-white">
+            <h2 className="text-xl font-semibold mb-4 text-foreground">
               Basic Demo
             </h2>
             <TabbedWorkspaceDemo />
@@ -297,11 +305,11 @@ const TabbedWorkspaceExample: React.FC = () => {
 
           {/* Advanced Demo with Scrollable Content */}
           <div>
-            <h2 className="text-xl font-semibold mb-4 text-white">
+            <h2 className="text-xl font-semibold mb-4 text-foreground">
               Advanced Demo - Independent Scrolling
             </h2>
-            <Card className="h-[600px] bg-gray-800 border-gray-700">
-              <CardContent className="p-0 h-full bg-gray-800">
+            <Card className="h-[600px] bg-card border-border">
+              <CardContent className="p-0 h-full bg-card">
                 <TabbedWorkspace
                   tabs={tabs}
                   activeTabId={activeTabId}
@@ -318,9 +326,11 @@ const TabbedWorkspaceExample: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-8 p-6 bg-gray-800 border border-gray-700 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4 text-white">Features</h2>
-          <ul className="space-y-2 text-sm text-gray-300">
+        <div className="mt-8 p-6 bg-card border border-border rounded-lg">
+          <h2 className="text-xl font-semibold mb-4 text-foreground">
+            Features
+          </h2>
+          <ul className="space-y-2 text-sm text-muted-foreground">
             <li>• Add new tabs with the + button</li>
             <li>• Close tabs by clicking the X button (appears on hover)</li>
             <li>• Switch between tabs by clicking on them</li>
@@ -334,6 +344,10 @@ const TabbedWorkspaceExample: React.FC = () => {
             <li>
               • Context-based state management for flexible component
               composition
+            </li>
+            <li>
+              • <strong>Theme-aware</strong> - uses CSS variables for consistent
+              styling
             </li>
           </ul>
         </div>
