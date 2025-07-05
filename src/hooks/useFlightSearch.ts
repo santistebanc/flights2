@@ -42,12 +42,6 @@ export interface UseFlightSearchReturn {
   performSearch: (params: FlightSearchParams) => Promise<void>;
   resetSearch: () => void;
   retrySearch: () => Promise<void>;
-
-  // Validation
-  validateSearchParams: (params: FlightSearchParams) => {
-    isValid: boolean;
-    errors: Record<string, string>;
-  };
 }
 
 export function useFlightSearch(): UseFlightSearchReturn {
@@ -70,84 +64,6 @@ export function useFlightSearch(): UseFlightSearchReturn {
   // Convex client for direct query
   const convex = new ConvexClient(import.meta.env.VITE_CONVEX_URL as string);
 
-  // Validation function
-  const validateSearchParams = useCallback((params: FlightSearchParams) => {
-    const errors: Record<string, string> = {};
-
-    // Validate IATA codes
-    const isValidIataCode = (code: string): boolean => {
-      return /^[A-Z]{3}$/.test(code.toUpperCase());
-    };
-
-    if (!params.departureAirport.trim()) {
-      errors.departureAirport = "Departure airport is required";
-    } else if (!isValidIataCode(params.departureAirport)) {
-      errors.departureAirport =
-        "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
-    }
-
-    if (!params.arrivalAirport.trim()) {
-      errors.arrivalAirport = "Arrival airport is required";
-    } else if (!isValidIataCode(params.arrivalAirport)) {
-      errors.arrivalAirport =
-        "Please enter a valid 3-letter airport code (e.g., JFK, LAX)";
-    }
-
-    // Check for duplicate airports
-    if (
-      params.departureAirport &&
-      params.arrivalAirport &&
-      params.departureAirport.toUpperCase() ===
-        params.arrivalAirport.toUpperCase()
-    ) {
-      errors.arrivalAirport =
-        "Departure and arrival airports must be different";
-    }
-
-    // Validate dates
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (!params.departureDate) {
-      errors.departureDate = "Departure date is required";
-    } else if (params.departureDate < today) {
-      errors.departureDate = "Departure date cannot be in the past";
-    }
-
-    if (params.isRoundTrip) {
-      if (!params.returnDate) {
-        errors.returnDate = "Return date is required for round trips";
-      } else if (params.returnDate < today) {
-        errors.returnDate = "Return date cannot be in the past";
-      } else if (params.returnDate <= params.departureDate) {
-        errors.returnDate = "Return date must be after departure date";
-      }
-    }
-
-    // Check if dates are too far in the future (more than 1 year)
-    const maxDate = new Date();
-    maxDate.setFullYear(maxDate.getFullYear() + 1);
-
-    if (params.departureDate > maxDate) {
-      errors.departureDate =
-        "Departure date cannot be more than 1 year in the future";
-    }
-
-    if (
-      params.isRoundTrip &&
-      params.returnDate &&
-      params.returnDate > maxDate
-    ) {
-      errors.returnDate =
-        "Return date cannot be more than 1 year in the future";
-    }
-
-    return {
-      isValid: Object.keys(errors).length === 0,
-      errors,
-    };
-  }, []);
-
   // Reset function
   const resetSearch = useCallback(() => {
     setSearchState("idle");
@@ -163,18 +79,6 @@ export function useFlightSearch(): UseFlightSearchReturn {
   // Main search function
   const performSearch = useCallback(
     async (params: FlightSearchParams) => {
-      // Validate parameters first
-      const validation = validateSearchParams(params);
-      if (!validation.isValid) {
-        setError({
-          message: "Invalid search parameters",
-          details: Object.values(validation.errors).join(", "),
-          source: "general",
-        });
-        setSearchState("error");
-        return;
-      }
-
       // Store params for retry functionality
       lastSearchParams.current = params;
 
@@ -329,7 +233,7 @@ export function useFlightSearch(): UseFlightSearchReturn {
         });
       }
     },
-    [validateSearchParams, scrapeKiwi, scrapeSkyscanner, progress]
+    [scrapeKiwi, scrapeSkyscanner, progress]
   );
 
   // Retry function
@@ -354,8 +258,5 @@ export function useFlightSearch(): UseFlightSearchReturn {
     performSearch,
     resetSearch,
     retrySearch,
-
-    // Validation
-    validateSearchParams,
   };
 }
