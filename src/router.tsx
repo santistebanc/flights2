@@ -11,10 +11,8 @@ import { ResultsList } from "./components/flight-results/ResultsList";
 import { ScrapingProgress } from "./components/progress/ScrapingProgress";
 import { useFlightSearch } from "./hooks/useFlightSearch";
 import { SearchContext, ScrapingSource } from "./SearchContext";
-import { useLocalStorage } from "./useLocalStorage";
 import { ThemeToggle } from "./components/ui/theme-toggle";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { useUrlBasedSearch } from "./hooks/useUrlBasedSearch";
 
 // Default sources configuration
@@ -44,19 +42,7 @@ interface SearchParams {
 // Root route component
 function RootComponent() {
   const navigate = useNavigate();
-  const search = useSearch({ from: "/search" });
-
-  const [searchParams, setSearchParams] = useLocalStorage(
-    "flight-search-filters",
-    {
-      departureAirport: "BER",
-      arrivalAirport: "MAD",
-      departureDate: "2025-07-03",
-      returnDate: "",
-      isRoundTrip: false,
-      sources: defaultSources,
-    }
-  );
+  const search = useSearch({ from: "/" });
 
   // Flight search hook for managing search lifecycle
   const {
@@ -70,69 +56,11 @@ function RootComponent() {
     retrySearch,
   } = useFlightSearch();
 
-  // Ensure sources is always an array (fallback for old localStorage data)
-  const safeSearchParams = {
-    ...searchParams,
-    sources: Array.isArray(searchParams.sources)
-      ? searchParams.sources
-      : defaultSources,
-  };
-
-  // Sync URL parameters with search state
-  useEffect(() => {
-    if (
-      search.from ||
-      search.to ||
-      search.depart ||
-      search.return ||
-      search.roundTrip
-    ) {
-      const urlParams: FlightSearchParams = {
-        departureAirport: search.from || searchParams.departureAirport,
-        arrivalAirport: search.to || searchParams.arrivalAirport,
-        departureDate: search.depart
-          ? new Date(search.depart)
-          : new Date(searchParams.departureDate),
-        returnDate: search.return
-          ? new Date(search.return)
-          : searchParams.returnDate
-            ? new Date(searchParams.returnDate)
-            : undefined,
-        isRoundTrip: search.roundTrip === "true" || searchParams.isRoundTrip,
-      };
-
-      // Update localStorage with URL params
-      setSearchParams({
-        departureAirport: urlParams.departureAirport,
-        arrivalAirport: urlParams.arrivalAirport,
-        departureDate: urlParams.departureDate.toISOString().split("T")[0],
-        returnDate: urlParams.returnDate
-          ? urlParams.returnDate.toISOString().split("T")[0]
-          : "",
-        isRoundTrip: urlParams.isRoundTrip,
-        sources: safeSearchParams.sources,
-      });
-
-      // Perform search if we have URL parameters
-      if (search.from || search.to || search.depart) {
-        performSearch(urlParams);
-      }
-    }
-  }, [search.from, search.to, search.depart, search.return, search.roundTrip]);
+  // URL-based search hook
+  const { bundles, isLoading, hasSearchParams, searchParams } =
+    useUrlBasedSearch();
 
   const handleSearch = async (searchParams: FlightSearchParams) => {
-    // Update search params in context
-    setSearchParams({
-      departureAirport: searchParams.departureAirport,
-      arrivalAirport: searchParams.arrivalAirport,
-      departureDate: searchParams.departureDate.toISOString().split("T")[0],
-      returnDate: searchParams.returnDate
-        ? searchParams.returnDate.toISOString().split("T")[0]
-        : "",
-      isRoundTrip: searchParams.isRoundTrip,
-      sources: safeSearchParams.sources,
-    });
-
     // Update URL with search parameters
     const urlParams: SearchParams = {
       from: searchParams.departureAirport,
@@ -142,12 +70,12 @@ function RootComponent() {
         ? searchParams.returnDate.toISOString().split("T")[0]
         : undefined,
       roundTrip: searchParams.isRoundTrip ? "true" : "false",
-      sources: safeSearchParams.sources.map((s) => s.id).join(","),
+      sources: defaultSources.map((s) => s.id).join(","),
     };
 
-    // Navigate to search route with parameters
+    // Navigate to same route with parameters
     navigate({
-      to: "/search",
+      to: "/",
       search: urlParams,
     });
 
@@ -155,12 +83,72 @@ function RootComponent() {
     await performSearch(searchParams);
   };
 
-  // Render content based on search state
+  // Render content based on search state and URL parameters
   const renderMainContent = () => {
+    // If we have URL parameters, show database results
+    if (hasSearchParams) {
+      if (isLoading) {
+        return (
+          <div className="mt-8 text-center">
+            <div className="bg-card border border-border rounded-lg p-8">
+              <h3 className="text-lg font-medium text-card-foreground mb-2">
+                Loading search results...
+              </h3>
+              <p className="text-muted-foreground">
+                Searching for flights from {searchParams.from} to{" "}
+                {searchParams.to} on {searchParams.depart}
+                {searchParams.return && ` returning on ${searchParams.return}`}
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      if (bundles.length === 0) {
+        return (
+          <div className="mt-8 text-center">
+            <div className="bg-card border border-border rounded-lg p-8">
+              <h3 className="text-lg font-medium text-card-foreground mb-2">
+                No flights found
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                No flights match your search criteria: {searchParams.from} to{" "}
+                {searchParams.to} on {searchParams.depart}
+                {searchParams.return && ` returning on ${searchParams.return}`}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Try adjusting your dates or airports.
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="mt-8">
+          <div className="mb-4 p-4 bg-card border border-border rounded-lg">
+            <h2 className="text-lg font-semibold text-card-foreground mb-2">
+              Search Results
+            </h2>
+            <p className="text-muted-foreground">
+              Found {bundles.length} flight options from {searchParams.from} to{" "}
+              {searchParams.to} on {searchParams.depart}
+              {searchParams.return && ` returning on ${searchParams.return}`}
+            </p>
+          </div>
+          <ResultsList bundles={bundles} isLoading={false} />
+        </div>
+      );
+    }
+
+    // If no URL parameters, show search state results
     switch (searchState) {
       case "idle":
         return (
           <div className="mt-8 text-center text-muted-foreground">
+            <h2 className="text-2xl font-bold text-foreground mb-4">
+              Welcome to Flight Search
+            </h2>
             <p>Enter your search criteria above to find flights</p>
           </div>
         );
@@ -232,7 +220,17 @@ function RootComponent() {
 
   return (
     <SearchContext.Provider
-      value={{ searchParams: safeSearchParams, setSearchParams }}
+      value={{
+        searchParams: {
+          departureAirport: search.from || "BER",
+          arrivalAirport: search.to || "MAD",
+          departureDate: search.depart || "2025-07-03",
+          returnDate: search.return || "",
+          isRoundTrip: search.roundTrip === "true" || false,
+          sources: defaultSources,
+        },
+        setSearchParams: () => {}, // No-op since we're not using localStorage
+      }}
     >
       <div className="h-screen flex flex-col bg-background overflow-hidden">
         {/* Sticky Search Form with Icon */}
@@ -261,88 +259,6 @@ function RootComponent() {
   );
 }
 
-// Home route component
-function HomeComponent() {
-  return (
-    <div className="mt-8 text-center text-muted-foreground">
-      <h2 className="text-2xl font-bold text-foreground mb-4">
-        Welcome to Flight Search
-      </h2>
-      <p>Enter your search criteria above to find flights</p>
-    </div>
-  );
-}
-
-// Search route component
-function SearchComponent() {
-  const { bundles, isLoading, hasSearchParams, searchParams } =
-    useUrlBasedSearch();
-
-  if (!hasSearchParams) {
-    return (
-      <div className="mt-8 text-center text-muted-foreground">
-        <h2 className="text-2xl font-bold text-foreground mb-4">
-          Search Results
-        </h2>
-        <p>No search parameters found. Please enter search criteria above.</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="mt-8 text-center">
-        <div className="bg-card border border-border rounded-lg p-8">
-          <h3 className="text-lg font-medium text-card-foreground mb-2">
-            Loading search results...
-          </h3>
-          <p className="text-muted-foreground">
-            Searching for flights from {searchParams.from} to {searchParams.to}{" "}
-            on {searchParams.depart}
-            {searchParams.return && ` returning on ${searchParams.return}`}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (bundles.length === 0) {
-    return (
-      <div className="mt-8 text-center">
-        <div className="bg-card border border-border rounded-lg p-8">
-          <h3 className="text-lg font-medium text-card-foreground mb-2">
-            No flights found
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            No flights match your search criteria: {searchParams.from} to{" "}
-            {searchParams.to} on {searchParams.depart}
-            {searchParams.return && ` returning on ${searchParams.return}`}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Try adjusting your dates or airports.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-8">
-      <div className="mb-4 p-4 bg-card border border-border rounded-lg">
-        <h2 className="text-lg font-semibold text-card-foreground mb-2">
-          Search Results
-        </h2>
-        <p className="text-muted-foreground">
-          Found {bundles.length} flight options from {searchParams.from} to{" "}
-          {searchParams.to} on {searchParams.depart}
-          {searchParams.return && ` returning on ${searchParams.return}`}
-        </p>
-      </div>
-      <ResultsList bundles={bundles} isLoading={false} />
-    </div>
-  );
-}
-
 // Create routes
 const rootRoute = createRootRoute({
   component: RootComponent,
@@ -351,13 +267,7 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: HomeComponent,
-});
-
-const searchRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/search",
-  component: SearchComponent,
+  component: () => null, // Component is handled in RootComponent
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
     from: search.from as string | undefined,
     to: search.to as string | undefined,
@@ -369,7 +279,7 @@ const searchRoute = createRoute({
 });
 
 // Create and export router
-export const routeTree = rootRoute.addChildren([indexRoute, searchRoute]);
+export const routeTree = rootRoute.addChildren([indexRoute]);
 
 export const router = createRouter({ routeTree });
 

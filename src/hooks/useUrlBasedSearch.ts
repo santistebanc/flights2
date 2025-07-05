@@ -4,7 +4,7 @@ import { useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
 
 export function useUrlBasedSearch() {
-  const search = useSearch({ from: "/search" });
+  const search = useSearch({ from: "/" });
 
   // Only query if we have search parameters
   const hasSearchParams = !!(search.from || search.to || search.depart);
@@ -39,6 +39,13 @@ export function useUrlBasedSearch() {
     bundles: bundlesWithPrices,
     isLoading: hasSearchParams && bundles === undefined,
     hasSearchParams,
-    searchParams: search,
+    searchParams: search as {
+      from?: string;
+      to?: string;
+      depart?: string;
+      return?: string;
+      roundTrip?: string;
+      sources?: string;
+    },
   };
 }
