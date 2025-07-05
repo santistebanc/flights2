@@ -127,42 +127,16 @@ export function extractBookingOptionsFromModal(
       `[${source.charAt(0).toUpperCase() + source.slice(1)}] Raw price text: "${priceAndLinkText}" for agency: ${agency}`
     );
 
-    // Use single consistent pattern for price extraction
+    // Use single consistent pattern for price extraction (same for both scrapers)
     let price = 0;
-    if (source === "skyscanner") {
-      // Skyscanner: Always use the consistent pattern "€827 <a href=...>Select</a>"
-      const priceMatch = priceAndLinkText.match(/€(\d+(?:\.\d{2})?)/);
-      if (priceMatch) {
-        const extractedPrice = parseFloat(priceMatch[1]);
-        if (!isNaN(extractedPrice) && extractedPrice > 0) {
-          price = extractedPrice;
-          console.log(
-            `[Skyscanner] Extracted price: ${price} from consistent pattern: €${priceMatch[1]}`
-          );
-        }
-      }
-    } else {
-      // Kiwi: Use existing multiple patterns for compatibility
-      const pricePatterns = [
-        /€(\d+(?:\.\d{2})?)/, // €291 or €291.50
-        /EUR\s*(\d+(?:\.\d{2})?)/, // EUR 291 or EUR 291.50
-        /(\d+(?:\.\d{2})?)\s*€/, // 291€ or 291.50€
-        /(\d+(?:\.\d{2})?)\s*EUR/, // 291 EUR or 291.50 EUR
-        /(\d+(?:\.\d{2})?)/, // Just numbers (fallback)
-      ];
-
-      for (const pattern of pricePatterns) {
-        const priceMatch = priceAndLinkText.match(pattern);
-        if (priceMatch) {
-          const extractedPrice = parseFloat(priceMatch[1]);
-          if (!isNaN(extractedPrice) && extractedPrice > 0) {
-            price = extractedPrice;
-            console.log(
-              `[Kiwi] Extracted price: ${price} using pattern: ${pattern}`
-            );
-            break;
-          }
-        }
+    const priceMatch = priceAndLinkText.match(/€(\d+(?:\.\d{2})?)/);
+    if (priceMatch) {
+      const extractedPrice = parseFloat(priceMatch[1]);
+      if (!isNaN(extractedPrice) && extractedPrice > 0) {
+        price = extractedPrice;
+        console.log(
+          `[${source.charAt(0).toUpperCase() + source.slice(1)}] Extracted price: ${price} from consistent pattern: €${priceMatch[1]}`
+        );
       }
     }
 
