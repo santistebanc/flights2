@@ -79,6 +79,7 @@ export function useFlightSearch(): UseFlightSearchReturn {
   // Main search function
   const performSearch = useCallback(
     async (params: FlightSearchParams) => {
+      console.log("performSearch", params);
       // Store params for retry functionality
       lastSearchParams.current = params;
 

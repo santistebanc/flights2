@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/utils";
+import { cn, formatCurrency } from "@/utils";
 import { BookingOptions, BookingOption } from "./BookingOptions";
 
 // Types for the bundle display
@@ -122,7 +122,7 @@ export const BundleCard: React.FC<BundleCardProps> = ({
           </CardTitle>
           <div className="text-right">
             <div className="text-2xl font-bold text-green-600">
-              {minPriceOption?.currency} {minPrice.toFixed(2)}
+              {formatCurrency(minPrice, minPriceOption?.currency || "EUR")}
             </div>
             <div className="text-xs text-muted-foreground">
               {bookingOptions.length} booking option
@@ -176,7 +176,8 @@ export const BundleCard: React.FC<BundleCardProps> = ({
             }
             className="bg-green-600 hover:bg-green-700"
           >
-            Book from {minPriceOption?.currency} {minPrice.toFixed(2)}
+            Book from{" "}
+            {formatCurrency(minPrice, minPriceOption?.currency || "EUR")}
           </Button>
         </div>
       </CardFooter>

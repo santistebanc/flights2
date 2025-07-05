@@ -56,14 +56,6 @@ export function calculateFlightDepartureDate(
   return `${year}-${month}-${day}`;
 }
 
-function shortHash(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff;
-  }
-  return Math.abs(hash).toString(36);
-}
-
 /**
  * Generate optimized bundle uniqueId using only first and last flight uniqueIds.
  * Since flights are guaranteed to be in chronological order, this maintains uniqueness
@@ -362,7 +354,7 @@ export const processAndInsertScrapedData = internalMutation({
           }
 
           return {
-            uniqueId: `booking_${option.agency}_${option.price}_${option.currency}_${option.extractedAt}_${shortHash(option.linkToBook)}`,
+            uniqueId: `booking_${option.agency}_${option.price}_${option.currency}`,
             targetUniqueId: targetBundleUniqueId,
             agency: option.agency,
             price: option.price,
@@ -737,7 +729,7 @@ export const savePollData = internalMutation({
 
         for (const option of bundle.bookingOptions) {
           const bookingOptionData = {
-            uniqueId: `booking_${option.agency}_${option.price}_${option.currency}_${option.extractedAt}_${shortHash(option.linkToBook)}`,
+            uniqueId: `booking_${option.agency}_${option.price}_${option.currency}`,
             targetId: bundleId,
             agency: option.agency,
             price: option.price,

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, ExternalLink, Star } from "lucide-react";
-import { cn } from "@/utils";
+import { cn, formatCurrency } from "@/utils";
 
 export interface BookingOption {
   _id: string;
@@ -43,11 +43,6 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
   const avgPrice =
     bookingOptions.reduce((sum, option) => sum + option.price, 0) /
     bookingOptions.length;
-
-  // Format price with currency
-  const formatPrice = (price: number, currency: string) => {
-    return `${currency} ${price.toFixed(2)}`;
-  };
 
   // Format extraction time
   const formatExtractionTime = (timestamp: number) => {
@@ -130,12 +125,13 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
           </CardTitle>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>
-              From {formatPrice(minPrice, bookingOptions[0]?.currency || "EUR")}
+              From{" "}
+              {formatCurrency(minPrice, bookingOptions[0]?.currency || "EUR")}
             </span>
             {bookingOptions.length > 1 && (
               <span>
                 Avg{" "}
-                {formatPrice(avgPrice, bookingOptions[0]?.currency || "EUR")}
+                {formatCurrency(avgPrice, bookingOptions[0]?.currency || "EUR")}
               </span>
             )}
           </div>
@@ -147,8 +143,8 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
             <span>Price range:</span>
             <span>
-              {formatPrice(minPrice, bookingOptions[0]?.currency || "EUR")} -{" "}
-              {formatPrice(maxPrice, bookingOptions[0]?.currency || "EUR")}
+              {formatCurrency(minPrice, bookingOptions[0]?.currency || "EUR")} -{" "}
+              {formatCurrency(maxPrice, bookingOptions[0]?.currency || "EUR")}
             </span>
           </div>
         )}
@@ -207,7 +203,7 @@ export const BookingOptions: React.FC<BookingOptionsProps> = ({
                         isBestPrice ? "text-green-300" : "text-foreground"
                       )}
                     >
-                      {formatPrice(option.price, option.currency)}
+                      {formatCurrency(option.price, option.currency)}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Updated {formatExtractionTime(option.extractedAt)}

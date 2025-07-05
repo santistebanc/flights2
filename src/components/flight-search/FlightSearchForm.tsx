@@ -5,6 +5,7 @@ import { cn } from "../../utils";
 import { PlaneTakeoff } from "lucide-react";
 import { AirportAutocomplete } from "./AirportAutocomplete";
 import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useFlightSearch } from "@/hooks/useFlightSearch";
 
 interface FlightSearchFormProps {
   className?: string;
@@ -26,7 +27,7 @@ interface DateRange {
 export function FlightSearchForm({ className }: FlightSearchFormProps) {
   const search = useSearch({ from: "/" });
   const navigate = useNavigate();
-
+  const { performSearch } = useFlightSearch();
   // Form state with URL parameters as default values
   const [departureAirport, setDepartureAirport] = useState(search.from || "");
   const [arrivalAirport, setArrivalAirport] = useState(search.to || "");
@@ -40,18 +41,24 @@ export function FlightSearchForm({ className }: FlightSearchFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const urlParams = {
-      from: departureAirport,
-      to: arrivalAirport,
-      depart: dateRange.from.toISOString().split("T")[0],
-      return: isRoundTrip
-        ? dateRange.to?.toISOString().split("T")[0]
-        : undefined,
-    };
+    performSearch({
+      departureAirport: departureAirport,
+      arrivalAirport: arrivalAirport,
+      departureDate: dateRange.from,
+      returnDate: dateRange.to,
+      isRoundTrip: isRoundTrip,
+    });
 
     navigate({
       to: "/",
-      search: urlParams,
+      search: {
+        from: departureAirport,
+        to: arrivalAirport,
+        depart: dateRange.from.toISOString().split("T")[0],
+        return: isRoundTrip
+          ? dateRange.to?.toISOString().split("T")[0]
+          : undefined,
+      },
     });
   };
 

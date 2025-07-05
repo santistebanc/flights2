@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ExternalLink, ArrowRight, Clock } from "lucide-react";
-import { cn } from "@/utils";
+import { cn, formatCurrency } from "@/utils";
 
 export interface BundleWithBookingOptions {
   _id: string;
@@ -76,22 +76,14 @@ const BookingOptionsPopup: React.FC<{
       {sortedOptions.map((option, index) => (
         <div
           key={option._id}
-          className={cn(
-            "flex items-center justify-between p-3 rounded-lg border",
-            index === 0 && "bg-green-50 border-green-200"
-          )}
+          className="flex items-center justify-between p-3 rounded-lg border"
         >
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="font-medium">{option.agency}</span>
-              {index === 0 && (
-                <Badge className="text-xs bg-green-100 text-green-800">
-                  Best Price
-                </Badge>
-              )}
             </div>
             <div className="text-lg font-bold text-green-600">
-              {currency} {option.price.toFixed(2)}
+              {formatCurrency(option.price, option.currency)}
             </div>
           </div>
           <Button
@@ -281,9 +273,10 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                 {bundles.length} flight{bundles.length !== 1 ? "s" : ""} found
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Prices from {currency}{" "}
-                {Math.min(...bundlesWithPrices.map((b) => b.minPrice)).toFixed(
-                  2
+                Prices from{" "}
+                {formatCurrency(
+                  Math.min(...bundlesWithPrices.map((b) => b.minPrice)),
+                  currency
                 )}
               </p>
             </div>
@@ -329,34 +322,17 @@ export const ResultsList: React.FC<ResultsListProps> = ({
             {sortedBundles.slice(0, showCount).map((bundle, index) => (
               <div
                 key={bundle._id}
-                className={cn(
-                  "flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors",
-                  index < 3 && "bg-yellow-50/30"
-                )}
+                className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
               >
-                {/* Rank Badge */}
-                {index < 3 && (
-                  <Badge
-                    className={cn(
-                      "flex-shrink-0",
-                      index === 0 && "bg-yellow-500 text-gray-900",
-                      index === 1 && "bg-gray-400 text-white",
-                      index === 2 && "bg-amber-600 text-white"
-                    )}
-                  >
-                    #{index + 1}
-                  </Badge>
-                )}
-
                 {/* Price - Clickable for booking options */}
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="flex-shrink-0 p-2 h-auto flex flex-col items-start hover:bg-green-50"
+                      className="flex-shrink-0 p-2 h-auto flex flex-col items-start hover:bg-green-900/20 hover:border-green-700 border border-transparent transition-colors"
                     >
                       <div className="text-lg font-bold text-green-600">
-                        {currency} {bundle.minPrice.toFixed(2)}
+                        {formatCurrency(bundle.minPrice, currency)}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {bundle.bookingOptions.length} option
@@ -425,10 +401,10 @@ export const ResultsList: React.FC<ResultsListProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold text-green-600">
-                  {currency}{" "}
-                  {Math.min(
-                    ...bundlesWithPrices.map((b) => b.minPrice)
-                  ).toFixed(2)}
+                  {formatCurrency(
+                    Math.min(...bundlesWithPrices.map((b) => b.minPrice)),
+                    currency
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Lowest Price
@@ -436,10 +412,10 @@ export const ResultsList: React.FC<ResultsListProps> = ({
               </div>
               <div>
                 <div className="text-2xl font-bold">
-                  {currency}{" "}
-                  {Math.max(
-                    ...bundlesWithPrices.map((b) => b.minPrice)
-                  ).toFixed(2)}
+                  {formatCurrency(
+                    Math.max(...bundlesWithPrices.map((b) => b.minPrice)),
+                    currency
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Highest Price
@@ -447,11 +423,11 @@ export const ResultsList: React.FC<ResultsListProps> = ({
               </div>
               <div>
                 <div className="text-2xl font-bold">
-                  {currency}{" "}
-                  {(
+                  {formatCurrency(
                     bundlesWithPrices.reduce((sum, b) => sum + b.minPrice, 0) /
-                    bundlesWithPrices.length
-                  ).toFixed(2)}
+                      bundlesWithPrices.length,
+                    currency
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Average Price
