@@ -130,19 +130,19 @@ export function extractBookingOptionsFromModal(
     // Use single consistent pattern for price extraction
     let price = 0;
     if (source === "skyscanner") {
-      // Skyscanner: Extract price from pattern like "€827 <a href=...>Select</a>"
+      // Skyscanner: Always use the consistent pattern "€827 <a href=...>Select</a>"
       const priceMatch = priceAndLinkText.match(/€(\d+(?:\.\d{2})?)/);
       if (priceMatch) {
         const extractedPrice = parseFloat(priceMatch[1]);
         if (!isNaN(extractedPrice) && extractedPrice > 0) {
           price = extractedPrice;
           console.log(
-            `[Skyscanner] Extracted price: ${price} from pattern: €${priceMatch[1]}`
+            `[Skyscanner] Extracted price: ${price} from consistent pattern: €${priceMatch[1]}`
           );
         }
       }
     } else {
-      // Kiwi: Use existing multiple patterns
+      // Kiwi: Use existing multiple patterns for compatibility
       const pricePatterns = [
         /€(\d+(?:\.\d{2})?)/, // €291 or €291.50
         /EUR\s*(\d+(?:\.\d{2})?)/, // EUR 291 or EUR 291.50
