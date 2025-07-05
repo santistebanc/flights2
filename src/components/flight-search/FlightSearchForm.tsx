@@ -130,8 +130,8 @@ export function FlightSearchForm({ className }: FlightSearchFormProps) {
         {/* Date Range Picker */}
         <div className="flex-shrink-0">
           <DateRangePicker
-            dateFrom={dateRange.from}
-            dateTo={dateRange.to}
+            dateFrom={search.depart || dateRange.from}
+            dateTo={search.return || dateRange.to}
             isRoundTrip={isRoundTrip}
             onUpdate={handleDateRangeUpdate}
           />
