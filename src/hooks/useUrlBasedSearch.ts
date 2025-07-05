@@ -17,7 +17,7 @@ export function useUrlBasedSearch() {
           arrivalIata: search.to || "",
           departureDate: search.depart || "",
           returnDate: search.return,
-          isRoundTrip: search.roundTrip === "true",
+          isRoundTrip: !!search.return,
         }
       : "skip"
   );
@@ -44,7 +44,6 @@ export function useUrlBasedSearch() {
       to?: string;
       depart?: string;
       return?: string;
-      roundTrip?: string;
       sources?: string;
     },
   };

@@ -35,7 +35,6 @@ interface SearchParams {
   to?: string;
   depart?: string;
   return?: string;
-  roundTrip?: string;
   sources?: string;
 }
 
@@ -69,7 +68,6 @@ function RootComponent() {
       return: searchParams.returnDate
         ? searchParams.returnDate.toISOString().split("T")[0]
         : undefined,
-      roundTrip: searchParams.isRoundTrip ? "true" : "false",
       sources: defaultSources.map((s) => s.id).join(","),
     };
 
@@ -226,7 +224,7 @@ function RootComponent() {
           arrivalAirport: search.to || "MAD",
           departureDate: search.depart || "2025-07-03",
           returnDate: search.return || "",
-          isRoundTrip: search.roundTrip === "true" || false,
+          isRoundTrip: !!search.return,
           sources: defaultSources,
         },
         setSearchParams: () => {}, // No-op since we're not using localStorage
@@ -273,7 +271,6 @@ const indexRoute = createRoute({
     to: search.to as string | undefined,
     depart: search.depart as string | undefined,
     return: search.return as string | undefined,
-    roundTrip: search.roundTrip as string | undefined,
     sources: search.sources as string | undefined,
   }),
 });
