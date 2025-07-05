@@ -58,13 +58,6 @@ const formatTime = (timestamp: number) => {
   });
 };
 
-const formatDate = (timestamp: number) => {
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-};
-
 const BookingOptionsPopup: React.FC<{
   bookingOptions: BookingOption[];
   currency: string;
@@ -357,22 +350,6 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                     outboundFlights={bundle.outboundFlights}
                     inboundFlights={bundle.inboundFlights || []}
                   />
-                </div>
-
-                {/* Flight Date */}
-                <div className="flex-shrink-0 text-right">
-                  <div className="text-sm font-medium">
-                    {formatDate(bundle.outboundFlights[0]?.departureDateTime)}
-                  </div>
-                  {bundle.inboundFlights &&
-                    bundle.inboundFlights.length > 0 && (
-                      <div className="text-xs text-muted-foreground">
-                        Return{" "}
-                        {formatDate(
-                          bundle.inboundFlights[0]?.departureDateTime
-                        )}
-                      </div>
-                    )}
                 </div>
               </div>
             ))}
