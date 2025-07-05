@@ -3,6 +3,10 @@ import { ConvexReactClient, ConvexProvider } from "convex/react";
 import "./index.css";
 import App from "./App";
 import TabbedWorkspaceExample from "./pages/TabbedWorkspaceExample";
+import { initializeTheme } from "./lib/theme-utils";
+
+// Initialize theme (defaults to dark)
+initializeTheme();
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 

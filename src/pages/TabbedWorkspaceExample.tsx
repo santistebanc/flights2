@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { ThemeToggle } from "../components/ui/theme-toggle";
 import {
   Search,
   Settings,
@@ -187,13 +188,7 @@ const TabbedWorkspaceExample: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Theme</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-border text-muted-foreground"
-                  >
-                    Dark
-                  </Button>
+                  <ThemeToggle />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Font Size</span>
@@ -284,14 +279,17 @@ const TabbedWorkspaceExample: React.FC = () => {
   return (
     <div className="container mx-auto p-6 bg-background min-h-screen">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-foreground">
-          Tabbed Workspace Component
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-foreground">
+            Tabbed Workspace Component
+          </h1>
+          <ThemeToggle />
+        </div>
         <p className="text-muted-foreground mb-8">
           This is a browser-like tabbed workspace component that allows you to
           add and close tabs. Each tab can contain any content and supports
           dynamic creation and removal. The content area scrolls independently
-          from the tab menu.
+          from the tab menu. Try switching themes using the toggle button above!
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -348,6 +346,10 @@ const TabbedWorkspaceExample: React.FC = () => {
             <li>
               • <strong>Theme-aware</strong> - uses CSS variables for consistent
               styling
+            </li>
+            <li>
+              • <strong>Dark theme by default</strong> - with theme switching
+              support
             </li>
           </ul>
         </div>
