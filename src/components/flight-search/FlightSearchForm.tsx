@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { DateRangePicker } from "../ui/date-range-picker";
 import { SearchButton } from "./SearchButton";
 import { cn } from "../../utils";
-import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { PlaneTakeoff } from "lucide-react";
 import { AirportAutocomplete } from "./AirportAutocomplete";
+import { useSearch } from "@tanstack/react-router";
 
 interface FlightSearchFormProps {
   onSearch: (searchParams: FlightSearchParams) => void;
@@ -30,9 +30,7 @@ export function FlightSearchForm({
   isLoading = false,
   className,
 }: FlightSearchFormProps) {
-  // localStorage hook
-  const { isLoaded, savePreferences, getFormState } = useLocalStorage();
-  const [loadedFromLocalStorage, setLoadedFromLocalStorage] = useState(false);
+  const search = useSearch({ from: "/" });
 
   // Form state
   const [departureAirport, setDepartureAirport] = useState("");
@@ -51,22 +49,25 @@ export function FlightSearchForm({
     boolean | null
   >(null);
 
-  // Load saved preferences when component mounts
+  // Load values from URL parameters when component mounts or URL changes
   useEffect(() => {
-    if (isLoaded && !loadedFromLocalStorage) {
-      const savedState = getFormState();
-      if (savedState) {
-        setDepartureAirport(savedState.departureAirport);
-        setArrivalAirport(savedState.arrivalAirport);
-        setDateRange({
-          from: savedState.departureDate,
-          to: savedState.returnDate,
-        });
-        setIsRoundTrip(savedState.isRoundTrip);
-        setLoadedFromLocalStorage(true);
-      }
+    if (search.from || search.to || search.depart || search.return) {
+      setDepartureAirport(search.from || "");
+      setArrivalAirport(search.to || "");
+
+      const departureDate = search.depart
+        ? new Date(search.depart)
+        : new Date();
+      const returnDate = search.return ? new Date(search.return) : undefined;
+      const roundTrip = !!search.return;
+
+      setDateRange({
+        from: departureDate,
+        to: returnDate,
+      });
+      setIsRoundTrip(roundTrip);
     }
-  }, [isLoaded, getFormState]);
+  }, [search.from, search.to, search.depart, search.return]);
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
@@ -79,16 +80,6 @@ export function FlightSearchForm({
       returnDate: isRoundTrip ? dateRange.to : undefined,
       isRoundTrip,
     };
-
-    // Save preferences to localStorage
-    savePreferences({
-      departureAirport,
-      arrivalAirport,
-      departureDate: dateRange.from.toISOString(),
-      returnDate:
-        isRoundTrip && dateRange.to ? dateRange.to.toISOString() : undefined,
-      isRoundTrip,
-    });
 
     onSearch(searchParams);
   };
