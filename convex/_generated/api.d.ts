@@ -16,6 +16,7 @@ import type {
 import type * as airports from "../airports.js";
 import type * as bookingOptions from "../bookingOptions.js";
 import type * as bundles from "../bundles.js";
+import type * as clearData from "../clearData.js";
 import type * as data_processing from "../data_processing.js";
 import type * as duplicate_handling from "../duplicate_handling.js";
 import type * as flights from "../flights.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   airports: typeof airports;
   bookingOptions: typeof bookingOptions;
   bundles: typeof bundles;
+  clearData: typeof clearData;
   data_processing: typeof data_processing;
   duplicate_handling: typeof duplicate_handling;
   flights: typeof flights;

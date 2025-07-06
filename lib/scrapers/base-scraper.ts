@@ -105,6 +105,24 @@ export abstract class BaseFlightScraper {
   }
 
   /**
+   * Format date for API requests
+   */
+  protected formatDate(date: string): string {
+    // If already a string in YYYY-MM-DD format, return as-is
+    if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+
+    // If it's a string that can be parsed as a date, parse and format
+    const parsedDate = new Date(date);
+    if (!isNaN(parsedDate.getTime())) {
+      return parsedDate.toISOString().split("T")[0];
+    }
+
+    throw new Error(`Invalid date format: ${date}`);
+  }
+
+  /**
    * Validate search parameters
    */
   protected validateParams(params: FlightSearchParams): void {

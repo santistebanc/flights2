@@ -3,7 +3,7 @@ import {
   ScrapingPhase1Result,
   ScrapingPhase2Result,
 } from "./base-scraper";
-import { FlightSearchParams } from "../../types/scraper";
+import { FlightSearchParams, ScrapedBundle } from "../../types/scraper";
 import {
   extractSessionDataFromPhase1Html,
   extractBundlesFromPhase2Html,
@@ -89,6 +89,27 @@ export class KiwiScraper extends BaseFlightScraper {
     phase1Result: ScrapingPhase1Result
   ): Promise<ScrapingPhase2Result> {
     this.logProgress("phase2", "Starting Kiwi Phase 2 scraping");
+
+    // For Kiwi, we can use the streaming version internally since it's a single request
+    const bundles: ScrapedBundle[] = [];
+    for await (const bundleChunk of this.executePhase2Stream(
+      params,
+      phase1Result
+    )) {
+      bundles.push(...bundleChunk);
+    }
+
+    return { bundles };
+  }
+
+  /**
+   * Phase 2 Streaming: Use token and cookie to fetch actual flight data and yield bundles
+   */
+  public async *executePhase2Stream(
+    params: FlightSearchParams,
+    phase1Result: ScrapingPhase1Result
+  ): AsyncGenerator<ScrapedBundle[], void, unknown> {
+    this.logProgress("phase2", "Starting Kiwi Phase 2 streaming");
 
     let currentCookie = phase1Result.cookie;
     let currentToken = phase1Result.token;
@@ -226,7 +247,12 @@ export class KiwiScraper extends BaseFlightScraper {
           this.logProgress("phase2", `Extracted ${bundles.length} bundles`);
         }
 
-        return { bundles };
+        // Yield all bundles at once for Kiwi (since it's a single request)
+        if (bundles.length > 0) {
+          yield bundles;
+        }
+
+        return; // Success, exit the retry loop
       } catch (error) {
         // If it's not a 419 error, or we've exhausted retries, throw the error
         if (
@@ -355,10 +381,17 @@ export class KiwiScraper extends BaseFlightScraper {
   /**
    * Format date for Kiwi API (DD/MM/YYYY format)
    */
-  private formatDate(date: Date): string {
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const year = date.getFullYear();
+  protected formatDate(date: string): string {
+    // Handle both YYYY-MM-DD format and ISO strings
+    let dateStr = date;
+
+    // If it's an ISO string, extract just the date part
+    if (date.includes("T")) {
+      dateStr = date.split("T")[0];
+    }
+
+    // Parse YYYY-MM-DD string directly
+    const [year, month, day] = dateStr.split("-");
     return `${day}/${month}/${year}`;
   }
 }

@@ -114,10 +114,8 @@ export function useFlightSearch(): UseFlightSearchReturn {
     const results = await convex.query(api.bundles.getBundlesForSearch, {
       departureIata: params.departureAirport.toUpperCase(),
       arrivalIata: params.arrivalAirport.toUpperCase(),
-      departureDate: params.departureDate.toISOString().split("T")[0],
-      returnDate: params.returnDate
-        ? params.returnDate.toISOString().split("T")[0]
-        : undefined,
+      departureDate: params.departureDate,
+      returnDate: params.returnDate,
       isRoundTrip: params.isRoundTrip,
     });
 
@@ -162,12 +160,31 @@ export function useFlightSearch(): UseFlightSearchReturn {
       });
 
       try {
-        // Create a new scrape session
+        // Fetch airport timezone information
+        const [departureAirport, arrivalAirport] = await Promise.all([
+          convex.query(api.airports.getAirportByIata, {
+            iataCode: params.departureAirport.toUpperCase(),
+          }),
+          convex.query(api.airports.getAirportByIata, {
+            iataCode: params.arrivalAirport.toUpperCase(),
+          }),
+        ]);
+
+        if (!departureAirport) {
+          throw new Error(
+            `Departure airport ${params.departureAirport} not found`
+          );
+        }
+        if (!arrivalAirport) {
+          throw new Error(`Arrival airport ${params.arrivalAirport} not found`);
+        }
+
+        // Create a new scrape session with timezone-adjusted dates
         const sessionId = await startScrape({
           departureAirport: params.departureAirport.toUpperCase(),
           arrivalAirport: params.arrivalAirport.toUpperCase(),
-          departureDate: params.departureDate.toISOString(),
-          returnDate: params.returnDate?.toISOString(),
+          departureDate: params.departureDate,
+          returnDate: params.returnDate,
           isRoundTrip: params.isRoundTrip,
         });
 
@@ -187,7 +204,7 @@ export function useFlightSearch(): UseFlightSearchReturn {
         });
       }
     },
-    [startScrape]
+    [startScrape, convex]
   );
 
   // Retry function

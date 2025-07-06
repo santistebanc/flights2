@@ -9,7 +9,8 @@
     "dev:backend": "convex dev",
     "lint": "tsc -p convex -noEmit --pretty false && tsc -p . -noEmit --pretty false && convex dev --once && vite build",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "clear-flight-data": "node scripts/clear-flight-data.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",

@@ -49,7 +49,7 @@ describe("BaseFlightScraper", () => {
       const validParams: FlightSearchParams = {
         departureAirport: "NYC",
         arrivalAirport: "LAX",
-        departureDate: new Date("2024-01-15"),
+        departureDate: "2024-01-15",
         isRoundTrip: false,
       };
 
@@ -60,8 +60,8 @@ describe("BaseFlightScraper", () => {
       const validRoundTripParams: FlightSearchParams = {
         departureAirport: "NYC",
         arrivalAirport: "LAX",
-        departureDate: new Date("2024-01-15"),
-        returnDate: new Date("2024-01-22"),
+        departureDate: "2024-01-15",
+        returnDate: "2024-01-22",
         isRoundTrip: true,
       };
 
@@ -74,7 +74,7 @@ describe("BaseFlightScraper", () => {
       const invalidParams: FlightSearchParams = {
         departureAirport: "N", // Too short
         arrivalAirport: "LAX",
-        departureDate: new Date("2024-01-15"),
+        departureDate: "2024-01-15",
         isRoundTrip: false,
       };
 
@@ -87,7 +87,7 @@ describe("BaseFlightScraper", () => {
       const invalidParams: FlightSearchParams = {
         departureAirport: "NYC",
         arrivalAirport: "", // Empty
-        departureDate: new Date("2024-01-15"),
+        departureDate: "2024-01-15",
         isRoundTrip: false,
       };
 
@@ -113,7 +113,7 @@ describe("BaseFlightScraper", () => {
       const invalidParams: FlightSearchParams = {
         departureAirport: "NYC",
         arrivalAirport: "LAX",
-        departureDate: new Date("2024-01-15"),
+        departureDate: "2024-01-15",
         isRoundTrip: true,
         // Missing returnDate
       };
@@ -135,7 +135,7 @@ describe("BaseFlightScraper", () => {
       const params: FlightSearchParams = {
         departureAirport: "NYC",
         arrivalAirport: "LAX",
-        departureDate: new Date("2024-01-15"),
+        departureDate: "2024-01-15",
         isRoundTrip: false,
       };
 
@@ -166,7 +166,7 @@ describe("BaseFlightScraper", () => {
       const params: FlightSearchParams = {
         departureAirport: "NYC",
         arrivalAirport: "LAX",
-        departureDate: new Date("2024-01-15"),
+        departureDate: "2024-01-15",
         isRoundTrip: false,
       };
 

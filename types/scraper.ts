@@ -1,8 +1,8 @@
 export interface FlightSearchParams {
   departureAirport: string; // IATA code
   arrivalAirport: string; // IATA code
-  departureDate: Date;
-  returnDate?: Date;
+  departureDate: string; // YYYY-MM-DD format
+  returnDate?: string; // YYYY-MM-DD format
   isRoundTrip: boolean;
 }
 

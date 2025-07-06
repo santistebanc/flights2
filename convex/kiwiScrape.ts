@@ -155,8 +155,8 @@ export const kiwiPhase1 = internalAction({
     const params: FlightSearchParams = {
       departureAirport: args.departureAirport,
       arrivalAirport: args.arrivalAirport,
-      departureDate: new Date(args.departureDate),
-      returnDate: args.returnDate ? new Date(args.returnDate) : undefined,
+      departureDate: args.departureDate,
+      returnDate: args.returnDate,
       isRoundTrip: args.isRoundTrip,
     };
 
@@ -216,8 +216,8 @@ export const kiwiPhase2 = internalAction({
     const params: FlightSearchParams = {
       departureAirport: args.departureAirport,
       arrivalAirport: args.arrivalAirport,
-      departureDate: new Date(args.departureDate),
-      returnDate: args.returnDate ? new Date(args.returnDate) : undefined,
+      departureDate: args.departureDate,
+      returnDate: args.returnDate,
       isRoundTrip: args.isRoundTrip,
     };
 
@@ -233,26 +233,39 @@ export const kiwiPhase2 = internalAction({
         cookie: args.sessionData.cookie,
       };
 
-      const phase2Result = await scraper.executePhase2(params, sessionData);
+      let totalRecordsProcessed = 0;
+      let chunkCount = 0;
 
-      // Process and insert scraped data into database
-      const insertionResult: any = await ctx.runMutation(
-        internal.data_processing.processAndInsertScrapedData,
-        {
-          scrapeResult: { bundles: phase2Result.bundles },
-        }
-      );
+      // Use the streaming version to process bundles as they arrive
+      for await (const bundleChunk of scraper.executePhase2Stream(
+        params,
+        sessionData
+      )) {
+        chunkCount++;
 
-      const recordsProcessed =
-        insertionResult.flightsInserted +
-        insertionResult.bundlesInserted +
-        insertionResult.bookingOptionsInserted +
-        insertionResult.bookingOptionsReplaced;
+        // Schedule saving this chunk of bundles (non-blocking)
+        await ctx.scheduler.runAfter(
+          0,
+          internal.data_processing.processAndInsertScrapedData,
+          {
+            scrapeResult: { bundles: bundleChunk },
+          }
+        );
+
+        // Estimate records processed (since we're not waiting for the save result)
+        const estimatedRecords = bundleChunk.length * 3; // Rough estimate: bundles + flights + booking options
+        totalRecordsProcessed += estimatedRecords;
+
+        // Log progress for this chunk
+        console.log(
+          `Kiwi chunk ${chunkCount}: scheduled save for ${bundleChunk.length} bundles (estimated ${estimatedRecords} records)`
+        );
+      }
 
       return {
-        success: insertionResult.success,
-        message: insertionResult.message,
-        recordsProcessed,
+        success: true,
+        message: `Successfully streamed and scheduled saves for ${chunkCount} chunks with estimated ${totalRecordsProcessed} records from Kiwi`,
+        recordsProcessed: totalRecordsProcessed,
       };
     } catch (error) {
       const errorMessage =

@@ -227,6 +227,7 @@ export const getAirportByIata = query({
       name: v.string(),
       city: v.string(),
       country: v.optional(v.string()),
+      timezone: v.optional(v.string()),
       popularityScore: v.optional(v.number()),
     }),
     v.null()
@@ -249,6 +250,7 @@ export const getAirportByIata = query({
       name: airport.name,
       city: airport.city,
       country: airport.country,
+      timezone: airport.timezone,
       popularityScore: airport.popularityScore,
     };
   },

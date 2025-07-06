@@ -14,8 +14,8 @@ interface FlightSearchFormProps {
 export interface FlightSearchParams {
   departureAirport: string;
   arrivalAirport: string;
-  departureDate: Date;
-  returnDate?: Date;
+  departureDate: string; // YYYY-MM-DD format
+  returnDate?: string; // YYYY-MM-DD format
   isRoundTrip: boolean;
 }
 
@@ -44,8 +44,8 @@ export function FlightSearchForm({ className }: FlightSearchFormProps) {
     performSearch({
       departureAirport: departureAirport,
       arrivalAirport: arrivalAirport,
-      departureDate: dateRange.from,
-      returnDate: dateRange.to,
+      departureDate: toPlainDateString(dateRange.from),
+      returnDate: dateRange.to ? toPlainDateString(dateRange.to) : undefined,
       isRoundTrip: isRoundTrip,
     });
 

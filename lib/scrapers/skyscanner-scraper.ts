@@ -103,8 +103,46 @@ export class SkyscannerScraper extends BaseFlightScraper {
     this.logProgress("phase2", "Starting Skyscanner Phase 2 polling");
 
     try {
-      let currentCookie = phase1Result.cookie;
       let allBundles: ScrapedBundle[] = [];
+
+      // Use the streaming version internally
+      for await (const bundleChunk of this.executePhase2Stream(
+        params,
+        phase1Result
+      )) {
+        allBundles.push(...bundleChunk);
+      }
+
+      this.logProgress(
+        "phase2",
+        `Phase 2 completed: ${allBundles.length} total bundles`
+      );
+
+      return { bundles: allBundles };
+    } catch (error) {
+      const scrapingError = {
+        phase: "phase2" as const,
+        message:
+          error instanceof Error ? error.message : "Unknown error in Phase 2",
+        details: error,
+        timestamp: Date.now(),
+      };
+      this.logError(scrapingError);
+      throw error;
+    }
+  }
+
+  /**
+   * Phase 2 Streaming: Poll for results and yield bundles as they are found
+   */
+  public async *executePhase2Stream(
+    params: FlightSearchParams,
+    phase1Result: ScrapingPhase1Result
+  ): AsyncGenerator<ScrapedBundle[], void, unknown> {
+    this.logProgress("phase2", "Starting Skyscanner Phase 2 streaming");
+
+    try {
+      let currentCookie = phase1Result.cookie;
       let isComplete = false;
       let pollCount = 0;
       const maxPolls = 50; // Prevent infinite polling
@@ -119,10 +157,6 @@ export class SkyscannerScraper extends BaseFlightScraper {
         // Build POST data for polling
         const postData = this.buildPhase2PostData(params, phase1Result);
         const url = `${this.baseUrl}/portal/sky/poll`;
-
-        // Remove verbose POST data and header logs
-        // this.logProgress("phase2", `POSTing to ${url} (attempt ${pollCount})`);
-        // this.logProgress("phase2", `POST data: ${postData}`);
 
         // Make the POST request
         const headers: Record<string, string> = {
@@ -154,11 +188,6 @@ export class SkyscannerScraper extends BaseFlightScraper {
             `Response status: ${response.status} ${response.statusText}`
           );
         }
-        // Remove verbose header logs
-        // this.logProgress(
-        //   "phase2",
-        //   `Response headers: set-cookie=${response.headers.get("set-cookie") || "NOT_FOUND"}`
-        // );
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -205,15 +234,17 @@ export class SkyscannerScraper extends BaseFlightScraper {
           // Extract bundles from this batch of results (includes flights and booking options)
           const bundles = extractBundlesFromPhase2Html(resultHtml);
 
-          // Add to cumulative results
-          allBundles.push(...bundles);
-
           // Only log bundle extraction on first/last poll
           if (pollCount === 1 || pollCount === maxPolls) {
             this.logProgress(
               "phase2",
               `Extracted ${bundles.length} bundles from poll ${pollCount}`
             );
+          }
+
+          // Yield the bundles immediately
+          if (bundles.length > 0) {
+            yield bundles;
           }
         }
 
@@ -230,12 +261,7 @@ export class SkyscannerScraper extends BaseFlightScraper {
         );
       }
 
-      this.logProgress(
-        "phase2",
-        `Phase 2 completed: ${allBundles.length} total bundles`
-      );
-
-      return { bundles: allBundles };
+      this.logProgress("phase2", "Phase 2 streaming completed");
     } catch (error) {
       const scrapingError = {
         phase: "phase2" as const,
@@ -310,7 +336,14 @@ export class SkyscannerScraper extends BaseFlightScraper {
   /**
    * Format date for Skyscanner API (YYYY-MM-DD format)
    */
-  private formatDate(date: Date): string {
-    return date.toISOString().split("T")[0];
+  protected formatDate(date: string): string {
+    // Handle both YYYY-MM-DD format and ISO strings
+    // If it's an ISO string, extract just the date part
+    if (date.includes("T")) {
+      return date.split("T")[0];
+    }
+
+    // Skyscanner expects YYYY-MM-DD format, which matches our input format
+    return date;
   }
 }
