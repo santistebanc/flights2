@@ -47,6 +47,26 @@ export function formatCurrency(
   }
 }
 
+/**
+ * Normalize text for search by removing accents and converting to lowercase
+ * This helps with accent-insensitive search (e.g., "Málaga" matches "malaga")
+ */
+export function normalizeTextForSearch(text: string): string {
+  return text
+    .normalize("NFD") // Decompose characters into base + combining characters
+    .replace(/[\u0300-\u036f]/g, "") // Remove combining characters (accents)
+    .toLowerCase();
+}
+
+/**
+ * Check if a search term matches text in an accent-insensitive way
+ */
+export function matchesSearchTerm(text: string, searchTerm: string): boolean {
+  return normalizeTextForSearch(text).includes(
+    normalizeTextForSearch(searchTerm)
+  );
+}
+
 // Example usage (for testing purposes - can be removed in production):
 // console.log(formatCurrency(806, 'EUR')); // Should output "€806" (en-US locale)
 // console.log(formatCurrency(1234, 'EUR', 'de-DE')); // Should output "1.234 €" (German locale)

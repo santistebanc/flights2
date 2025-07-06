@@ -1,6 +1,10 @@
-import { useUrlBasedSearch } from "@/hooks/useUrlBasedSearch";
 import { ResultsList } from "../flight-results/ResultsList";
+import { ScrapingProgress } from "../progress/ScrapingProgress";
 import { ArrowRight } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useMemo } from "react";
+import { useSearch } from "@tanstack/react-router";
 
 // Date formatting function to match the date picker
 const formatDate = (dateString: string): string => {
@@ -12,9 +16,57 @@ const formatDate = (dateString: string): string => {
 };
 
 export function SearchResults() {
-  // URL-based search hook
-  const { bundles, isLoading, hasSearchParams, searchParams } =
-    useUrlBasedSearch();
+  const searchParams = useSearch({ from: "/" });
+
+  // Only query if we have search parameters
+  const hasSearchParams = !!(
+    searchParams.from ||
+    searchParams.to ||
+    searchParams.depart
+  );
+
+  const bundles = useQuery(
+    api.bundles.getBundlesForSearch,
+    hasSearchParams
+      ? {
+          departureIata: searchParams.from || "",
+          arrivalIata: searchParams.to || "",
+          departureDate: searchParams.depart || "",
+          returnDate: searchParams.return,
+          isRoundTrip: !!searchParams.return,
+        }
+      : "skip"
+  );
+
+  // Calculate minPrice for each bundle
+  const bundlesWithPrices = useMemo(() => {
+    if (!bundles) return [];
+
+    return bundles.map((bundle) => ({
+      ...bundle,
+      minPrice:
+        bundle.bookingOptions.length > 0
+          ? Math.min(...bundle.bookingOptions.map((option) => option.price))
+          : 0,
+    }));
+  }, [bundles]);
+
+  // Query the most recent scrape session for these search parameters
+  const scrapeSession = useQuery(
+    api.scrapeSessions.getMostRecentScrapeSession,
+    hasSearchParams &&
+      searchParams.from &&
+      searchParams.to &&
+      searchParams.depart
+      ? {
+          departureAirport: searchParams.from.toUpperCase(),
+          arrivalAirport: searchParams.to.toUpperCase(),
+          departureDate: searchParams.depart,
+          returnDate: searchParams.return,
+          isRoundTrip: !!searchParams.return,
+        }
+      : "skip"
+  );
 
   // If we have URL parameters, show database results
   if (hasSearchParams) {
@@ -35,7 +87,14 @@ export function SearchResults() {
             )}
           </div>
         </div>
-        <ResultsList bundles={bundles} isLoading={isLoading} />
+
+        {/* Show scraping progress if we have a session */}
+        {scrapeSession && <ScrapingProgress session={scrapeSession} />}
+
+        <ResultsList
+          bundles={bundlesWithPrices}
+          isLoading={bundles === undefined}
+        />
       </div>
     );
   }

@@ -268,3 +268,78 @@ export const getRecentScrapeSessions = internalQuery({
       .take(limit);
   },
 });
+
+// Get the most recent scrape session matching search parameters
+export const getMostRecentScrapeSession = query({
+  args: {
+    departureAirport: v.string(),
+    arrivalAirport: v.string(),
+    departureDate: v.string(),
+    returnDate: v.optional(v.string()),
+    isRoundTrip: v.boolean(),
+  },
+  returns: v.union(
+    v.null(),
+    v.object({
+      _id: v.id("scrapeSessions"),
+      _creationTime: v.number(),
+      departureAirport: v.string(),
+      arrivalAirport: v.string(),
+      departureDate: v.string(),
+      returnDate: v.optional(v.string()),
+      isRoundTrip: v.boolean(),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("in_progress"),
+        v.literal("completed"),
+        v.literal("failed"),
+        v.literal("partial_success")
+      ),
+      kiwiStatus: v.union(
+        v.literal("idle"),
+        v.literal("phase1"),
+        v.literal("phase2"),
+        v.literal("completed"),
+        v.literal("error")
+      ),
+      kiwiMessage: v.string(),
+      kiwiRecordsProcessed: v.optional(v.number()),
+      kiwiError: v.optional(v.string()),
+      skyscannerStatus: v.union(
+        v.literal("idle"),
+        v.literal("phase1"),
+        v.literal("phase2"),
+        v.literal("completed"),
+        v.literal("error")
+      ),
+      skyscannerMessage: v.string(),
+      skyscannerRecordsProcessed: v.optional(v.number()),
+      skyscannerError: v.optional(v.string()),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      completedAt: v.optional(v.number()),
+    })
+  ),
+  handler: async (ctx, args) => {
+    // Query sessions with matching search parameters, ordered by most recent
+    const sessions = await ctx.db
+      .query("scrapeSessions")
+      .withIndex("by_search_params", (q) =>
+        q
+          .eq("departureAirport", args.departureAirport)
+          .eq("arrivalAirport", args.arrivalAirport)
+          .eq("departureDate", args.departureDate)
+      )
+      .order("desc")
+      .collect();
+
+    // Filter by return date and round trip status, then return the most recent
+    const matchingSession = sessions.find(
+      (session) =>
+        session.returnDate === args.returnDate &&
+        session.isRoundTrip === args.isRoundTrip
+    );
+
+    return matchingSession || null;
+  },
+});

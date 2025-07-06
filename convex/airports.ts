@@ -1,5 +1,25 @@
-import { query } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+
+/**
+ * Normalize text for search by removing accents and converting to lowercase
+ * This helps with accent-insensitive search (e.g., "Málaga" matches "malaga")
+ */
+function normalizeTextForSearch(text: string): string {
+  return text
+    .normalize("NFD") // Decompose characters into base + combining characters
+    .replace(/[\u0300-\u036f]/g, "") // Remove combining characters (accents)
+    .toLowerCase();
+}
+
+/**
+ * Check if a search term matches text in an accent-insensitive way
+ */
+function matchesSearchTerm(text: string, searchTerm: string): boolean {
+  return normalizeTextForSearch(text).includes(
+    normalizeTextForSearch(searchTerm)
+  );
+}
 
 /**
  * Search airports with priority-based matching as specified in PRD
@@ -148,6 +168,29 @@ export const searchAirports = query({
       }
     }
 
+    // Priority 5.5: Manual accent-insensitive name matching (fallback)
+    if (results.length < limit) {
+      const allAirports = await ctx.db.query("airports").collect();
+
+      for (const airport of allAirports) {
+        if (results.some((r) => r._id === airport._id)) continue;
+
+        if (matchesSearchTerm(airport.name, searchTerm)) {
+          results.push({
+            _id: airport._id,
+            iataCode: airport.iataCode,
+            name: airport.name,
+            city: airport.city,
+            country: airport.country,
+            popularityScore: airport.popularityScore,
+            matchType: "name" as const,
+          });
+
+          if (results.length >= limit) break;
+        }
+      }
+    }
+
     // Priority 6: City name matches
     if (results.length < limit) {
       const cityMatches = await ctx.db
@@ -166,6 +209,29 @@ export const searchAirports = query({
             popularityScore: airport.popularityScore,
             matchType: "city" as const,
           });
+        }
+      }
+    }
+
+    // Priority 6.5: Manual accent-insensitive city matching (fallback)
+    if (results.length < limit) {
+      const allAirports = await ctx.db.query("airports").collect();
+
+      for (const airport of allAirports) {
+        if (results.some((r) => r._id === airport._id)) continue;
+
+        if (matchesSearchTerm(airport.city, searchTerm)) {
+          results.push({
+            _id: airport._id,
+            iataCode: airport.iataCode,
+            name: airport.name,
+            city: airport.city,
+            country: airport.country,
+            popularityScore: airport.popularityScore,
+            matchType: "city" as const,
+          });
+
+          if (results.length >= limit) break;
         }
       }
     }

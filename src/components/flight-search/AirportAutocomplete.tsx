@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { cn } from "@/utils";
+import { cn, matchesSearchTerm } from "@/utils";
 import { Check } from "lucide-react";
 import { useAirportHistory } from "@/hooks/useAirportHistory";
 import { Input } from "@/components/ui/input";
@@ -91,14 +91,12 @@ export function AirportAutocomplete({
         });
       });
     } else {
-      // Filter history items that match search term
+      // Filter history items that match search term (accent-insensitive)
       const matchingHistory = history.filter(
         (historyItem) =>
-          historyItem.iataCode
-            .toLowerCase()
-            .includes(searchValue.toLowerCase()) ||
-          historyItem.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-          historyItem.city.toLowerCase().includes(searchValue.toLowerCase())
+          matchesSearchTerm(historyItem.iataCode, searchValue) ||
+          matchesSearchTerm(historyItem.name, searchValue) ||
+          matchesSearchTerm(historyItem.city, searchValue)
       );
 
       matchingHistory.forEach((historyItem) => {
@@ -181,11 +179,11 @@ export function AirportAutocomplete({
       !currentAirport
     ) {
       const topResult = combinedResults[0];
-      // Only auto-select if the search value matches the IATA code or name
+      // Only auto-select if the search value matches the IATA code or name (accent-insensitive)
       if (
         topResult.iataCode === searchValue ||
-        topResult.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        topResult.city.toLowerCase().includes(searchValue.toLowerCase())
+        matchesSearchTerm(topResult.name, searchValue) ||
+        matchesSearchTerm(topResult.city, searchValue)
       ) {
         handleAirportSelect(topResult);
       }
