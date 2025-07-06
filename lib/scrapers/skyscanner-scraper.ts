@@ -96,7 +96,7 @@ export class SkyscannerScraper extends BaseFlightScraper {
   /**
    * Phase 2: Poll for results using session data
    */
-  protected async executePhase2(
+  public async executePhase2(
     params: FlightSearchParams,
     phase1Result: ScrapingPhase1Result
   ): Promise<ScrapingPhase2Result> {

@@ -23,7 +23,7 @@ export class KiwiScraper extends BaseFlightScraper {
   /**
    * Phase 1: Fetch initial HTML and extract token and cookie
    */
-  protected async executePhase1(
+  public async executePhase1(
     params: FlightSearchParams
   ): Promise<ScrapingPhase1Result> {
     this.logProgress("phase1", "Starting Kiwi Phase 1 scraping");
@@ -90,7 +90,7 @@ export class KiwiScraper extends BaseFlightScraper {
   /**
    * Phase 2: Use token and cookie to fetch actual flight data
    */
-  protected async executePhase2(
+  public async executePhase2(
     params: FlightSearchParams,
     phase1Result: ScrapingPhase1Result
   ): Promise<ScrapingPhase2Result> {
