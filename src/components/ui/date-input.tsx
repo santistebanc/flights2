@@ -242,7 +242,7 @@ const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
     useImperativeHandle(ref, () => dayRef.current!);
 
     return (
-      <div className="flex border border-gray-600 rounded-md bg-gray-700 items-center text-sm px-2 py-1 text-white shadow-sm transition-colors focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400">
+      <div className="flex border border-input rounded-md bg-background items-center text-sm px-2 py-1 text-foreground shadow-sm transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
         <input
           type="text"
           ref={dayRef}
@@ -257,10 +257,10 @@ const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             }
           }}
           onBlur={handleBlur("day")}
-          className="p-0 outline-none w-7 border-none text-center bg-transparent text-white placeholder:text-gray-400"
+          className="p-0 outline-none w-7 border-none text-center bg-transparent text-foreground placeholder:text-muted-foreground"
           placeholder="D"
         />
-        <span className="opacity-40 -mx-px text-gray-400">/</span>
+        <span className="opacity-40 -mx-px text-muted-foreground">/</span>
         <input
           type="text"
           ref={monthRef}
@@ -275,10 +275,10 @@ const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             }
           }}
           onBlur={handleBlur("month")}
-          className="p-0 outline-none w-6 border-none text-center bg-transparent text-white placeholder:text-gray-400"
+          className="p-0 outline-none w-6 border-none text-center bg-transparent text-foreground placeholder:text-muted-foreground"
           placeholder="M"
         />
-        <span className="opacity-40 -mx-px text-gray-400">/</span>
+        <span className="opacity-40 -mx-px text-muted-foreground">/</span>
         <input
           type="text"
           ref={yearRef}
@@ -293,7 +293,7 @@ const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             }
           }}
           onBlur={handleBlur("year")}
-          className="p-0 outline-none w-12 border-none text-center bg-transparent text-white placeholder:text-gray-400"
+          className="p-0 outline-none w-12 border-none text-center bg-transparent text-foreground placeholder:text-muted-foreground"
           placeholder="YYYY"
         />
       </div>

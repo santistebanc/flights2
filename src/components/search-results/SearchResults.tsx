@@ -88,8 +88,7 @@ export function SearchResults() {
           </div>
         </div>
 
-        {/* Show scraping progress if we have a session */}
-        {scrapeSession && <ScrapingProgress session={scrapeSession} />}
+        <ScrapingProgress session={scrapeSession} />
 
         <ResultsList
           bundles={bundlesWithPrices}

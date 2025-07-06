@@ -1,3 +1,5 @@
+"use node";
+
 import { action, internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { KiwiScraper } from "../lib/scrapers/kiwi-scraper";

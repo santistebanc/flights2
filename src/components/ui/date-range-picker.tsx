@@ -149,7 +149,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="border-gray-600 bg-gray-700 text-white hover:bg-gray-600 hover:border-gray-500 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 min-w-[280px]"
+          className="border-border bg-background text-foreground hover:bg-accent hover:border-border focus:border-ring focus:ring-1 focus:ring-ring min-w-[280px]"
         >
           <div className="text-right flex-1">
             <div className="py-1">
@@ -160,7 +160,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
               }`}</div>
             </div>
           </div>
-          <div className="pl-1 opacity-60 -mr-2 scale-125 text-gray-400 flex-shrink-0">
+          <div className="pl-1 opacity-60 -mr-2 scale-125 text-muted-foreground flex-shrink-0">
             {isOpen ? (
               <ChevronUpIcon width={24} />
             ) : (
@@ -170,7 +170,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-auto bg-gray-800 border-gray-600 text-white shadow-lg"
+        className="w-auto bg-popover border-border text-popover-foreground shadow-lg"
         onMouseDown={handlePopoverMouseDown}
       >
         <div className="flex py-2">
@@ -199,9 +199,8 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                       }
                     }}
                     id="round-trip-mode"
-                    className="data-[state=checked]:bg-yellow-400 data-[state=unchecked]:bg-gray-600"
                   />
-                  <Label htmlFor="round-trip-mode" className="text-gray-300">
+                  <Label htmlFor="round-trip-mode" className="text-foreground">
                     Round Trip
                   </Label>
                 </div>
@@ -216,7 +215,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                     />
                     {isRoundTrip && (
                       <>
-                        <div className="py-1 text-gray-400">-</div>
+                        <div className="py-1 text-muted-foreground">-</div>
                         <DateInput
                           ref={toInputRef}
                           value={range.to}
@@ -259,7 +258,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                         )
                       )
                     }
-                    className="bg-gray-800 text-white"
+                    className="bg-popover text-popover-foreground"
                     disabled={(date) => isDateInPast(date)}
                   />
                 ) : (
@@ -285,7 +284,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                         )
                       )
                     }
-                    className="bg-gray-800 text-white"
+                    className="bg-popover text-popover-foreground"
                     disabled={(date) => isDateInPast(date)}
                   />
                 )}
@@ -293,12 +292,12 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
             </div>
           </div>
         </div>
-        <div className="flex justify-end gap-2 py-2 pr-4 border-t border-gray-600">
+        <div className="flex justify-end gap-2 py-2 pr-4 border-t border-border">
           <Button
             onClick={() => {
               setIsOpen(false);
             }}
-            className="bg-yellow-400 text-black hover:bg-yellow-500"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             Done
           </Button>

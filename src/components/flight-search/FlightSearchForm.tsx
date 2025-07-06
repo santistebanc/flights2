@@ -6,6 +6,7 @@ import { PlaneTakeoff } from "lucide-react";
 import { AirportAutocomplete } from "./AirportAutocomplete";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useFlightSearch } from "@/hooks/useFlightSearch";
+import { ThemeToggle } from "../ui/theme-toggle";
 
 interface FlightSearchFormProps {
   className?: string;
@@ -36,20 +37,15 @@ export function FlightSearchForm({ className }: FlightSearchFormProps) {
     to: search.return ? new Date(search.return) : undefined,
   });
   const [isRoundTrip, setIsRoundTrip] = useState(!!search.return);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    performSearch({
-      departureAirport: departureAirport,
-      arrivalAirport: arrivalAirport,
-      departureDate: toPlainDateString(dateRange.from),
-      returnDate: dateRange.to ? toPlainDateString(dateRange.to) : undefined,
-      isRoundTrip: isRoundTrip,
-    });
+    setIsLoading(true);
 
-    navigate({
+    await navigate({
       to: "/",
       search: {
         from: departureAirport,
@@ -58,6 +54,16 @@ export function FlightSearchForm({ className }: FlightSearchFormProps) {
         return: isRoundTrip ? toPlainDateString(dateRange.to) : undefined,
       },
     });
+
+    await performSearch({
+      departureAirport: departureAirport,
+      arrivalAirport: arrivalAirport,
+      departureDate: toPlainDateString(dateRange.from),
+      returnDate: dateRange.to ? toPlainDateString(dateRange.to) : undefined,
+      isRoundTrip: isRoundTrip,
+    });
+
+    setIsLoading(false);
   };
 
   // Handle date range updates
@@ -94,12 +100,15 @@ export function FlightSearchForm({ className }: FlightSearchFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className={cn("p-3 bg-gray-800/95 backdrop-blur-sm", className)}
+      className={cn(
+        "p-3 bg-card/95 backdrop-blur-sm border-b border-border",
+        className
+      )}
     >
       <div className="flex flex-col md:flex-row gap-3 items-center max-w-6xl mx-auto">
         {/* FlightFinder Icon */}
         <div className="flex-shrink-0">
-          <PlaneTakeoff className="h-8 w-8 text-yellow-400" />
+          <PlaneTakeoff className="h-8 w-8 text-primary" />
         </div>
 
         {/* Airport Inputs */}
@@ -141,9 +150,15 @@ export function FlightSearchForm({ className }: FlightSearchFormProps) {
             disabled={!isFormValid}
             loadingText="Searching..."
             size="default"
+            isLoading={isLoading}
           >
             Search
           </SearchButton>
+        </div>
+
+        {/* Theme Toggle */}
+        <div className="flex-shrink-0">
+          <ThemeToggle />
         </div>
       </div>
     </form>

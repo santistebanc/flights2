@@ -265,16 +265,16 @@ export function AirportAutocomplete({
       {open && (
         <div
           ref={listRef}
-          className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto"
         >
           {combinedResults.length > 0 ? (
             combinedResults.map((airport, idx) => (
               <div
                 key={airport._id}
                 className={cn(
-                  "px-3 py-2 cursor-pointer hover:bg-gray-700 transition-colors flex flex-col items-start",
-                  idx === highlightedIndex && "bg-gray-700",
-                  airport.isHistory && "border-l-2 border-l-blue-400"
+                  "px-3 py-2 cursor-pointer hover:bg-accent transition-colors flex flex-col items-start",
+                  idx === highlightedIndex && "bg-accent",
+                  airport.isHistory && "border-l-2 border-l-blue-500"
                 )}
                 onMouseDown={() => handleAirportSelect(airport)}
                 onMouseEnter={() => setHighlightedIndex(idx)}
@@ -288,15 +288,19 @@ export function AirportAutocomplete({
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold">{airport.iataCode}</span>
+                      <span className="font-bold text-foreground">
+                        {airport.iataCode}
+                      </span>
                       {airport.isHistory && (
-                        <span className="text-xs text-blue-400 bg-blue-900 px-1 rounded">
+                        <span className="text-xs text-blue-400 bg-blue-900 dark:bg-blue-800 px-1 rounded">
                           Recent
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-gray-300">{airport.name}</div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-sm text-foreground">
+                      {airport.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
                       {airport.city}
                       {airport.country && `, ${airport.country}`}
                     </div>
@@ -305,7 +309,7 @@ export function AirportAutocomplete({
               </div>
             ))
           ) : (
-            <div className="px-3 py-2 text-sm text-gray-400">
+            <div className="px-3 py-2 text-sm text-muted-foreground">
               No airports found.
             </div>
           )}

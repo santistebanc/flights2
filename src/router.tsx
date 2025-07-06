@@ -18,8 +18,8 @@ interface SearchParams {
 function RootComponent() {
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* Sticky Search Form with Icon */}
-      <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm flex-shrink-0">
+      {/* Search Form */}
+      <div className="bg-card border-b border-border flex-shrink-0">
         <FlightSearchForm />
       </div>
 

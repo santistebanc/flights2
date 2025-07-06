@@ -195,65 +195,65 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   // Get currency from first bundle (assuming all bundles use same currency)
   const currency = bundles[0]?.bookingOptions[0]?.currency || "EUR";
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className={cn("space-y-2", className)}>
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle>Searching for flights...</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-12 bg-muted rounded-lg"></div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // // Loading state
+  // if (isLoading) {
+  //   return (
+  //     <div className={cn("space-y-2", className)}>
+  //       <Card>
+  //         <CardHeader className="pb-4">
+  //           <CardTitle>Searching for flights...</CardTitle>
+  //         </CardHeader>
+  //         <CardContent>
+  //           <div className="space-y-2">
+  //             {[...Array(5)].map((_, i) => (
+  //               <div key={i} className="animate-pulse">
+  //                 <div className="h-12 bg-muted rounded-lg"></div>
+  //               </div>
+  //             ))}
+  //           </div>
+  //         </CardContent>
+  //       </Card>
+  //     </div>
+  //   );
+  // }
 
-  // Error state
-  if (error) {
-    return (
-      <Card className={cn("border-red-200", className)}>
-        <CardHeader>
-          <CardTitle className="text-red-600">Error Loading Results</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">{error}</p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => window.location.reload()}
-          >
-            Try Again
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  // // Error state
+  // if (error) {
+  //   return (
+  //     <Card className={cn("border-red-200", className)}>
+  //       <CardHeader>
+  //         <CardTitle className="text-red-600">Error Loading Results</CardTitle>
+  //       </CardHeader>
+  //       <CardContent>
+  //         <p className="text-muted-foreground">{error}</p>
+  //         <Button
+  //           variant="outline"
+  //           className="mt-4"
+  //           onClick={() => window.location.reload()}
+  //         >
+  //           Try Again
+  //         </Button>
+  //       </CardContent>
+  //     </Card>
+  //   );
+  // }
 
-  // No results state
-  if (bundles.length === 0) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle>No flights found</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            No flights match your search criteria. Try adjusting your dates or
-            airports.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+  // // No results state
+  // if (bundles.length === 0) {
+  //   return (
+  //     <Card className={className}>
+  //       <CardHeader>
+  //         <CardTitle>No flights found</CardTitle>
+  //       </CardHeader>
+  //       <CardContent>
+  //         <p className="text-muted-foreground">
+  //           No flights match your search criteria. Try adjusting your dates or
+  //           airports.
+  //         </p>
+  //       </CardContent>
+  //     </Card>
+  //   );
+  // }
 
   return (
     <div className={cn("space-y-4", className)}>
