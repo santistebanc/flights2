@@ -69,24 +69,58 @@ const airlines = defineTable({
   .index("by_iataCode", ["iataCode"])
   .index("by_icaoCode", ["icaoCode"]);
 
-const scrapingLogs = defineTable({
-  source: v.string(), // e.g., "skyscanner", "kiwi"
+const scrapeSessions = defineTable({
+  // Search parameters
+  departureAirport: v.string(),
+  arrivalAirport: v.string(),
+  departureDate: v.string(), // ISO string
+  returnDate: v.optional(v.string()), // ISO string
+  isRoundTrip: v.boolean(),
+
+  // Overall session status
   status: v.union(
-    v.literal("started"),
-    v.literal("success"),
-    v.literal("error"),
-    v.literal("failed")
+    v.literal("pending"),
+    v.literal("in_progress"),
+    v.literal("completed"),
+    v.literal("failed"),
+    v.literal("partial_success")
   ),
-  message: v.string(), // Description of what happened
-  errorDetails: v.optional(v.string()), // Error message if status is error/failed
-  startTime: v.number(), // Unix milliseconds
-  endTime: v.optional(v.number()), // Unix milliseconds
-  recordsProcessed: v.optional(v.number()), // Number of flights/bundles processed
-  searchParams: v.optional(v.string()), // JSON string of search parameters
+
+  // Individual scraper progress
+  kiwiStatus: v.union(
+    v.literal("idle"),
+    v.literal("phase1"),
+    v.literal("phase2"),
+    v.literal("completed"),
+    v.literal("error")
+  ),
+  kiwiMessage: v.string(),
+  kiwiRecordsProcessed: v.optional(v.number()),
+  kiwiError: v.optional(v.string()),
+
+  skyscannerStatus: v.union(
+    v.literal("idle"),
+    v.literal("phase1"),
+    v.literal("phase2"),
+    v.literal("completed"),
+    v.literal("error")
+  ),
+  skyscannerMessage: v.string(),
+  skyscannerRecordsProcessed: v.optional(v.number()),
+  skyscannerError: v.optional(v.string()),
+
+  // Timestamps
+  createdAt: v.number(),
+  updatedAt: v.number(),
+  completedAt: v.optional(v.number()),
 })
-  .index("by_source", ["source"])
   .index("by_status", ["status"])
-  .index("by_startTime", ["startTime"]);
+  .index("by_createdAt", ["createdAt"])
+  .index("by_search_params", [
+    "departureAirport",
+    "arrivalAirport",
+    "departureDate",
+  ]);
 
 export default defineSchema({
   flights,
@@ -94,5 +128,5 @@ export default defineSchema({
   bookingOptions,
   airports,
   airlines,
-  scrapingLogs,
+  scrapeSessions,
 });

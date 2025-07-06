@@ -1,4 +1,4 @@
-import { action } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { KiwiScraper } from "../lib/scrapers/kiwi-scraper";
 import { SkyscannerScraper } from "../lib/scrapers/skyscanner-scraper";
@@ -38,14 +38,7 @@ export const kiwiPhase1: any = action({
       isRoundTrip: args.isRoundTrip,
     };
 
-    // Log scraping start
-    const logId: string = await ctx.runMutation(
-      internal["scraping_logs"].logScrapingStart,
-      {
-        source: "kiwi",
-        searchParams: JSON.stringify(params),
-      }
-    );
+    const logId: string = "temp_log_id";
 
     try {
       const scraper = new KiwiScraper();
@@ -66,14 +59,6 @@ export const kiwiPhase1: any = action({
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-
-      // Log error
-      await ctx.runMutation(internal["scraping_logs"].logScrapingError, {
-        logId,
-        errorMessage,
-        errorDetails: error instanceof Error ? error.stack : undefined,
-        phase: "phase1",
-      });
 
       return {
         success: false,
@@ -142,13 +127,6 @@ export const kiwiPhase2: any = action({
         insertionResult.bookingOptionsInserted +
         insertionResult.bookingOptionsReplaced;
 
-      // Log success
-      await ctx.runMutation(internal["scraping_logs"].logScrapingSuccess, {
-        logId: args.logId,
-        recordsProcessed,
-        message: `Successfully scraped and inserted ${recordsProcessed} records from Kiwi`,
-      });
-
       return {
         success: insertionResult.success,
         message: insertionResult.message,
@@ -157,14 +135,6 @@ export const kiwiPhase2: any = action({
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-
-      // Log error
-      await ctx.runMutation(internal["scraping_logs"].logScrapingError, {
-        logId: args.logId,
-        errorMessage,
-        errorDetails: error instanceof Error ? error.stack : undefined,
-        phase: "phase2",
-      });
 
       return {
         success: false,
@@ -208,14 +178,7 @@ export const skyscannerPhase1: any = action({
       isRoundTrip: args.isRoundTrip,
     };
 
-    // Log scraping start
-    const logId: string = await ctx.runMutation(
-      internal["scraping_logs"].logScrapingStart,
-      {
-        source: "skyscanner",
-        searchParams: JSON.stringify(params),
-      }
-    );
+    const logId: string = "temp_log_id";
 
     try {
       const scraper = new SkyscannerScraper();
@@ -236,14 +199,6 @@ export const skyscannerPhase1: any = action({
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-
-      // Log error
-      await ctx.runMutation(internal["scraping_logs"].logScrapingError, {
-        logId,
-        errorMessage,
-        errorDetails: error instanceof Error ? error.stack : undefined,
-        phase: "phase1",
-      });
 
       return {
         success: false,
@@ -386,13 +341,6 @@ export const skyscannerPhase2: any = action({
         }
       }
 
-      // Log success
-      await ctx.runMutation(internal["scraping_logs"].logScrapingSuccess, {
-        logId: args.logId,
-        recordsProcessed: totalRecordsProcessed,
-        message: `Successfully scraped and inserted ${totalRecordsProcessed} records from Skyscanner`,
-      });
-
       return {
         success: true,
         message: `Successfully scraped ${totalRecordsProcessed} records from Skyscanner`,
@@ -401,14 +349,6 @@ export const skyscannerPhase2: any = action({
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-
-      // Log error
-      await ctx.runMutation(internal["scraping_logs"].logScrapingError, {
-        logId: args.logId,
-        errorMessage,
-        errorDetails: error instanceof Error ? error.stack : undefined,
-        phase: "phase2",
-      });
 
       return {
         success: false,
@@ -419,10 +359,11 @@ export const skyscannerPhase2: any = action({
   },
 });
 
-// ===== COMBINED ACTIONS (using phase-specific actions internally) =====
+// ===== COMBINED ACTIONS (now internal, with session tracking) =====
 
-export const scrapeKiwi: any = action({
+export const scrapeKiwi: any = internalAction({
   args: {
+    sessionId: v.id("scrapeSessions"),
     departureAirport: v.string(),
     arrivalAirport: v.string(),
     departureDate: v.string(), // ISO string
@@ -436,6 +377,13 @@ export const scrapeKiwi: any = action({
   }),
   handler: async (ctx: any, args: any): Promise<any> => {
     try {
+      // Update session: Kiwi starting
+      await ctx.runMutation(internal.scrapeSessions.updateScrapeSession, {
+        sessionId: args.sessionId,
+        kiwiStatus: "phase1",
+        kiwiMessage: "Starting Kiwi search...",
+      });
+
       // Phase 1: Get session data
       const phase1Result = await kiwiPhase1.handler(ctx, args);
 
@@ -444,12 +392,27 @@ export const scrapeKiwi: any = action({
         !phase1Result.sessionData ||
         !phase1Result.logId
       ) {
+        // Update session: Kiwi failed
+        await ctx.runMutation(internal.scrapeSessions.updateScrapeSession, {
+          sessionId: args.sessionId,
+          kiwiStatus: "error",
+          kiwiMessage: phase1Result.message,
+          kiwiError: phase1Result.message,
+        });
+
         return {
           success: false,
           message: phase1Result.message,
           recordsProcessed: 0,
         };
       }
+
+      // Update session: Kiwi phase 2
+      await ctx.runMutation(internal.scrapeSessions.updateScrapeSession, {
+        sessionId: args.sessionId,
+        kiwiStatus: "phase2",
+        kiwiMessage: "Extracting Kiwi data...",
+      });
 
       // Phase 2: Extract data and save to database
       const phase2Result = await kiwiPhase2.handler(ctx, {
@@ -458,10 +421,27 @@ export const scrapeKiwi: any = action({
         logId: phase1Result.logId,
       });
 
+      // Update session: Kiwi completed
+      await ctx.runMutation(internal.scrapeSessions.updateScrapeSession, {
+        sessionId: args.sessionId,
+        kiwiStatus: phase2Result.success ? "completed" : "error",
+        kiwiMessage: phase2Result.message,
+        kiwiRecordsProcessed: phase2Result.recordsProcessed,
+        kiwiError: phase2Result.success ? undefined : phase2Result.message,
+      });
+
       return phase2Result;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
+
+      // Update session: Kiwi failed
+      await ctx.runMutation(internal.scrapeSessions.updateScrapeSession, {
+        sessionId: args.sessionId,
+        kiwiStatus: "error",
+        kiwiMessage: `Failed to scrape Kiwi: ${errorMessage}`,
+        kiwiError: errorMessage,
+      });
 
       return {
         success: false,
@@ -472,8 +452,9 @@ export const scrapeKiwi: any = action({
   },
 });
 
-export const scrapeSkyscanner: any = action({
+export const scrapeSkyscanner: any = internalAction({
   args: {
+    sessionId: v.id("scrapeSessions"),
     departureAirport: v.string(),
     arrivalAirport: v.string(),
     departureDate: v.string(), // ISO string
@@ -487,6 +468,13 @@ export const scrapeSkyscanner: any = action({
   }),
   handler: async (ctx: any, args: any): Promise<any> => {
     try {
+      // Update session: Skyscanner starting
+      await ctx.runMutation(internal.scrapeSessions.updateScrapeSession, {
+        sessionId: args.sessionId,
+        skyscannerStatus: "phase1",
+        skyscannerMessage: "Starting Skyscanner search...",
+      });
+
       // Phase 1: Get session data
       const phase1Result = await skyscannerPhase1.handler(ctx, args);
 
@@ -495,12 +483,27 @@ export const scrapeSkyscanner: any = action({
         !phase1Result.sessionData ||
         !phase1Result.logId
       ) {
+        // Update session: Skyscanner failed
+        await ctx.runMutation(internal.scrapeSessions.updateScrapeSession, {
+          sessionId: args.sessionId,
+          skyscannerStatus: "error",
+          skyscannerMessage: phase1Result.message,
+          skyscannerError: phase1Result.message,
+        });
+
         return {
           success: false,
           message: phase1Result.message,
           recordsProcessed: 0,
         };
       }
+
+      // Update session: Skyscanner phase 2
+      await ctx.runMutation(internal.scrapeSessions.updateScrapeSession, {
+        sessionId: args.sessionId,
+        skyscannerStatus: "phase2",
+        skyscannerMessage: "Extracting Skyscanner data...",
+      });
 
       // Phase 2: Extract data and save to database
       const phase2Result = await skyscannerPhase2.handler(ctx, {
@@ -509,10 +512,29 @@ export const scrapeSkyscanner: any = action({
         logId: phase1Result.logId,
       });
 
+      // Update session: Skyscanner completed
+      await ctx.runMutation(internal.scrapeSessions.updateScrapeSession, {
+        sessionId: args.sessionId,
+        skyscannerStatus: phase2Result.success ? "completed" : "error",
+        skyscannerMessage: phase2Result.message,
+        skyscannerRecordsProcessed: phase2Result.recordsProcessed,
+        skyscannerError: phase2Result.success
+          ? undefined
+          : phase2Result.message,
+      });
+
       return phase2Result;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
+
+      // Update session: Skyscanner failed
+      await ctx.runMutation(internal.scrapeSessions.updateScrapeSession, {
+        sessionId: args.sessionId,
+        skyscannerStatus: "error",
+        skyscannerMessage: `Failed to scrape Skyscanner: ${errorMessage}`,
+        skyscannerError: errorMessage,
+      });
 
       return {
         success: false,

@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from "react";
-import { useAction } from "convex/react";
+import React, { useState, useCallback, useRef } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FlightSearchParams } from "../../types/scraper";
 import { ConvexClient } from "convex/browser";
@@ -53,16 +53,84 @@ export function useFlightSearch(): UseFlightSearchReturn {
   });
   const [error, setError] = useState<SearchError | null>(null);
   const [results, setResults] = useState<any[] | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   // Store last search params for retry functionality
   const lastSearchParams = useRef<FlightSearchParams | null>(null);
 
-  // Convex actions
-  const scrapeKiwi = useAction(api.scrapingActions.scrapeKiwi);
-  const scrapeSkyscanner = useAction(api.scrapingActions.scrapeSkyscanner);
+  // Convex mutations and queries
+  const createScrapeSession = useMutation(
+    api.scrapeSessions.createScrapeSession
+  );
+
+  // Watch the current session for progress updates
+  const sessionData = useQuery(
+    api.scrapeSessions.getScrapeSession,
+    currentSessionId ? { sessionId: currentSessionId as any } : "skip"
+  );
 
   // Convex client for direct query
   const convex = new ConvexClient(import.meta.env.VITE_CONVEX_URL as string);
+
+  // Update progress when session data changes
+  React.useEffect(() => {
+    if (sessionData) {
+      const newProgress: ScrapingProgress = {
+        kiwi: {
+          status: sessionData.kiwiStatus,
+          message: sessionData.kiwiMessage,
+          recordsProcessed: sessionData.kiwiRecordsProcessed,
+        },
+        skyscanner: {
+          status: sessionData.skyscannerStatus,
+          message: sessionData.skyscannerMessage,
+          recordsProcessed: sessionData.skyscannerRecordsProcessed,
+        },
+      };
+
+      setProgress(newProgress);
+
+      // Update overall search state based on session status
+      if (
+        sessionData.status === "completed" ||
+        sessionData.status === "partial_success"
+      ) {
+        // Fetch results
+        fetchResults();
+      } else if (sessionData.status === "failed") {
+        setSearchState("error");
+        setError({
+          message: "Search failed",
+          details:
+            "Both Kiwi and Skyscanner searches failed. Please try again later.",
+          source: "general",
+        });
+      }
+    }
+  }, [sessionData]);
+
+  const fetchResults = async () => {
+    if (!lastSearchParams.current) return;
+
+    const params = lastSearchParams.current;
+    const results = await convex.query(api.bundles.getBundlesForSearch, {
+      departureIata: params.departureAirport.toUpperCase(),
+      arrivalIata: params.arrivalAirport.toUpperCase(),
+      departureDate: params.departureDate.toISOString().split("T")[0],
+      returnDate: params.returnDate
+        ? params.returnDate.toISOString().split("T")[0]
+        : undefined,
+      isRoundTrip: params.isRoundTrip,
+    });
+
+    if (results && results.length > 0) {
+      setResults(results);
+      setSearchState("success");
+    } else {
+      setSearchState("no-results");
+      setResults([]);
+    }
+  };
 
   // Reset function
   const resetSearch = useCallback(() => {
@@ -73,6 +141,7 @@ export function useFlightSearch(): UseFlightSearchReturn {
     });
     setError(null);
     setResults(null);
+    setCurrentSessionId(null);
     lastSearchParams.current = null;
   }, []);
 
@@ -87,119 +156,25 @@ export function useFlightSearch(): UseFlightSearchReturn {
       setError(null);
       setResults(null);
       setProgress({
-        kiwi: { status: "phase1", message: "Starting Kiwi search..." },
+        kiwi: { status: "idle", message: "Starting Kiwi search..." },
         skyscanner: {
-          status: "phase1",
+          status: "idle",
           message: "Starting Skyscanner search...",
         },
       });
 
       try {
-        // Prepare parameters for Convex actions
-        const kiwiParams = {
+        // Create a new scrape session
+        const sessionId = await createScrapeSession({
           departureAirport: params.departureAirport.toUpperCase(),
           arrivalAirport: params.arrivalAirport.toUpperCase(),
           departureDate: params.departureDate.toISOString(),
           returnDate: params.returnDate?.toISOString(),
           isRoundTrip: params.isRoundTrip,
-        };
+        });
 
-        const skyscannerParams = {
-          departureAirport: params.departureAirport.toUpperCase(),
-          arrivalAirport: params.arrivalAirport.toUpperCase(),
-          departureDate: params.departureDate.toISOString(),
-          returnDate: params.returnDate?.toISOString(),
-          isRoundTrip: params.isRoundTrip,
-        };
-
-        // Start both scraping operations in parallel
-        const [kiwiResult, skyscannerResult] = await Promise.allSettled([
-          scrapeKiwi(kiwiParams),
-          scrapeSkyscanner(skyscannerParams),
-        ]);
-
-        // Update progress based on results
-        const newProgress: ScrapingProgress = { ...progress };
-
-        if (kiwiResult.status === "fulfilled") {
-          const result = kiwiResult.value;
-          if (result.success) {
-            newProgress.kiwi = {
-              status: "completed",
-              message: result.message,
-              recordsProcessed: result.recordsProcessed,
-            };
-          } else {
-            newProgress.kiwi = {
-              status: "error",
-              message: result.message,
-            };
-          }
-        } else {
-          newProgress.kiwi = {
-            status: "error",
-            message: kiwiResult.reason?.message || "Kiwi search failed",
-          };
-        }
-
-        if (skyscannerResult.status === "fulfilled") {
-          const result = skyscannerResult.value;
-          if (result.success) {
-            newProgress.skyscanner = {
-              status: "completed",
-              message: result.message,
-              recordsProcessed: result.recordsProcessed,
-            };
-          } else {
-            newProgress.skyscanner = {
-              status: "error",
-              message: result.message,
-            };
-          }
-        } else {
-          newProgress.skyscanner = {
-            status: "error",
-            message:
-              skyscannerResult.reason?.message || "Skyscanner search failed",
-          };
-        }
-
-        setProgress(newProgress);
-
-        // Determine overall search state
-        const kiwiSuccess = newProgress.kiwi.status === "completed";
-        const skyscannerSuccess = newProgress.skyscanner.status === "completed";
-
-        if (kiwiSuccess || skyscannerSuccess) {
-          // At least one source succeeded
-          // Fetch and display results from the database
-          const results = await convex.query(api.bundles.getBundlesForSearch, {
-            departureIata: params.departureAirport.toUpperCase(),
-            arrivalIata: params.arrivalAirport.toUpperCase(),
-            departureDate: params.departureDate.toISOString().split("T")[0],
-            returnDate: params.returnDate
-              ? params.returnDate.toISOString().split("T")[0]
-              : undefined,
-            isRoundTrip: params.isRoundTrip,
-          });
-
-          if (results && results.length > 0) {
-            setResults(results);
-            setSearchState("success");
-          } else {
-            setSearchState("no-results");
-            setResults([]);
-          }
-        } else {
-          // Both sources failed
-          setSearchState("error");
-          setError({
-            message: "Search failed",
-            details:
-              "Both Kiwi and Skyscanner searches failed. Please try again later.",
-            source: "general",
-          });
-        }
+        // Set the current session ID to start monitoring
+        setCurrentSessionId(sessionId);
       } catch (error) {
         setSearchState("error");
         setError({
@@ -214,7 +189,7 @@ export function useFlightSearch(): UseFlightSearchReturn {
         });
       }
     },
-    [scrapeKiwi, scrapeSkyscanner, progress]
+    [createScrapeSession]
   );
 
   // Retry function
