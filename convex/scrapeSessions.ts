@@ -1,9 +1,14 @@
-import { mutation, query } from "./_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
 // Create a new scrape session and schedule the scraping actions
-export const createScrapeSession = mutation({
+export const startScraping = mutation({
   args: {
     departureAirport: v.string(),
     arrivalAirport: v.string(),
@@ -32,7 +37,7 @@ export const createScrapeSession = mutation({
     });
 
     // Schedule both scraping actions
-    await ctx.scheduler.runAfter(0, internal.scrapingActions.scrapeKiwi, {
+    await ctx.scheduler.runAfter(0, internal.kiwiScrape.scrapeKiwi, {
       sessionId,
       departureAirport: args.departureAirport,
       arrivalAirport: args.arrivalAirport,
@@ -41,14 +46,18 @@ export const createScrapeSession = mutation({
       isRoundTrip: args.isRoundTrip,
     });
 
-    await ctx.scheduler.runAfter(0, internal.scrapingActions.scrapeSkyscanner, {
-      sessionId,
-      departureAirport: args.departureAirport,
-      arrivalAirport: args.arrivalAirport,
-      departureDate: args.departureDate,
-      returnDate: args.returnDate,
-      isRoundTrip: args.isRoundTrip,
-    });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.skyscannerScrape.scrapeSkyscanner,
+      {
+        sessionId,
+        departureAirport: args.departureAirport,
+        arrivalAirport: args.arrivalAirport,
+        departureDate: args.departureDate,
+        returnDate: args.returnDate,
+        isRoundTrip: args.isRoundTrip,
+      }
+    );
 
     // Update session status to in_progress
     await ctx.db.patch(sessionId, {
@@ -61,7 +70,7 @@ export const createScrapeSession = mutation({
 });
 
 // Update scrape session progress
-export const updateScrapeSession = mutation({
+export const updateScrapeSession = internalMutation({
   args: {
     sessionId: v.id("scrapeSessions"),
     kiwiStatus: v.optional(
@@ -207,7 +216,7 @@ export const getScrapeSession = query({
 });
 
 // Get recent scrape sessions
-export const getRecentScrapeSessions = query({
+export const getRecentScrapeSessions = internalQuery({
   args: { limit: v.optional(v.number()) },
   returns: v.array(
     v.object({

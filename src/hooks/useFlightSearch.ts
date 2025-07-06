@@ -59,9 +59,7 @@ export function useFlightSearch(): UseFlightSearchReturn {
   const lastSearchParams = useRef<FlightSearchParams | null>(null);
 
   // Convex mutations and queries
-  const createScrapeSession = useMutation(
-    api.scrapeSessions.createScrapeSession
-  );
+  const startScrape = useMutation(api.scrapeSessions.startScraping);
 
   // Watch the current session for progress updates
   const sessionData = useQuery(
@@ -165,7 +163,7 @@ export function useFlightSearch(): UseFlightSearchReturn {
 
       try {
         // Create a new scrape session
-        const sessionId = await createScrapeSession({
+        const sessionId = await startScrape({
           departureAirport: params.departureAirport.toUpperCase(),
           arrivalAirport: params.arrivalAirport.toUpperCase(),
           departureDate: params.departureDate.toISOString(),
@@ -189,7 +187,7 @@ export function useFlightSearch(): UseFlightSearchReturn {
         });
       }
     },
-    [createScrapeSession]
+    [startScrape]
   );
 
   // Retry function

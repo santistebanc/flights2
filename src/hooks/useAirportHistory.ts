@@ -1,4 +1,4 @@
-import { useLocalStorage } from "../useLocalStorage";
+import { useState, useEffect } from "react";
 
 interface AirportHistoryItem {
   iataCode: string;
@@ -12,8 +12,33 @@ interface AirportHistoryItem {
 const MAX_HISTORY_ITEMS = 10;
 const HISTORY_STORAGE_KEY = "airport-search-history";
 
+// Generic localStorage hook for this component
+function useLocalStorageState<T>(
+  key: string,
+  defaultValue: T
+): [T, (value: T | ((prev: T) => T)) => void] {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch (error) {
+      console.warn(`Failed to save ${key} to localStorage:`, error);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+}
+
 export function useAirportHistory() {
-  const [history, setHistory] = useLocalStorage<AirportHistoryItem[]>(
+  const [history, setHistory] = useLocalStorageState<AirportHistoryItem[]>(
     HISTORY_STORAGE_KEY,
     []
   );
@@ -25,12 +50,12 @@ export function useAirportHistory() {
     city: string;
     country?: string;
   }) => {
-    setHistory((prevHistory) => {
+    setHistory((prevHistory: AirportHistoryItem[]) => {
       const now = Date.now();
 
       // Check if airport already exists in history
       const existingIndex = prevHistory.findIndex(
-        (item) => item.iataCode === airport.iataCode
+        (item: AirportHistoryItem) => item.iataCode === airport.iataCode
       );
 
       if (existingIndex >= 0) {
@@ -82,8 +107,10 @@ export function useAirportHistory() {
 
   // Remove specific airport from history
   const removeFromHistory = (iataCode: string) => {
-    setHistory((prevHistory) =>
-      prevHistory.filter((item) => item.iataCode !== iataCode)
+    setHistory((prevHistory: AirportHistoryItem[]) =>
+      prevHistory.filter(
+        (item: AirportHistoryItem) => item.iataCode !== iataCode
+      )
     );
   };
 
