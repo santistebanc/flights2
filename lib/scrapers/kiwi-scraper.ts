@@ -3,13 +3,7 @@ import {
   ScrapingPhase1Result,
   ScrapingPhase2Result,
 } from "./base-scraper";
-import {
-  FlightSearchParams,
-  ScrapeResult,
-  ScrapedFlight,
-  ScrapedBundle,
-  ScrapedBookingOption,
-} from "../../types/scraper";
+import { FlightSearchParams } from "../../types/scraper";
 import {
   extractSessionDataFromPhase1Html,
   extractBundlesFromPhase2Html,
