@@ -160,6 +160,7 @@ export const getBundlesWithBookingOptions = query({
       _id: v.id("bundles"),
       _creationTime: v.number(),
       uniqueId: v.string(),
+      searchId: v.optional(v.string()),
       outboundFlightIds: v.array(v.id("flights")),
       inboundFlightIds: v.array(v.id("flights")),
       bookingOptions: v.array(
@@ -195,6 +196,7 @@ export const getBundlesWithBookingOptions = query({
         _id: bundle._id,
         _creationTime: bundle._creationTime,
         uniqueId: bundle.uniqueId,
+        searchId: bundle.searchId,
         outboundFlightIds: bundle.outboundFlightIds,
         inboundFlightIds: bundle.inboundFlightIds,
         bookingOptions,

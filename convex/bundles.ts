@@ -11,6 +11,7 @@ export const bulkInsertBundles = internalMutation({
     bundles: v.array(
       v.object({
         uniqueId: v.string(),
+        searchId: v.string(),
         outboundFlightUniqueIds: v.array(v.string()),
         inboundFlightUniqueIds: v.array(v.string()),
       })
@@ -44,6 +45,7 @@ export const bulkInsertBundles = internalMutation({
         // Insert new bundle
         const dbId = await ctx.db.insert("bundles", {
           uniqueId: bundle.uniqueId,
+          searchId: bundle.searchId,
           outboundFlightIds,
           inboundFlightIds,
         });
@@ -67,6 +69,7 @@ export const getBundlesByUniqueIds = query({
       _id: v.id("bundles"),
       _creationTime: v.number(),
       uniqueId: v.string(),
+      searchId: v.optional(v.string()),
       outboundFlightIds: v.array(v.id("flights")),
       inboundFlightIds: v.array(v.id("flights")),
     })
@@ -98,6 +101,7 @@ export const getBundlesWithFlights = query({
       _id: v.id("bundles"),
       _creationTime: v.number(),
       uniqueId: v.string(),
+      searchId: v.optional(v.string()),
       outboundFlights: v.array(
         v.object({
           _id: v.id("flights"),
@@ -149,6 +153,7 @@ export const getBundlesWithFlights = query({
         _id: bundle._id,
         _creationTime: bundle._creationTime,
         uniqueId: bundle.uniqueId,
+        searchId: bundle.searchId,
         outboundFlights,
         inboundFlights,
       });
@@ -172,6 +177,7 @@ export const getAllBundleUniqueIds = query({
 
 /**
  * Get bundles for a search (by departure/arrival IATA and dates), including flights and booking options.
+ * This function now uses getBundlesBySearchId for efficient searching.
  */
 export const getBundlesForSearch = query({
   args: {
@@ -185,6 +191,7 @@ export const getBundlesForSearch = query({
     v.object({
       _id: v.id("bundles"),
       uniqueId: v.string(),
+      searchId: v.optional(v.string()),
       outboundFlights: v.array(
         v.object({
           _id: v.id("flights"),
@@ -238,187 +245,257 @@ export const getBundlesForSearch = query({
     })
   ),
   handler: async (ctx, args) => {
-    // 1. Find airport IDs for the given IATA codes
-    const depAirport = await ctx.db
-      .query("airports")
-      .withIndex("by_iataCode", (q) => q.eq("iataCode", args.departureIata))
-      .unique();
-    const arrAirport = await ctx.db
-      .query("airports")
-      .withIndex("by_iataCode", (q) => q.eq("iataCode", args.arrivalIata))
-      .unique();
-    if (!depAirport || !arrAirport) return [];
+    // Step 1: Generate searchId from the search parameters
+    const departureDateTime = new Date(
+      args.departureDate + "T00:00:00Z"
+    ).getTime();
+    const returnDateTime =
+      args.isRoundTrip && args.returnDate
+        ? new Date(args.returnDate + "T00:00:00Z").getTime()
+        : 0;
 
-    // 2. Helper function to get start/end of day
-    const startOfDay = (dateStr: string) =>
-      new Date(dateStr + "T00:00:00Z").getTime();
-    const endOfDay = (dateStr: string) =>
-      new Date(dateStr + "T23:59:59Z").getTime();
+    const searchId = `${args.departureIata}_${departureDateTime}_${args.arrivalIata}_${returnDateTime}`;
 
-    // 3. Get all bundles and filter them based on the new logic
-    const allBundles = await ctx.db.query("bundles").collect();
-    const matchingBundles = [];
+    // Step 2: Try to find bundles using the searchId first (for new bundles)
+    let bundles = await ctx.db
+      .query("bundles")
+      .withIndex("by_searchId", (q) => q.eq("searchId", searchId))
+      .take(500);
 
-    for (const bundle of allBundles) {
-      // Only get first and last outbound flights for criteria checking
-      const firstOutboundId = bundle.outboundFlightIds[0];
-      const lastOutboundId =
-        bundle.outboundFlightIds[bundle.outboundFlightIds.length - 1];
+    // Step 3: If no bundles found by searchId, fall back to the old logic (for existing bundles without searchId)
+    if (bundles.length === 0) {
+      // Find airport IDs for the given IATA codes
+      const depAirport = await ctx.db
+        .query("airports")
+        .withIndex("by_iataCode", (q) => q.eq("iataCode", args.departureIata))
+        .unique();
+      const arrAirport = await ctx.db
+        .query("airports")
+        .withIndex("by_iataCode", (q) => q.eq("iataCode", args.arrivalIata))
+        .unique();
+      if (!depAirport || !arrAirport) return [];
 
-      if (!firstOutboundId || !lastOutboundId) continue;
+      // Helper function to get start/end of day
+      const startOfDay = (dateStr: string) =>
+        new Date(dateStr + "T00:00:00Z").getTime();
+      const endOfDay = (dateStr: string) =>
+        new Date(dateStr + "T23:59:59Z").getTime();
 
-      // Get first outbound flight
-      const firstOutboundFlight = await ctx.db.get(firstOutboundId);
-      if (!firstOutboundFlight) continue;
-      const firstOutboundDep = await ctx.db.get(
-        firstOutboundFlight.departureAirportId
-      );
-      if (!firstOutboundDep) continue;
+      // Get bundles without searchId and filter them
+      const allBundles = await ctx.db
+        .query("bundles")
+        .filter((q) => q.eq(q.field("searchId"), undefined))
+        .collect();
 
-      // Get last outbound flight
-      const lastOutboundFlight = await ctx.db.get(lastOutboundId);
-      if (!lastOutboundFlight) continue;
-      const lastOutboundArr = await ctx.db.get(
-        lastOutboundFlight.arrivalAirportId
-      );
-      if (!lastOutboundArr) continue;
+      for (const bundle of allBundles) {
+        // Only get first and last outbound flights for criteria checking
+        const firstOutboundId = bundle.outboundFlightIds[0];
+        const lastOutboundId =
+          bundle.outboundFlightIds[bundle.outboundFlightIds.length - 1];
 
-      // Check outbound criteria:
-      // - First flight departs from departureIata on departureDate
-      // - Last flight arrives at arrivalIata (any datetime)
-      // Note: flights are already in chronological order from data insertion
+        if (!firstOutboundId || !lastOutboundId) continue;
 
-      const outboundMatch =
-        firstOutboundDep.iataCode === args.departureIata &&
-        firstOutboundFlight.departureDateTime >=
-          startOfDay(args.departureDate) &&
-        firstOutboundFlight.departureDateTime <= endOfDay(args.departureDate) &&
-        lastOutboundArr.iataCode === args.arrivalIata;
+        // Get first outbound flight
+        const firstOutboundFlight = await ctx.db.get(firstOutboundId);
+        if (!firstOutboundFlight) continue;
+        const firstOutboundDep = await ctx.db.get(
+          firstOutboundFlight.departureAirportId
+        );
+        if (!firstOutboundDep) continue;
 
-      // For round trips, check inbound criteria
-      let inboundMatch = true;
+        // Get last outbound flight
+        const lastOutboundFlight = await ctx.db.get(lastOutboundId);
+        if (!lastOutboundFlight) continue;
+        const lastOutboundArr = await ctx.db.get(
+          lastOutboundFlight.arrivalAirportId
+        );
+        if (!lastOutboundArr) continue;
 
-      if (args.isRoundTrip && args.returnDate) {
-        // Only get first and last inbound flights for criteria checking
-        const firstInboundId = bundle.inboundFlightIds[0];
-        const lastInboundId =
-          bundle.inboundFlightIds[bundle.inboundFlightIds.length - 1];
+        // Check outbound criteria
+        const outboundMatch =
+          firstOutboundDep.iataCode === args.departureIata &&
+          firstOutboundFlight.departureDateTime >=
+            startOfDay(args.departureDate) &&
+          firstOutboundFlight.departureDateTime <=
+            endOfDay(args.departureDate) &&
+          lastOutboundArr.iataCode === args.arrivalIata;
 
-        if (!firstInboundId || !lastInboundId) {
-          inboundMatch = false;
-        } else {
-          // Get first inbound flight
-          const firstInboundFlight = await ctx.db.get(firstInboundId);
-          const firstInboundDep = firstInboundFlight
-            ? await ctx.db.get(firstInboundFlight.departureAirportId)
-            : null;
+        // For round trips, check inbound criteria
+        let inboundMatch = true;
 
-          // Get last inbound flight
-          const lastInboundFlight = await ctx.db.get(lastInboundId);
-          const lastInboundArr = lastInboundFlight
-            ? await ctx.db.get(lastInboundFlight.arrivalAirportId)
-            : null;
+        if (args.isRoundTrip && args.returnDate) {
+          const firstInboundId = bundle.inboundFlightIds[0];
+          const lastInboundId =
+            bundle.inboundFlightIds[bundle.inboundFlightIds.length - 1];
 
-          // Check inbound criteria:
-          // - First flight departs from arrivalIata on returnDate
-          // - Last flight arrives at departureIata (any datetime)
-          // Note: flights are already in chronological order from data insertion
-          inboundMatch =
-            !!firstInboundFlight &&
-            !!lastInboundFlight &&
-            !!firstInboundDep &&
-            !!lastInboundArr &&
-            firstInboundDep.iataCode === args.arrivalIata &&
-            firstInboundFlight.departureDateTime >=
-              startOfDay(args.returnDate) &&
-            firstInboundFlight.departureDateTime <= endOfDay(args.returnDate) &&
-            lastInboundArr.iataCode === args.departureIata;
-        }
-      } else if (!args.isRoundTrip) {
-        // For one-way trips, we don't check inbound flights
-        inboundMatch = true;
-      }
+          if (!firstInboundId || !lastInboundId) {
+            inboundMatch = false;
+          } else {
+            const firstInboundFlight = await ctx.db.get(firstInboundId);
+            const firstInboundDep = firstInboundFlight
+              ? await ctx.db.get(firstInboundFlight.departureAirportId)
+              : null;
 
-      if (outboundMatch && inboundMatch) {
-        // Now build complete flight objects for the response
-        const outboundFlights = [];
-        for (const fid of bundle.outboundFlightIds) {
-          const f = await ctx.db.get(fid);
-          if (!f) continue;
-          const dep = await ctx.db.get(f.departureAirportId);
-          const arr = await ctx.db.get(f.arrivalAirportId);
-          if (!dep || !arr) continue;
-          outboundFlights.push({
-            _id: f._id,
-            flightNumber: f.flightNumber,
-            departureAirport: {
-              _id: dep._id,
-              iataCode: dep.iataCode,
-              name: dep.name,
-              city: dep.city,
-            },
-            arrivalAirport: {
-              _id: arr._id,
-              iataCode: arr.iataCode,
-              name: arr.name,
-              city: arr.city,
-            },
-            departureDateTime: f.departureDateTime,
-            arrivalDateTime: f.arrivalDateTime,
-          });
+            const lastInboundFlight = await ctx.db.get(lastInboundId);
+            const lastInboundArr = lastInboundFlight
+              ? await ctx.db.get(lastInboundFlight.arrivalAirportId)
+              : null;
+
+            inboundMatch =
+              !!firstInboundFlight &&
+              !!lastInboundFlight &&
+              !!firstInboundDep &&
+              !!lastInboundArr &&
+              firstInboundDep.iataCode === args.arrivalIata &&
+              firstInboundFlight.departureDateTime >=
+                startOfDay(args.returnDate) &&
+              firstInboundFlight.departureDateTime <=
+                endOfDay(args.returnDate) &&
+              lastInboundArr.iataCode === args.departureIata;
+          }
         }
 
-        const inboundFlights = [];
-        for (const fid of bundle.inboundFlightIds) {
-          const f = await ctx.db.get(fid);
-          if (!f) continue;
-          const dep = await ctx.db.get(f.departureAirportId);
-          const arr = await ctx.db.get(f.arrivalAirportId);
-          if (!dep || !arr) continue;
-          inboundFlights.push({
-            _id: f._id,
-            flightNumber: f.flightNumber,
-            departureAirport: {
-              _id: dep._id,
-              iataCode: dep.iataCode,
-              name: dep.name,
-              city: dep.city,
-            },
-            arrivalAirport: {
-              _id: arr._id,
-              iataCode: arr.iataCode,
-              name: arr.name,
-              city: arr.city,
-            },
-            departureDateTime: f.departureDateTime,
-            arrivalDateTime: f.arrivalDateTime,
-          });
+        if (outboundMatch && inboundMatch) {
+          bundles.push(bundle);
         }
-
-        // Booking options
-        const bookingOptions = await ctx.db
-          .query("bookingOptions")
-          .withIndex("by_targetId", (q) => q.eq("targetId", bundle._id))
-          .order("asc")
-          .collect();
-
-        matchingBundles.push({
-          _id: bundle._id,
-          uniqueId: bundle.uniqueId,
-          outboundFlights,
-          inboundFlights,
-          bookingOptions: bookingOptions.map((bo) => ({
-            _id: bo._id,
-            agency: bo.agency,
-            price: bo.price,
-            currency: bo.currency,
-            linkToBook: bo.linkToBook,
-            extractedAt: bo.extractedAt,
-          })),
-        });
       }
     }
 
+    // Step 4: Build the response with full flight and booking option details
+    const matchingBundles = [];
+
+    for (const bundle of bundles) {
+      // Build complete flight objects for the response
+      const outboundFlights = [];
+      for (const fid of bundle.outboundFlightIds) {
+        const f = await ctx.db.get(fid);
+        if (!f) continue;
+        const dep = await ctx.db.get(f.departureAirportId);
+        const arr = await ctx.db.get(f.arrivalAirportId);
+        if (!dep || !arr) continue;
+        outboundFlights.push({
+          _id: f._id,
+          flightNumber: f.flightNumber,
+          departureAirport: {
+            _id: dep._id,
+            iataCode: dep.iataCode,
+            name: dep.name,
+            city: dep.city,
+          },
+          arrivalAirport: {
+            _id: arr._id,
+            iataCode: arr.iataCode,
+            name: arr.name,
+            city: arr.city,
+          },
+          departureDateTime: f.departureDateTime,
+          arrivalDateTime: f.arrivalDateTime,
+        });
+      }
+
+      const inboundFlights = [];
+      for (const fid of bundle.inboundFlightIds) {
+        const f = await ctx.db.get(fid);
+        if (!f) continue;
+        const dep = await ctx.db.get(f.departureAirportId);
+        const arr = await ctx.db.get(f.arrivalAirportId);
+        if (!dep || !arr) continue;
+        inboundFlights.push({
+          _id: f._id,
+          flightNumber: f.flightNumber,
+          departureAirport: {
+            _id: dep._id,
+            iataCode: dep.iataCode,
+            name: dep.name,
+            city: dep.city,
+          },
+          arrivalAirport: {
+            _id: arr._id,
+            iataCode: arr.iataCode,
+            name: arr.name,
+            city: arr.city,
+          },
+          departureDateTime: f.departureDateTime,
+          arrivalDateTime: f.arrivalDateTime,
+        });
+      }
+
+      // Booking options
+      const bookingOptions = await ctx.db
+        .query("bookingOptions")
+        .withIndex("by_targetId", (q) => q.eq("targetId", bundle._id))
+        .order("asc")
+        .collect();
+
+      matchingBundles.push({
+        _id: bundle._id,
+        uniqueId: bundle.uniqueId,
+        searchId: bundle.searchId,
+        outboundFlights,
+        inboundFlights,
+        bookingOptions: bookingOptions.map((bo) => ({
+          _id: bo._id,
+          agency: bo.agency,
+          price: bo.price,
+          currency: bo.currency,
+          linkToBook: bo.linkToBook,
+          extractedAt: bo.extractedAt,
+        })),
+      });
+    }
+
     return matchingBundles;
+  },
+});
+
+/**
+ * Get bundles by searchId for efficient search matching.
+ */
+export const getBundlesBySearchId = query({
+  args: {
+    searchId: v.string(),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("bundles"),
+      _creationTime: v.number(),
+      uniqueId: v.string(),
+      searchId: v.optional(v.string()),
+      outboundFlightIds: v.array(v.id("flights")),
+      inboundFlightIds: v.array(v.id("flights")),
+    })
+  ),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("bundles")
+      .withIndex("by_searchId", (q) => q.eq("searchId", args.searchId))
+      .collect();
+  },
+});
+
+/**
+ * Generate searchId from search parameters.
+ * This can be used to search for bundles matching specific criteria.
+ */
+export const generateSearchId = query({
+  args: {
+    departureIata: v.string(),
+    arrivalIata: v.string(),
+    departureDate: v.string(), // YYYY-MM-DD
+    returnDate: v.optional(v.string()), // YYYY-MM-DD or undefined
+    isRoundTrip: v.boolean(),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    // Convert dates to timestamps (start of day in UTC)
+    const departureDateTime = new Date(
+      args.departureDate + "T00:00:00Z"
+    ).getTime();
+    const returnDateTime =
+      args.isRoundTrip && args.returnDate
+        ? new Date(args.returnDate + "T00:00:00Z").getTime()
+        : 0;
+
+    return `${args.departureIata}_${departureDateTime}_${args.arrivalIata}_${returnDateTime}`;
   },
 });

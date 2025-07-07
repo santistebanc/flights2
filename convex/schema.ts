@@ -24,9 +24,12 @@ const flights = defineTable({
 
 const bundles = defineTable({
   uniqueId: v.string(),
+  searchId: v.optional(v.string()), // Made optional to handle existing data
   outboundFlightIds: v.array(v.id("flights")),
   inboundFlightIds: v.array(v.id("flights")),
-}).index("by_uniqueId", ["uniqueId"]);
+})
+  .index("by_uniqueId", ["uniqueId"])
+  .index("by_searchId", ["searchId"]);
 
 const bookingOptions = defineTable({
   uniqueId: v.string(),

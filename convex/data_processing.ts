@@ -83,6 +83,80 @@ function generateOptimizedBundleUniqueId(
 }
 
 /**
+ * Generate searchId for a bundle based on flight information.
+ * Format: {departureAirportIata}_{departureDateTimeMs}_{arrivalAirportIata}_{returnDateTimeMs}
+ * For one-way trips, returnDateTimeMs will be "0".
+ */
+async function generateBundleSearchId(
+  ctx: any,
+  outboundFlightIds: string[],
+  inboundFlightIds: string[],
+  flightUniqueIdToDbId: Record<string, any>
+): Promise<string> {
+  // Get first outbound flight for departure info
+  const firstOutboundId = outboundFlightIds[0];
+  const firstOutboundDbId = flightUniqueIdToDbId[firstOutboundId];
+
+  if (!firstOutboundDbId) {
+    throw new Error(`First outbound flight not found: ${firstOutboundId}`);
+  }
+
+  const firstOutboundFlight = await ctx.db.get(firstOutboundDbId);
+  if (!firstOutboundFlight) {
+    throw new Error(
+      `First outbound flight not found in database: ${firstOutboundDbId}`
+    );
+  }
+
+  const departureAirport = await ctx.db.get(
+    firstOutboundFlight.departureAirportId
+  );
+  if (!departureAirport) {
+    throw new Error(
+      `Departure airport not found: ${firstOutboundFlight.departureAirportId}`
+    );
+  }
+
+  // Get last outbound flight for arrival info
+  const lastOutboundId = outboundFlightIds[outboundFlightIds.length - 1];
+  const lastOutboundDbId = flightUniqueIdToDbId[lastOutboundId];
+
+  if (!lastOutboundDbId) {
+    throw new Error(`Last outbound flight not found: ${lastOutboundId}`);
+  }
+
+  const lastOutboundFlight = await ctx.db.get(lastOutboundDbId);
+  if (!lastOutboundFlight) {
+    throw new Error(
+      `Last outbound flight not found in database: ${lastOutboundDbId}`
+    );
+  }
+
+  const arrivalAirport = await ctx.db.get(lastOutboundFlight.arrivalAirportId);
+  if (!arrivalAirport) {
+    throw new Error(
+      `Arrival airport not found: ${lastOutboundFlight.arrivalAirportId}`
+    );
+  }
+
+  // Get first inbound flight for return info (if exists)
+  let returnDateTime = 0;
+  if (inboundFlightIds.length > 0) {
+    const firstInboundId = inboundFlightIds[0];
+    const firstInboundDbId = flightUniqueIdToDbId[firstInboundId];
+
+    if (firstInboundDbId) {
+      const firstInboundFlight = await ctx.db.get(firstInboundDbId);
+      if (firstInboundFlight) {
+        returnDateTime = firstInboundFlight.departureDateTime;
+      }
+    }
+  }
+
+  return `${departureAirport.iataCode}_${firstOutboundFlight.departureDateTime}_${arrivalAirport.iataCode}_${returnDateTime}`;
+}
+
+/**
  * Process scraped data and insert into database.
  * This is the main function that orchestrates the database insertion process.
  */
@@ -241,8 +315,8 @@ export const processAndInsertScrapedData = internalMutation({
       });
 
       // Step 4: Convert bundles to database format
-      const bundlesForDb = args.scrapeResult.bundles.map(
-        (bundle, bundleIndex) => {
+      const bundlesForDb = await Promise.all(
+        args.scrapeResult.bundles.map(async (bundle, bundleIndex) => {
           const outboundFlightUniqueIds: string[] = [];
           const inboundFlightUniqueIds: string[] = [];
 
@@ -272,15 +346,24 @@ export const processAndInsertScrapedData = internalMutation({
             }
           });
 
+          // Generate searchId for this bundle
+          const searchId = await generateBundleSearchId(
+            ctx,
+            outboundFlightUniqueIds,
+            inboundFlightUniqueIds,
+            flightUniqueIdToDbId
+          );
+
           return {
             uniqueId: generateOptimizedBundleUniqueId(
               outboundFlightUniqueIds,
               inboundFlightUniqueIds
             ),
+            searchId,
             outboundFlightUniqueIds,
             inboundFlightUniqueIds,
           };
-        }
+        })
       );
 
       // Step 5: Insert bundles and get ID mapping
@@ -623,12 +706,21 @@ export const savePollData = internalMutation({
           inboundFlightUniqueIds.push(uniqueId);
         });
 
+        // Generate searchId for this bundle
+        const searchId = await generateBundleSearchId(
+          ctx,
+          outboundFlightUniqueIds,
+          inboundFlightUniqueIds,
+          flightUniqueIdToDbId
+        );
+
         // Create bundle
         const bundleData = {
           uniqueId: generateOptimizedBundleUniqueId(
             outboundFlightUniqueIds,
             inboundFlightUniqueIds
           ),
+          searchId,
           outboundFlightIds: outboundFlightUniqueIds
             .map((uniqueId) => flightUniqueIdToDbId[uniqueId])
             .filter(Boolean) as Id<"flights">[],

@@ -16,6 +16,7 @@ import { cn, formatCurrency } from "@/utils";
 export interface BundleWithBookingOptions {
   _id: string;
   uniqueId: string;
+  searchId?: string;
   outboundFlights: FlightInfo[];
   inboundFlights?: FlightInfo[];
   bookingOptions: BookingOption[];
